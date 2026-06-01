@@ -1,0 +1,102 @@
+"""Tolerant column alias registry for Wildberries report formats."""
+
+from __future__ import annotations
+
+CANONICAL_FIELDS = (
+    "operation_date",
+    "sku",
+    "nm_id",
+    "operation_type",
+    "retail_amount",
+    "commission",
+    "logistics",
+    "storage_fee",
+    "penalty",
+    "acquiring",
+    "compensation",
+    "deduction",
+    "payout",
+    "advertisement",
+    "quantity",
+    "return_amount",
+    "warehouse_name",
+)
+
+FIELD_ALIASES: dict[str, tuple[str, ...]] = {
+    "operation_date": (
+        "operation_date",
+        "date",
+        "report_date",
+        "period",
+        "дата",
+        "дата операции",
+        "дата продажи",
+    ),
+    "sku": (
+        "sku",
+        "internal_sku",
+        "vendor_code",
+        "supplier_article",
+        "артикул",
+        "артикул поставщика",
+    ),
+    "nm_id": ("nm_id", "nmid", "nm id", "номенклатура", "код номенклатуры"),
+    "operation_type": (
+        "operation_type",
+        "operation",
+        "doc_type",
+        "тип операции",
+        "обоснование для оплаты",
+        "supplier_oper_name",
+    ),
+    "retail_amount": (
+        "retail_amount",
+        "retail price",
+        "retail_price",
+        "розничная цена",
+        "цена розничная",
+        "retail price withdisc rub",
+    ),
+    "commission": (
+        "commission",
+        "ppvz_sales_commission",
+        "комиссия",
+        "вознаграждение",
+        "комиссия wb",
+    ),
+    "logistics": (
+        "logistics",
+        "delivery_rub",
+        "логистика",
+        "delivery_amount",
+        "rebill_logistic_cost",
+    ),
+    "storage_fee": ("storage_fee", "storage", "хранение", "storage_amount"),
+    "penalty": ("penalty", "penalties", "штраф", "penalty_amount"),
+    "acquiring": ("acquiring", "acquiring_fee", "эквайринг"),
+    "compensation": ("compensation", "compens", "компенсация"),
+    "deduction": ("deduction", "deductions", "удержание", "удержания"),
+    "payout": (
+        "payout",
+        "for_pay",
+        "к перечислению",
+        "ppvz_for_pay",
+        "перечисление",
+        "amount_to_pay",
+    ),
+    "advertisement": ("advertisement", "ads", "реклама", "promo"),
+    "quantity": ("quantity", "qty", "кол-во", "количество"),
+    "return_amount": ("return_amount", "return", "возврат", "return_qty"),
+    "warehouse_name": (
+        "warehouse_name",
+        "warehouse",
+        "склад",
+        "office_name",
+        "офис",
+        "склад отгрузки",
+        "warehouse of delivery",
+    ),
+}
+
+PARSER_VERSION_V1_SIGNATURE = frozenset({"ppvz_for_pay", "supplier_oper_name", "nm_id"})
+PARSER_VERSION_V2_SIGNATURE = frozenset({"к перечислению", "тип операции", "номенклатура"})

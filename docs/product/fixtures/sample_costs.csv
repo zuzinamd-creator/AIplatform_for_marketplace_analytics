@@ -1,0 +1,4 @@
+internal_sku,effective_from,product_cost,packaging_cost,inbound_logistics_cost,additional_cost,currency,comment
+SKU-001,2026-01-01,120.00,10.00,15.00,5.00,RUB,Example SKU cost
+SKU-002,2026-01-01,250.00,15.00,20.00,0.00,RUB,Example SKU cost
+
