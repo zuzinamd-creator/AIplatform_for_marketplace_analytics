@@ -13,3 +13,7 @@ build/
 .vscode/
 uploads/
 *.log
+node_modules/
+frontend/node_modules/
+.vite/
+*.log
