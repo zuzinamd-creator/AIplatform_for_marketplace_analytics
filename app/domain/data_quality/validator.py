@@ -22,10 +22,12 @@ class DataQualityValidator:
         source_file_name: str,
         inventory_movements: list[InventoryMovementDraft],
         today: date | None = None,
+        seen_keys: dict[tuple[str, str, str, str], int] | None = None,
     ) -> list[EtlAnomalyDraft]:
         ref = today or date.today()
         anomalies: list[EtlAnomalyDraft] = []
-        seen_keys: dict[tuple[str, str, str, str], int] = defaultdict(int)
+        if seen_keys is None:
+            seen_keys = defaultdict(int)
 
         if SEMANTICS_VERSION not in SEMANTICS_REGISTRY:
             anomalies.append(

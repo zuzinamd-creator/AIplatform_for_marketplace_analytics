@@ -17,7 +17,7 @@ export function QueuePage() {
     <div className="space-y-6">
       <div>
         <div className="text-2xl font-semibold">Queue status</div>
-        <div className="text-sm text-slate-300">Read-only view of tenant job queue (claim/retry/visibility).</div>
+        <div className="text-sm text-ink-secondary">Read-only view of tenant job queue (claim/retry/visibility).</div>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -34,9 +34,9 @@ export function QueuePage() {
 
       <Card className="p-5">
         {q.isLoading ? (
-          <div className="text-sm text-slate-300">Loading…</div>
+          <div className="text-sm text-ink-secondary">Loading…</div>
         ) : (
-          <pre className="overflow-auto text-[11px] text-slate-300">
+          <pre className="overflow-auto text-[11px] text-ink-secondary">
             {JSON.stringify(items.slice(0, 50), null, 2)}
           </pre>
         )}

@@ -15,6 +15,21 @@ export const RU = {
     signed_in: "Вход выполнен",
     welcome_back: "С возвращением",
     login_failed: "Не удалось войти",
+    email_required: "Укажите email.",
+    password_required: "Укажите пароль.",
+    password_too_short: "Пароль должен быть не короче 8 символов.",
+    wrong_credentials: "Неверный email или пароль.",
+    forgot_password_link: "Забыли пароль?",
+    forgot_password_title: "Восстановление пароля",
+    forgot_password_subtitle:
+      "Укажите email аккаунта — мы отправим новый временный пароль на почту.",
+    send_new_password: "Отправить новый пароль",
+    sending_reset: "Отправляем…",
+    password_reset_sent: "Письмо отправлено",
+    password_reset_sent_detail:
+      "Если аккаунт с таким email существует, на почту отправлен новый временный пароль. Проверьте также папку «Спам».",
+    password_reset_failed: "Не удалось отправить письмо",
+    back_to_sign_in: "← Вернуться ко входу",
     new_here: "Впервые здесь?",
     create_account: "Создать аккаунт",
 

@@ -90,15 +90,15 @@ export function AppShell() {
   }, []);
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-4 py-6">
-        <div className="flex flex-col gap-6 md:flex-row">
-          <aside className="md:w-64">
-            <Card className="p-4 shadow-soft">
+    <div className="min-h-screen bg-surface-muted">
+      <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
+        <div className="flex flex-col gap-8 md:flex-row md:items-start">
+          <aside className="md:w-64 md:shrink-0">
+            <Card className="sticky top-6 p-5 shadow-soft">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <div className="text-sm font-semibold">{profile.workspace_name}</div>
-                  <div className="text-xs text-slate-300">Аналитика маркетплейсов</div>
+                  <div className="text-sm font-semibold text-ink">{profile.workspace_name}</div>
+                  <div className="text-xs text-ink-muted">Аналитика маркетплейсов</div>
                 </div>
                 <Button
                   variant="ghost"
@@ -113,43 +113,43 @@ export function AppShell() {
                 </Button>
               </div>
 
-              <div className="mt-3 rounded-lg bg-slate-900/60 px-3 py-2">
-                <div className="text-xs text-slate-300">Вы вошли как</div>
-                <div className="truncate text-sm">{user?.email ?? "…"}</div>
+              <div className="mt-4 rounded-xl bg-surface-inset px-3 py-2.5 ring-1 ring-surface-subtle/80">
+                <div className="text-xs text-ink-muted">Вы вошли как</div>
+                <div className="truncate text-sm font-medium text-ink">{user?.email ?? "…"}</div>
               </div>
-              <div className="mt-2 rounded-lg border border-slate-800/70 bg-slate-950/30 px-3 py-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-400">Окружение</div>
-                <div className="mt-0.5 flex items-center justify-between gap-2 text-xs">
+              <div className="mt-3 rounded-xl border border-surface-subtle bg-surface-inset/60 px-3 py-2.5">
+                <div className="text-[10px] font-medium uppercase tracking-wide text-ink-faint">Окружение</div>
+                <div className="mt-1 flex items-center justify-between gap-2 text-xs">
                   <span
                     className={
                       envMode === "INTEGRATION"
-                        ? "text-rose-200"
+                        ? "font-medium text-semantic-danger"
                         : envMode === "MAIN"
-                          ? "text-emerald-200"
-                          : "text-amber-200"
+                          ? "font-medium text-semantic-success"
+                          : "font-medium text-semantic-warn"
                     }
                   >
                     {envLabel}
                   </span>
-                  <span className="truncate text-slate-500">{apiBase.replace(/^https?:\/\//, "")}</span>
+                  <span className="truncate text-ink-faint">{apiBase.replace(/^https?:\/\//, "")}</span>
                 </div>
-                <div className="mt-1 text-[11px] text-slate-500">
+                <div className="mt-1 text-[11px] leading-relaxed text-ink-muted">
                   База: {dbName || "—"} @ {dbHost || "—"} · Хранилище:{" "}
-                  {persistent ? <span className="text-emerald-200">persistent</span> : <span className="text-rose-200">ephemeral</span>}
+                  {persistent ? <span className="text-semantic-success">persistent</span> : <span className="text-semantic-danger">ephemeral</span>}
                 </div>
                 {!persistent ? (
-                  <div className="mt-1 text-[11px] text-rose-200/90">
+                  <div className="mt-1.5 text-[11px] leading-relaxed text-semantic-danger">
                     В тестовом/локальном окружении данные могут удаляться (reset/volume). Для рабочего режима используйте MAIN + cloud DB.
                   </div>
                 ) : null}
               </div>
               {!isOnboardingDone() ? (
-                <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                <div className="mt-3 rounded-xl border border-amber-200 bg-semantic-warn-bg px-3 py-2.5 text-xs text-semantic-warn">
                   Завершите <span className="font-medium">настройку</span>, чтобы аналитика стала полезнее.
                 </div>
               ) : null}
 
-              <nav className="mt-4 flex flex-col gap-1" aria-label="Main navigation">
+              <nav className="mt-5 flex flex-col gap-0.5" aria-label="Main navigation">
                 {nav.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -158,17 +158,15 @@ export function AppShell() {
                       to={item.to}
                       className={({ isActive }) =>
                         cx(
-                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition",
-                          isActive
-                            ? "bg-sky-500/15 text-sky-200"
-                            : "text-slate-200 hover:bg-slate-800/60",
+                          "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition",
+                          isActive ? "nav-item-active" : "nav-item-idle",
                         )
                       }
                     >
                       <Icon className="h-4 w-4" />
                       <span className="flex-1">{item.label}</span>
                       {item.maturity === "beta" ? (
-                        <span className="text-[10px] text-amber-300">бета</span>
+                        <span className="text-[10px] font-medium text-semantic-warn">бета</span>
                       ) : null}
                     </NavLink>
                   );
@@ -177,7 +175,7 @@ export function AppShell() {
             </Card>
           </aside>
 
-          <main className="min-w-0 flex-1 space-y-4">
+          <main className="min-w-0 flex-1 space-y-6 pb-10">
             <TrustBanners />
             <Outlet />
           </main>

@@ -1,3 +1,5 @@
+import { generateId } from "../utils/id";
+
 export type SavedView = {
   id: string;
   name: string;
@@ -15,7 +17,7 @@ export function loadSavedViews(page?: SavedView["page"]): SavedView[] {
 
 export function saveView(view: Omit<SavedView, "id">) {
   const all = loadSavedViews();
-  const next: SavedView = { ...view, id: crypto.randomUUID() };
+  const next: SavedView = { ...view, id: generateId() };
   localStorage.setItem(KEY, JSON.stringify([next, ...all].slice(0, 20)));
   return next;
 }

@@ -16,11 +16,11 @@ export function AiRunsPage() {
     <div className="space-y-6">
       <div>
         <div className="text-2xl font-semibold">AI Runs</div>
-        <div className="text-sm text-slate-300">Governed run history (read-only).</div>
+        <div className="text-sm text-ink-secondary">Governed run history (read-only).</div>
       </div>
 
       <Card className="overflow-hidden">
-        <div className="grid grid-cols-12 border-b border-slate-800/70 bg-slate-950/40 px-4 py-3 text-xs text-slate-300">
+        <div className="grid grid-cols-12 border-b border-surface-subtle bg-surface-inset px-4 py-3 text-xs text-ink-secondary">
           <div className="col-span-4">Run ID</div>
           <div className="col-span-3">Workflow</div>
           <div className="col-span-3">Status</div>
@@ -28,24 +28,24 @@ export function AiRunsPage() {
         </div>
 
         {q.isLoading ? (
-          <div className="px-4 py-6 text-sm text-slate-300">Loading…</div>
+          <div className="px-4 py-6 text-sm text-ink-secondary">Loading…</div>
         ) : items.length > 0 ? (
           items.map((r: any) => (
             <Link
               key={String(r.id)}
               to={`/app/ai/runs/${r.id}`}
-              className="grid grid-cols-12 border-b border-slate-800/40 px-4 py-3 text-sm hover:bg-slate-900/40"
+              className="grid grid-cols-12 border-b border-surface-subtle px-4 py-3 text-sm hover:bg-surface-inset"
             >
               <div className="col-span-4 truncate font-mono text-[12px]">{String(r.id)}</div>
               <div className="col-span-3 truncate">{String(r.workflow ?? "—")}</div>
               <div className="col-span-3 truncate">{String(r.status ?? r.state ?? "—")}</div>
-              <div className="col-span-2 truncate text-slate-300">{String(r.created_at ?? "—")}</div>
+              <div className="col-span-2 truncate text-ink-secondary">{String(r.created_at ?? "—")}</div>
             </Link>
           ))
         ) : (
           <div className="px-4 py-10 text-center">
             <div className="text-sm font-medium">No AI runs yet</div>
-            <div className="mt-1 text-xs text-slate-400">Once you run intelligence workflows, they’ll show up here.</div>
+            <div className="mt-1 text-xs text-ink-muted">Once you run intelligence workflows, they’ll show up here.</div>
           </div>
         )}
       </Card>

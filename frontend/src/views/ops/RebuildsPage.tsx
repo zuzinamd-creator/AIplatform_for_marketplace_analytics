@@ -27,7 +27,7 @@ export function RebuildsPage() {
     <div className="space-y-6">
       <div>
         <div className="text-2xl font-semibold">Rebuild lifecycle</div>
-        <div className="text-sm text-slate-300">Visibility into snapshot rebuild requirements and dispatch outcomes.</div>
+        <div className="text-sm text-ink-secondary">Visibility into snapshot rebuild requirements and dispatch outcomes.</div>
       </div>
 
       <Card className="p-5">
@@ -44,9 +44,9 @@ export function RebuildsPage() {
 
         <div className="mt-4">
           {q.isLoading ? (
-            <div className="text-sm text-slate-300">Loading…</div>
+            <div className="text-sm text-ink-secondary">Loading…</div>
           ) : (
-            <pre className="overflow-auto text-[11px] text-slate-300">{JSON.stringify(items, null, 2)}</pre>
+            <pre className="overflow-auto text-[11px] text-ink-secondary">{JSON.stringify(items, null, 2)}</pre>
           )}
         </div>
       </Card>

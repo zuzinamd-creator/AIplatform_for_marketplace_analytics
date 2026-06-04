@@ -6,8 +6,10 @@ export function Card(props: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       {...props}
-      className={cx("rounded-xl border border-slate-800/70 bg-slate-900/40", props.className)}
+      className={cx(
+        "rounded-2xl border border-surface-subtle/90 bg-surface shadow-card",
+        props.className,
+      )}
     />
   );
 }
-

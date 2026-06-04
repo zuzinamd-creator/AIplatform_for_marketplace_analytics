@@ -1,8 +1,30 @@
+import re
 from collections.abc import AsyncIterator, Iterator
 from io import BytesIO
+from pathlib import Path
+
+import httpx
 
 from app.core.config import settings
 from app.integrations.supabase_client import get_supabase_client
+
+_ALLOWED_EXTENSIONS = frozenset({".xlsx", ".xls", ".csv"})
+
+
+def storage_object_name(filename: str, report_id: str) -> str:
+    """ASCII-safe object key for Supabase/S3 (original filename stays in DB)."""
+    ext = Path(filename).suffix.lower()
+    if ext not in _ALLOWED_EXTENSIONS:
+        ext = ".bin"
+    return f"{report_id}{ext}"
+
+
+def is_ascii_storage_key(path: str) -> bool:
+    """True when every path segment is safe for Supabase/S3 object keys."""
+    if not path or path.startswith("/") or ".." in path.split("/"):
+        return False
+    allowed = re.compile(r"^[A-Za-z0-9._-]+$")
+    return all(allowed.match(part) for part in path.split("/") if part)
 
 
 class SupabaseReportStorage:
@@ -10,7 +32,7 @@ class SupabaseReportStorage:
 
     def _object_path(self, user_id: str, report_id: str, filename: str) -> tuple[str, str]:
         bucket = settings.supabase_storage_bucket
-        path = f"{user_id}/{report_id}/{filename}"
+        path = f"{user_id}/{report_id}/{storage_object_name(filename, report_id)}"
         return bucket, path
 
     def _uri(self, bucket: str, path: str) -> str:
@@ -63,20 +85,36 @@ class SupabaseReportStorage:
         return self.save_stream(user_id, report_id, filename, _iter())
 
     def iter_chunks(self, storage_uri: str, *, chunk_size: int = 1024 * 1024) -> Iterator[bytes]:
+        """HTTP stream from signed URL — avoids loading the full object into RAM."""
         client = get_supabase_client()
         if client is None:
             raise RuntimeError("Supabase client is not configured")
 
         bucket, path = storage_uri.split("/", 1)
-        payload = client.storage.from_(bucket).download(path)
-        offset = 0
-        while offset < len(payload):
-            yield payload[offset : offset + chunk_size]
-            offset += chunk_size
+        signed = client.storage.from_(bucket).create_signed_url(path, 3600)
+        signed_url = signed.get("signedURL") or signed.get("signedUrl")
+        if not signed_url:
+            raise RuntimeError(f"Failed to sign download URL for {storage_uri}")
+
+        total = 0
+        timeout = httpx.Timeout(600.0, connect=30.0)
+        with httpx.Client(timeout=timeout, follow_redirects=True) as http:
+            with http.stream("GET", signed_url) as response:
+                response.raise_for_status()
+                for chunk in response.iter_bytes(chunk_size=chunk_size):
+                    if not chunk:
+                        continue
+                    total += len(chunk)
+                    if total > settings.max_upload_bytes:
+                        raise ValueError(
+                            f"File exceeds max allowed size ({settings.max_upload_bytes} bytes)"
+                        )
+                    yield chunk
 
     def read_all(self, storage_uri: str, *, max_bytes: int) -> bytes:
-        chunks = list(self.iter_chunks(storage_uri))
-        content = b"".join(chunks)
-        if len(content) > max_bytes:
-            raise ValueError(f"File exceeds max allowed size ({max_bytes} bytes)")
-        return content
+        buffer = bytearray()
+        for chunk in self.iter_chunks(storage_uri):
+            buffer.extend(chunk)
+            if len(buffer) > max_bytes:
+                raise ValueError(f"File exceeds max allowed size ({max_bytes} bytes)")
+        return bytes(buffer)

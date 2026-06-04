@@ -156,32 +156,29 @@ export function TrustBanners() {
   const visible = banners.filter((b) => b.id !== "all-clear" || banners.length === 1).slice(0, 4);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {visible.map((b) => (
         <Card
           key={b.id}
           className={
             b.tone === "bad"
-              ? "border-rose-500/30 bg-rose-500/10 p-3"
+              ? "border-red-200 bg-semantic-danger-bg p-4"
               : b.tone === "warn"
-                ? "border-amber-500/30 bg-amber-500/10 p-3"
+                ? "border-amber-200 bg-semantic-warn-bg p-4"
                 : b.tone === "ok"
-                  ? "border-emerald-500/30 bg-emerald-500/10 p-3"
-                  : "border-sky-500/30 bg-sky-500/10 p-3"
+                  ? "border-emerald-200 bg-semantic-success-bg p-4"
+                  : "border-sky-200 bg-semantic-info-bg p-4"
           }
         >
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <StatusBadge tone={b.tone}>{b.title}</StatusBadge>
               </div>
-              <div className="mt-1 text-xs text-slate-200">{b.detail}</div>
+              <div className="mt-1.5 text-sm leading-relaxed text-ink-secondary">{b.detail}</div>
             </div>
             {b.href ? (
-              <Link
-                to={b.href}
-                className="shrink-0 rounded-lg bg-slate-900/50 px-3 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800"
-              >
+              <Link to={b.href} className="btn-secondary h-9 shrink-0 px-3 text-xs">
                 {b.action ?? "Подробнее"}
               </Link>
             ) : null}
@@ -194,8 +191,8 @@ export function TrustBanners() {
 
 export function AiTrustNotice() {
   return (
-    <Card className="border-slate-700/70 bg-slate-950/40 p-4 text-xs text-slate-300">
-      <div className="font-medium text-slate-200">Важное про AI</div>
+    <Card className="border-surface-subtle bg-surface-inset p-5 text-sm text-ink-muted">
+      <div className="font-medium text-ink">Важное про AI</div>
       <ul className="mt-2 list-disc space-y-1 pl-4">
         <li>Рекомендации AI носят советный характер и не меняют ваши данные автоматически.</li>
         <li>Перед ценами, поставками и рекламой проверьте доказательства и уровень уверенности.</li>

@@ -22,25 +22,25 @@ export function AiUsagePage() {
     <div className="space-y-6">
       <div>
         <div className="text-2xl font-semibold">AI Usage & Providers</div>
-        <div className="text-sm text-slate-300">Operational visibility — tokens, cost caps, provider health.</div>
+        <div className="text-sm text-ink-secondary">Operational visibility — tokens, cost caps, provider health.</div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Card className="p-3 text-xs">
-          <div className="text-slate-400">Today spend</div>
+          <div className="text-ink-muted">Today spend</div>
           <div className="text-lg font-semibold">${c?.daily_spend_usd?.toFixed(4) ?? "—"}</div>
-          <div className="text-slate-500">cap ${c?.daily_cap_usd ?? "—"}</div>
+          <div className="text-ink0">cap ${c?.daily_cap_usd ?? "—"}</div>
         </Card>
         <Card className="p-3 text-xs">
-          <div className="text-slate-400">Remaining today</div>
+          <div className="text-ink-muted">Remaining today</div>
           <div className="text-lg font-semibold">${c?.daily_cap_remaining_usd?.toFixed(4) ?? "—"}</div>
         </Card>
         <Card className="p-3 text-xs">
-          <div className="text-slate-400">Est. monthly</div>
+          <div className="text-ink-muted">Est. monthly</div>
           <div className="text-lg font-semibold">${p?.estimated_monthly_cost_usd?.toFixed(2) ?? "—"}</div>
         </Card>
         <Card className="p-3 text-xs">
-          <div className="text-slate-400">Tokens (period)</div>
+          <div className="text-ink-muted">Tokens (period)</div>
           <div className="text-lg font-semibold">{u?.tokens_total ?? "—"}</div>
         </Card>
       </div>
@@ -48,7 +48,7 @@ export function AiUsagePage() {
       <Card className="p-5">
         <div className="text-sm font-semibold">Provider status</div>
         {p ? (
-          <div className="mt-3 space-y-2 text-xs text-slate-300">
+          <div className="mt-3 space-y-2 text-xs text-ink-secondary">
             <div className="flex flex-wrap gap-2">
               <StatusBadge tone="info">Primary: {p.primary_provider}</StatusBadge>
               {p.failover_provider ? (
@@ -60,23 +60,23 @@ export function AiUsagePage() {
               <StatusBadge tone="info">Prompt: {p.prompt_runtime_version}</StatusBadge>
             </div>
             {(p.providers ?? []).map((row: Record<string, unknown>) => (
-              <div key={String(row.provider_id)} className="rounded border border-slate-800/60 p-2">
+              <div key={String(row.provider_id)} className="rounded border border-surface-subtle p-2">
                 {String(row.provider_id)} — healthy={String(row.healthy)} failures=
                 {String(row.consecutive_failures)}
               </div>
             ))}
           </div>
         ) : (
-          <div className="mt-2 text-sm text-slate-400">Loading…</div>
+          <div className="mt-2 text-sm text-ink-muted">Loading…</div>
         )}
       </Card>
 
       <Card className="p-5">
         <div className="text-sm font-semibold">Cost breakdown</div>
         {c ? (
-          <div className="mt-3 grid gap-4 md:grid-cols-2 text-xs text-slate-300">
+          <div className="mt-3 grid gap-4 md:grid-cols-2 text-xs text-ink-secondary">
             <div>
-              <div className="font-medium text-slate-200">By workflow (agent)</div>
+              <div className="font-medium text-ink-secondary">By workflow (agent)</div>
               <ul className="mt-1 list-inside list-disc">
                 {(c.by_workflow ?? []).map((w, i) => (
                   <li key={i}>
@@ -86,11 +86,11 @@ export function AiUsagePage() {
               </ul>
             </div>
             <div>
-              <div className="font-medium text-slate-200">Expensive runs</div>
+              <div className="font-medium text-ink-secondary">Expensive runs</div>
               <ul className="mt-1 list-inside list-disc">
                 {(c.expensive_runs ?? []).map((r, i) => (
                   <li key={i}>
-                    <Link className="text-sky-300 hover:underline" to={`/app/ai/runs/${(r as any).run_id}`}>
+                    <Link className="text-brand hover:underline" to={`/app/ai/runs/${(r as any).run_id}`}>
                       {(r as any).run_id?.slice(0, 8)}
                     </Link>{" "}
                     — ${Number((r as any).cost_usd).toFixed(4)}

@@ -9,6 +9,8 @@ export type ReportResponse = {
   error_message?: string | null;
   created_at: string;
   processed_at?: string | null;
+  period_start?: string | null;
+  period_end?: string | null;
   job?: {
     id: string;
     status: string;

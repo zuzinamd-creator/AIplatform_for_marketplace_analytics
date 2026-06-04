@@ -6,7 +6,7 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,13 +48,40 @@ class WbPersistAggregatesMixin:
             )
         return costs
 
+    async def _resolve_affected_dates(
+        self,
+        *,
+        result: WbFinancialProcessResult,
+        report_id: UUID,
+    ) -> set[date]:
+        affected_dates = {item.aggregate_date for item in result.daily_aggregates}
+        if affected_dates:
+            return affected_dates
+        rows = await self.db.execute(
+            select(FinancialLedgerEntry.operation_date)
+            .where(
+                FinancialLedgerEntry.user_id == self.user_id,
+                FinancialLedgerEntry.report_id == report_id,
+            )
+            .distinct()
+        )
+        return {value for (value,) in rows.all() if value is not None}
+
     async def _rebuild_aggregates(
         self,
         *,
         result: WbFinancialProcessResult,
+        report_id: UUID,
         costs_by_sku: dict[str, list[SkuCostSnapshot]] | None = None,
     ) -> None:
-        affected_dates = {item.aggregate_date for item in result.daily_aggregates}
+        """
+        Rebuild day-level projections from full ledger history on affected dates.
+
+        Idempotent on retry: SKU-level rows for the period are removed first, then
+        recomputed from ledger (prevents stale SKU rows after re-import). Day-level
+        totals use ON CONFLICT DO UPDATE (full row replace per date/marketplace).
+        """
+        affected_dates = await self._resolve_affected_dates(result=result, report_id=report_id)
         if not affected_dates:
             return
 
@@ -80,9 +107,35 @@ class WbPersistAggregatesMixin:
             affected_dates=affected_dates,
         )
 
+        marketplace_value = Marketplace.WILDBERRIES.value
+        await self._purge_sku_aggregates_for_dates(affected_dates, marketplace=marketplace_value)
         await self._batch_upsert_daily_aggregates(daily, affected_dates)
         await self._batch_upsert_sku_daily_metrics(sku_rows, affected_dates)
         await self._batch_upsert_sku_unit_economics(unit_econ_rows)
+
+    async def _purge_sku_aggregates_for_dates(
+        self,
+        affected_dates: set[date],
+        *,
+        marketplace: str,
+    ) -> None:
+        """Drop SKU projections for affected dates so retry cannot leave orphan rows."""
+        if not affected_dates:
+            return
+        await self.db.execute(
+            delete(SkuDailyMetric).where(
+                SkuDailyMetric.user_id == self.user_id,
+                SkuDailyMetric.metric_date.in_(affected_dates),
+                SkuDailyMetric.marketplace == marketplace,
+            )
+        )
+        await self.db.execute(
+            delete(SkuUnitEconomicsDaily).where(
+                SkuUnitEconomicsDaily.user_id == self.user_id,
+                SkuUnitEconomicsDaily.metric_date.in_(affected_dates),
+                SkuUnitEconomicsDaily.marketplace == marketplace,
+            )
+        )
 
     async def _load_ledger_drafts_for_dates(self, dates: set[date]) -> list[LedgerEntryDraft]:
         result = await self.db.execute(

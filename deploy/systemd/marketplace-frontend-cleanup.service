@@ -1,0 +1,8 @@
+[Unit]
+Description=Marketplace frontend artifact cleanup (npm cache, vite temp, logs)
+Documentation=file:///root/AIplatform_for_marketplace_analytics/docs/ops/frontend-deploy.md
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/root/AIplatform_for_marketplace_analytics/scripts/cleanup-frontend-artifacts.sh

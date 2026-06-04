@@ -18,7 +18,7 @@ export function DriftChecksPage() {
     <div className="space-y-6">
       <div>
         <div className="text-2xl font-semibold">Drift indicators</div>
-        <div className="text-sm text-slate-300">
+        <div className="text-sm text-ink-secondary">
           Read-only drift checks for inventory/snapshot consistency (staleness and rebuild signals).
         </div>
       </div>
@@ -34,9 +34,9 @@ export function DriftChecksPage() {
 
         <div className="mt-4">
           {q.isLoading ? (
-            <div className="text-sm text-slate-300">Loading…</div>
+            <div className="text-sm text-ink-secondary">Loading…</div>
           ) : (
-            <pre className="overflow-auto text-[11px] text-slate-300">{JSON.stringify(items, null, 2)}</pre>
+            <pre className="overflow-auto text-[11px] text-ink-secondary">{JSON.stringify(items, null, 2)}</pre>
           )}
         </div>
       </Card>

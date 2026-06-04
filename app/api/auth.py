@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.user import User
-from app.schemas.auth import Token, UserCreate, UserResponse
+from app.schemas.auth import ForgotPasswordRequest, MessageResponse, Token, UserCreate, UserResponse
 from app.services.auth_service import AuthService
 
 router = APIRouter()
@@ -29,3 +29,14 @@ async def login(
 @router.get("/me", response_model=UserResponse)
 async def me(current_user: User = Depends(get_current_user)) -> User:
     return current_user
+
+
+@router.post("/forgot-password", response_model=MessageResponse)
+async def forgot_password(data: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)) -> MessageResponse:
+    await AuthService(db).request_password_reset(data.email)
+    return MessageResponse(
+        message=(
+            "If an account exists for this email, a new temporary password has been sent. "
+            "Check your inbox and spam folder."
+        )
+    )

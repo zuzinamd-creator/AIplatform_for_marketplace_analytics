@@ -8,6 +8,7 @@ import { RouteError } from "./ui/route-error";
 
 import { LoginPage } from "./views/auth/LoginPage";
 import { RegisterPage } from "./views/auth/RegisterPage";
+import { ForgotPasswordPage } from "./views/auth/ForgotPasswordPage";
 
 import { DashboardPage } from "./views/dashboard/DashboardPage";
 import { OnboardingPage } from "./views/onboarding/OnboardingPage";
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/app" replace /> },
   { path: "/login", element: withBoundary(<LoginPage />) },
   { path: "/register", element: withBoundary(<RegisterPage />) },
+  { path: "/forgot-password", element: withBoundary(<ForgotPasswordPage />) },
   {
     path: "/app",
     element: withBoundary(

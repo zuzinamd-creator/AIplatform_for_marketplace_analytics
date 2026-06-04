@@ -40,7 +40,13 @@ export function AuthProvider(props: { children: React.ReactNode }) {
     localStorage.setItem(TOKEN_KEY, newToken);
     setAccessToken(newToken);
     setToken(newToken);
-    await refreshMe();
+    setLoading(true);
+    try {
+      const me = await api.auth.me();
+      setUser(me);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signOut = () => {

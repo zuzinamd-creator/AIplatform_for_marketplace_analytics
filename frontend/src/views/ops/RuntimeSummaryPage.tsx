@@ -13,16 +13,16 @@ export function RuntimeSummaryPage() {
     <div className="space-y-6">
       <div>
         <div className="text-2xl font-semibold">Runtime summary</div>
-        <div className="text-sm text-slate-300">Seller-facing operational summary for diagnosing degraded modes.</div>
+        <div className="text-sm text-ink-secondary">Seller-facing operational summary for diagnosing degraded modes.</div>
       </div>
 
       <Card className="p-5">
         {q.isLoading ? (
-          <div className="text-sm text-slate-300">Loading…</div>
+          <div className="text-sm text-ink-secondary">Loading…</div>
         ) : q.data ? (
-          <pre className="overflow-auto text-[11px] text-slate-300">{JSON.stringify(q.data, null, 2)}</pre>
+          <pre className="overflow-auto text-[11px] text-ink-secondary">{JSON.stringify(q.data, null, 2)}</pre>
         ) : (
-          <div className="text-sm text-slate-300">No data.</div>
+          <div className="text-sm text-ink-secondary">No data.</div>
         )}
       </Card>
     </div>

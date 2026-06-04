@@ -1,6 +1,12 @@
 from collections.abc import AsyncIterator, Iterator
+from pathlib import Path
 
 from app.core.config import settings
+from app.etl.worker_shutdown import (
+    LEGACY_XLS_MAX_BYTES,
+    LEGACY_XLS_TOO_LARGE_MESSAGE,
+    LegacyReportTooLargeError,
+)
 from app.storage import get_report_storage
 
 
@@ -22,6 +28,14 @@ def iter_report_file(storage_uri: str, *, chunk_size: int = 1024 * 1024) -> Iter
     return get_report_storage().iter_chunks(storage_uri, chunk_size=chunk_size)
 
 
-def read_report_file(storage_uri: str) -> bytes:
+def read_report_file(storage_uri: str, *, filename: str | None = None) -> bytes:
     """Bounded read for ETL pipeline (existing bytes contract)."""
-    return get_report_storage().read_all(storage_uri, max_bytes=settings.max_upload_bytes)
+    max_bytes = settings.max_upload_bytes
+    if filename and Path(filename).suffix.lower() == ".xls":
+        max_bytes = min(max_bytes, LEGACY_XLS_MAX_BYTES)
+    try:
+        return get_report_storage().read_all(storage_uri, max_bytes=max_bytes)
+    except ValueError as exc:
+        if filename and Path(filename).suffix.lower() == ".xls":
+            raise LegacyReportTooLargeError(LEGACY_XLS_TOO_LARGE_MESSAGE) from exc
+        raise

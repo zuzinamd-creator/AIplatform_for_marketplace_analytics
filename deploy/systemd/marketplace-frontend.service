@@ -1,0 +1,36 @@
+[Unit]
+Description=Marketplace Analytics Frontend (Vite preview — optional; production UI is nginx static)
+Documentation=file:///root/AIplatform_for_marketplace_analytics/docs/ops/frontend-deploy.md
+After=network-online.target marketplace-backend.service
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/AIplatform_for_marketplace_analytics/frontend
+Environment=NODE_OPTIONS=--max-old-space-size=256
+Environment=VITE_API_BASE_URL=
+Environment=VITE_API_PREFIX=/api/v1
+# Quick trim of npm/vite temp before start (full cleanup runs on timer).
+ExecStartPre=/root/AIplatform_for_marketplace_analytics/scripts/cleanup-frontend-artifacts.sh --quick
+# Ensure port 4173 is not held by a stale preview from a crashed deploy.
+ExecStartPre=-/usr/bin/fuser -k 4173/tcp
+ExecStart=/usr/bin/npm run preview -- --host 0.0.0.0 --port 4173
+Restart=on-failure
+RestartSec=15
+TimeoutStopSec=30
+KillMode=mixed
+KillSignal=SIGTERM
+
+# 2 GB VPS: cap preview so deploy/build can still run.
+MemoryHigh=350M
+MemoryMax=400M
+TasksMax=64
+LimitNOFILE=4096
+OOMPolicy=stop
+OOMScoreAdjust=500
+
+[Install]
+WantedBy=multi-user.target

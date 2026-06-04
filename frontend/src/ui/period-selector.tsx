@@ -30,7 +30,7 @@ export function PeriodSelector(props: { onChange?: (sel: PeriodSelection) => voi
   }, [sel]);
 
   return (
-    <Card className="p-4">
+    <Card className="p-5">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end">
         <div className="md:col-span-4">
           <Label>Период</Label>
@@ -126,11 +126,11 @@ export function PeriodSelector(props: { onChange?: (sel: PeriodSelection) => voi
           </div>
         ) : null}
 
-        <div className="md:col-span-12 text-xs text-slate-400">
-          Данные проанализированы за период: <span className="text-slate-200">{sel.range.start} → {sel.range.end}</span>
+        <div className="md:col-span-12 text-xs text-ink-muted">
+          Данные проанализированы за период: <span className="font-medium text-ink-secondary">{sel.range.start} → {sel.range.end}</span>
           {compareRange ? (
             <>
-              {" "}· Сравнение: <span className="text-slate-200">{compareRange.start} → {compareRange.end}</span>
+              {" "}· Сравнение: <span className="font-medium text-ink-secondary">{compareRange.start} → {compareRange.end}</span>
             </>
           ) : null}
         </div>

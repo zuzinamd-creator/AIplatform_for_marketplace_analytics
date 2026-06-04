@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { generateId } from "../utils/id";
+
 type Toast = { id: string; title: string; detail?: string };
 
 let pushToast: ((t: Toast) => void) | null = null;
 
 export function toast(title: string, detail?: string) {
-  pushToast?.({ id: crypto.randomUUID(), title, detail });
+  pushToast?.({ id: generateId(), title, detail });
 }
 
 export function ToastHost() {
@@ -33,10 +35,10 @@ export function ToastHost() {
       {items.map((t) => (
         <div
           key={t.id}
-          className="rounded-xl border border-slate-800/70 bg-slate-950/85 p-3 shadow-soft backdrop-blur"
+          className="rounded-xl border border-surface-subtle bg-surface p-4 shadow-soft"
         >
-          <div className="text-sm font-semibold">{t.title}</div>
-          {t.detail ? <div className="mt-1 text-xs text-slate-300">{t.detail}</div> : null}
+          <div className="text-sm font-semibold text-ink">{t.title}</div>
+          {t.detail ? <div className="mt-1 text-xs text-ink-muted">{t.detail}</div> : null}
         </div>
       ))}
     </div>

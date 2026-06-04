@@ -32,7 +32,7 @@ export function CostCoveragePage() {
       <div className="flex items-end justify-between gap-3">
         <div>
           <div className="text-2xl font-semibold">Себестоимость и покрытие затрат</div>
-          <div className="text-sm text-slate-300">
+          <div className="text-sm text-ink-secondary">
             Понимание, можно ли доверять марже: полнота COGS, дубли, устаревшие стоимости.
           </div>
         </div>
@@ -43,21 +43,21 @@ export function CostCoveragePage() {
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <Card className="p-4">
-          <div className="text-xs text-slate-300">Полнота затрат (score)</div>
+          <div className="text-xs text-ink-secondary">Полнота затрат (score)</div>
           <div className="mt-1 text-xl font-semibold">{score ?? "—"}%</div>
-          <div className="mt-1 text-xs text-slate-400">Эвристика на основе покрытия SKU + предупреждений.</div>
+          <div className="mt-1 text-xs text-ink-muted">Эвристика на основе покрытия SKU + предупреждений.</div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs text-slate-300">Покрытие SKU себестоимостью</div>
+          <div className="text-xs text-ink-secondary">Покрытие SKU себестоимостью</div>
           <div className="mt-1 text-xl font-semibold">{covPct ?? "—"}%</div>
-          <div className="mt-1 text-xs text-slate-400">
+          <div className="mt-1 text-xs text-ink-muted">
             SKU считаются покрытыми, если COGS &gt; 0 при наличии продаж.
           </div>
         </Card>
         <Card className="p-4">
           <Label>Фильтр по SKU</Label>
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="например: SKU-123" />
-          <div className="mt-2 text-xs text-slate-400">Показывает SKU с продажами в выбранном периоде.</div>
+          <div className="mt-2 text-xs text-ink-muted">Показывает SKU с продажами в выбранном периоде.</div>
         </Card>
       </div>
 
@@ -74,12 +74,12 @@ export function CostCoveragePage() {
 
       <Card className="p-4">
         <div className="text-sm font-semibold">SKU с продажами (покрытие себестоимостью)</div>
-        <div className="mt-2 text-xs text-slate-400">
+        <div className="mt-2 text-xs text-ink-muted">
           Период: {range.start} → {range.end} · Маркетплейс: {marketplace}
         </div>
         <div className="mt-4 overflow-auto">
           <table className="min-w-full text-left text-sm">
-            <thead className="text-xs text-slate-400">
+            <thead className="text-xs text-ink-muted">
               <tr>
                 <th className="py-2 pr-4">SKU</th>
                 <th className="py-2 pr-4">Продано</th>
@@ -89,9 +89,9 @@ export function CostCoveragePage() {
                 <th className="py-2 pr-4">Последняя дата</th>
               </tr>
             </thead>
-            <tbody className="text-slate-200">
+            <tbody className="text-ink-secondary">
               {(coverage.data?.items ?? []).map((row) => (
-                <tr key={row.sku} className="border-t border-slate-800">
+                <tr key={row.sku} className="border-t border-surface-subtle">
                   <td className="py-2 pr-4">{row.sku}</td>
                   <td className="py-2 pr-4">{row.units_sold}</td>
                   <td className="py-2 pr-4">{row.revenue}</td>
@@ -102,14 +102,14 @@ export function CostCoveragePage() {
               ))}
               {coverage.isLoading ? (
                 <tr>
-                  <td className="py-3 text-slate-400" colSpan={6}>
+                  <td className="py-3 text-ink-muted" colSpan={6}>
                     Загрузка…
                   </td>
                 </tr>
               ) : null}
               {!coverage.isLoading && (coverage.data?.items ?? []).length === 0 ? (
                 <tr>
-                  <td className="py-3 text-slate-400" colSpan={6}>
+                  <td className="py-3 text-ink-muted" colSpan={6}>
                     Нет данных за выбранный период.
                   </td>
                 </tr>

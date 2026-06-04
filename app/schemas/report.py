@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -23,6 +23,8 @@ class ReportResponse(BaseModel):
     idempotency_key: str | None = Field(default=None, min_length=1, max_length=128)
     claimed_at: datetime | None = None
     processed_at: datetime | None
+    period_start: date | None = None
+    period_end: date | None = None
     created_at: datetime
     updated_at: datetime
 

@@ -138,23 +138,21 @@ class ETLPipeline:
             persist_service = WbFinancialPersistService(self.db, self.user_id)
             costs = await persist_service.load_cost_snapshots(self.db, self.user_id)
             wb_enriched = WbFinancialProcessor.enrich_with_costs(result.wb_financial, costs)
+            persist_kwargs = {
+                "report": report,
+                "file_checksum": report.file_checksum or "",
+                "storage_uri": report.file_path or "",
+                "result": wb_enriched,
+                "costs_by_sku": costs,
+                "job_id": job_id,
+                "opening_movements": result.wb_opening_movements,
+                "batch_first_dates": result.wb_batch_first_dates,
+            }
             if in_transaction:
-                loss_analytics = await persist_service.persist(
-                    report=report,
-                    file_checksum=report.file_checksum or "",
-                    storage_uri=report.file_path or "",
-                    result=wb_enriched,
-                    costs_by_sku=costs,
-                )
+                loss_analytics = await persist_service.persist(**persist_kwargs)
             else:
                 async with TenantSession.transaction(self.db, self.user_id):
-                    loss_analytics = await persist_service.persist(
-                        report=report,
-                        file_checksum=report.file_checksum or "",
-                        storage_uri=report.file_path or "",
-                        result=wb_enriched,
-                        costs_by_sku=costs,
-                    )
+                    loss_analytics = await persist_service.persist(**persist_kwargs)
             analytics_payload = extend_analytics_payload(
                 dict(wb_enriched.analytics_payload),
                 loss_analytics=loss_analytics,

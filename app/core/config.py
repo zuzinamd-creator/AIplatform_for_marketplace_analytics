@@ -26,6 +26,15 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
 
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_use_tls: bool = True
+    smtp_use_ssl: bool = False
+    app_public_url: str = "http://localhost"
+
     supabase_url: str = ""
     supabase_key: str = ""
     supabase_storage_bucket: str = "reports"
@@ -35,6 +44,8 @@ class Settings(BaseSettings):
 
     job_max_attempts: int = 3
     job_visibility_timeout_seconds: int = 1800
+    # Exponential backoff base (seconds) before a failed ETL job is claimable again.
+    job_retry_base_delay_seconds: int = 30
 
     storage_backend: str = "supabase"
     allow_local_storage_fallback: bool = False
@@ -44,6 +55,8 @@ class Settings(BaseSettings):
 
     log_level: str = "INFO"
     worker_heartbeat_interval_seconds: int = 15
+    # Phase-3 aggregate upserts: avoid indefinite waits when workers contend on same dates.
+    etl_aggregate_lock_timeout_ms: int = 5000
 
     # Production safety guards (structured log thresholds only)
     ops_rebuild_duration_warn_ms: int = 120_000

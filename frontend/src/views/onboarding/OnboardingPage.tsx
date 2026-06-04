@@ -74,7 +74,7 @@ function StepHeader(props: { idx: number; total: number; title: string; why: str
     <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
       <div>
         <div className="text-2xl font-semibold">{props.title}</div>
-        <div className="mt-1 text-sm text-slate-300">{props.why}</div>
+        <div className="mt-1 text-sm text-ink-secondary">{props.why}</div>
       </div>
       <StatusBadge tone="info">
         Шаг {props.idx + 1} / {props.total}
@@ -146,7 +146,7 @@ export function OnboardingPage() {
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="text-sm font-semibold">Прогресс настройки</div>
-            <div className="mt-1 text-xs text-slate-300">{suggestedNext}</div>
+            <div className="mt-1 text-xs text-ink-secondary">{suggestedNext}</div>
           </div>
           <div className="flex flex-wrap gap-2">
             <StatusBadge tone={hasUpload ? "ok" : "warn"}>Отчёты</StatusBadge>
@@ -161,12 +161,12 @@ export function OnboardingPage() {
 
         <div className="mt-6">
           {step.id === "welcome" ? (
-            <div className="space-y-3 text-sm text-slate-200">
+            <div className="space-y-3 text-sm text-ink-secondary">
               <div>
                 Эта настройка сделана с <span className="font-medium">минимальной когнитивной нагрузкой</span>: только шаги,
                 которые реально повышают пользу финансовой панели.
               </div>
-              <div className="rounded-lg border border-slate-800/70 bg-slate-950/40 p-3 text-xs text-slate-300">
+              <div className="rounded-lg border border-surface-subtle bg-surface-inset p-3 text-xs text-ink-secondary">
                 Подсказка: если где-то “пусто”, чаще всего система ждёт первую загрузку или завершение пересборки.
                 Операционные страницы — только для просмотра.
               </div>
@@ -182,7 +182,7 @@ export function OnboardingPage() {
                   onChange={(e) => setProfile((p) => ({ ...p, workspace_name: e.target.value }))}
                   placeholder="Например: WB · Магазин"
                 />
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-ink-muted">
                   Хранится локально. При необходимости можно добавить серверные настройки позже, не меняя ETL/леджер.
                 </div>
               </div>
@@ -227,34 +227,34 @@ export function OnboardingPage() {
 
           {step.id === "upload" ? (
             <div className="space-y-4 text-sm">
-              <div className="text-slate-200">
+              <div className="text-ink-secondary">
                 Загрузите первый отчёт. Прогресс обработки виден в “Отчёты” и “Очередь”.
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link to="/app/reports/upload" className="rounded-lg bg-sky-500/90 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400">
                   Перейти к загрузке
                 </Link>
-                <Link to="/app/reports" className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700">
+                <Link to="/app/reports" className="btn-secondary">
                   История отчётов
                 </Link>
               </div>
               {hasUpload ? (
                 <div className="text-xs text-emerald-200">Обнаружено: уже есть хотя бы один загруженный отчёт.</div>
               ) : (
-                <div className="text-xs text-slate-400">Пока нет загруженных отчётов.</div>
+                <div className="text-xs text-ink-muted">Пока нет загруженных отчётов.</div>
               )}
             </div>
           ) : null}
 
           {step.id === "sku_mapping" ? (
-            <div className="space-y-3 text-sm text-slate-200">
+            <div className="space-y-3 text-sm text-ink-secondary">
               <div>
                 Сопоставление SKU — реальная потребность продавца, но сейчас нет API для управления сопоставлениями.
               </div>
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">
                 Подсказка: позже можно добавить API сопоставлений как tenant-scoped проекцию (без редизайна ETL/леджера).
               </div>
-              <div className="text-xs text-slate-400">
+              <div className="text-xs text-ink-muted">
                 Рекомендуемый подход:
                 <ul className="mt-2 list-disc space-y-1 pl-5">
                   <li>Определите внутренние SKU (ваш мастер-каталог).</li>
@@ -267,7 +267,7 @@ export function OnboardingPage() {
 
           {step.id === "cost_import" ? (
             <div className="space-y-4 text-sm">
-              <div className="text-slate-200">
+              <div className="text-ink-secondary">
                 Загрузите себестоимость, чтобы валовая прибыль и маржинальность стали финансово корректными.
               </div>
               <div className="flex flex-wrap gap-2">
@@ -278,17 +278,17 @@ export function OnboardingPage() {
               {hasCosts ? (
                 <div className="text-xs text-emerald-200">Обнаружено: себестоимость уже загружена.</div>
               ) : (
-                <div className="text-xs text-slate-400">Пока нет данных себестоимости.</div>
+                <div className="text-xs text-ink-muted">Пока нет данных себестоимости.</div>
               )}
             </div>
           ) : null}
 
           {step.id === "first_ai" ? (
             <div className="space-y-4 text-sm">
-              <div className="text-slate-200">
+              <div className="text-ink-secondary">
                 Запустите первый ИИ-анализ (инвентарь). Он создаст запуск и может сформировать рекомендацию.
               </div>
-              <div className="rounded-lg border border-slate-800/70 bg-slate-950/40 p-3 text-xs text-slate-300">
+              <div className="rounded-lg border border-surface-subtle bg-surface-inset p-3 text-xs text-ink-secondary">
                 Используется prompt id <span className="font-mono">inventory.insight.v1</span> и workflow{" "}
                 <span className="font-mono">inventory_insight</span>.
               </div>
@@ -300,10 +300,10 @@ export function OnboardingPage() {
                 >
                   {runFirstAi.isPending ? "Запуск…" : "Запустить ИИ-анализ"}
                 </Button>
-                <Link to="/app/ai/recommendations" className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700">
+                <Link to="/app/ai/recommendations" className="btn-secondary">
                   Открыть рекомендации
                 </Link>
-                <Link to="/app/ai/runs" className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700">
+                <Link to="/app/ai/runs" className="btn-secondary">
                   История запусков
                 </Link>
               </div>
@@ -314,24 +314,24 @@ export function OnboardingPage() {
           ) : null}
 
           {step.id === "walkthrough" ? (
-            <div className="space-y-4 text-sm text-slate-200">
+            <div className="space-y-4 text-sm text-ink-secondary">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <Card className="p-4">
                   <div className="text-sm font-semibold">Ежедневный ритм</div>
-                  <div className="mt-2 text-xs text-slate-300">
+                  <div className="mt-2 text-xs text-ink-secondary">
                     Загрузка → статус обработки → KPI/предупреждения → рекомендации ИИ.
                   </div>
                 </Card>
                 <Card className="p-4">
                   <div className="text-sm font-semibold">Если что-то выглядит странно</div>
-                  <div className="mt-2 text-xs text-slate-300">
+                  <div className="mt-2 text-xs text-ink-secondary">
                     Проверьте очередь/пересборки/дрейф, затем детали аномалий и объяснимость ИИ.
                   </div>
                 </Card>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button onClick={finish}>Завершить</Button>
-                <Link to="/app/dashboard" className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700">
+                <Link to="/app/dashboard" className="btn-secondary">
                   Перейти к панели
                 </Link>
               </div>
@@ -344,7 +344,7 @@ export function OnboardingPage() {
             Назад
           </Button>
           <div className="flex gap-2">
-            <Link to="/app/dashboard" className="rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-slate-800/60">
+            <Link to="/app/dashboard" className="btn-secondary h-9">
               Пропустить и перейти к панели
             </Link>
             <Button variant="secondary" onClick={next} disabled={stepIdx === steps.length - 1}>

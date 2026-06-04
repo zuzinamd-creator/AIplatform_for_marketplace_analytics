@@ -8,6 +8,15 @@ if (-not (Test-Path ".env")) {
     Write-Host "Created .env from .env.example — edit AI_OPENAI_API_KEY and SECRET_KEY before real AI testing."
 }
 
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+    Write-Host "Docker is not installed."
+    Write-Host "On Linux/macOS without Docker, run:"
+    Write-Host "  bash scripts/local/start-dev-no-docker.sh"
+    Write-Host ""
+    Write-Host "Or install Docker Desktop / docker.io, then re-run this script."
+    exit 1
+}
+
 Write-Host "Building and starting Docker services..."
 docker compose up -d --build
 
@@ -25,14 +34,12 @@ else {
 }
 
 Write-Host ""
-Write-Host "Backend (via nginx): http://localhost:8080"
-Write-Host "Health:            http://localhost:8080/health"
-Write-Host "API prefix:        http://localhost:8080/api/v1"
+Write-Host "Seller UI (via nginx): http://localhost:8080/app/dashboard"
+Write-Host "Seller UI (direct):    http://localhost:5173/app/dashboard"
+Write-Host "Health:                http://localhost:8080/health"
+Write-Host "API prefix:            http://localhost:8080/api/v1"
 Write-Host ""
-Write-Host "Start frontend in another terminal:"
-Write-Host "  cd frontend"
-Write-Host "  copy .env.local.example .env.local"
-Write-Host "  npm install"
-Write-Host "  npm run dev"
+Write-Host "Frontend runs in Docker (service: frontend). If UI looks stale:"
+Write-Host "  docker compose restart frontend"
 Write-Host ""
 Write-Host "Smoke test: .venv\Scripts\python.exe scripts\local\run-local-smoke-test.py"

@@ -48,18 +48,48 @@ class InventorySnapshotRebuildService:
         exclude_report_id: UUID | None = None,
     ) -> None:
         batch_first_dates = self._batch_first_operation_dates(movements)
+        opening_movements = [
+            movement
+            for movement in movements
+            if is_opening_balance_movement(movement.canonical_payload)
+        ]
+        await self._validate_opening_balance_movements(
+            opening_movements,
+            batch_first_dates,
+            exclude_report_id=exclude_report_id,
+        )
+
+    async def validate_opening_balances_streamed(
+        self,
+        opening_movements: list[InventoryMovementDraft],
+        batch_first_dates: dict[tuple[str | None, str | None], date],
+        *,
+        exclude_report_id: UUID | None = None,
+    ) -> None:
+        """Opening-balance checks after stream parse (no full movement list in RAM)."""
+        await self._validate_opening_balance_movements(
+            opening_movements,
+            batch_first_dates,
+            exclude_report_id=exclude_report_id,
+        )
+
+    async def _validate_opening_balance_movements(
+        self,
+        opening_movements: list[InventoryMovementDraft],
+        batch_first_dates: dict[tuple[str | None, str | None], date],
+        *,
+        exclude_report_id: UUID | None = None,
+    ) -> None:
         opening_keys = {
             (movement.sku, movement.warehouse_name)
-            for movement in movements
-            if is_opening_balance_movement(movement.canonical_payload) and movement.sku
+            for movement in opening_movements
+            if movement.sku
         }
         persisted_first_by_key = await self._batch_first_ledger_operation_dates(
             opening_keys,
             exclude_report_id=exclude_report_id,
         )
-        for movement in movements:
-            if not is_opening_balance_movement(movement.canonical_payload):
-                continue
+        for movement in opening_movements:
             effective = opening_effective_date(
                 movement.canonical_payload,
                 fallback=movement.operation_date,

@@ -54,7 +54,7 @@ async def upload_report(
                 report=report_to_response(existing, job),
                 message="Report upload completed (resumed previous attempt)",
             )
-        _, existing_job = await report_service.get_report(existing.id)
+        _, existing_job, _, _ = await report_service.get_report(existing.id)
         return ReportUploadResponse(
             report=report_to_response(existing, existing_job),
             message="Identical file already uploaded; returning existing report",
@@ -92,12 +92,15 @@ async def upload_report(
 @router.get("", response_model=list[ReportResponse])
 async def list_reports(
     skip: int = 0,
-    limit: int = 50,
+    limit: int = 200,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list[ReportResponse]:
-    rows = await ReportService(db, current_user).list_reports(skip=skip, limit=limit)
-    return [report_to_response(report, job) for report, job in rows]
+    rows = await ReportService(db, current_user).list_reports(skip=skip, limit=min(limit, 500))
+    return [
+        report_to_response(report, job, period_start=ps, period_end=pe)
+        for report, job, ps, pe in rows
+    ]
 
 
 @router.get("/{report_id}", response_model=ReportResponse)
@@ -106,5 +109,5 @@ async def get_report(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ReportResponse:
-    report, job = await ReportService(db, current_user).get_report(report_id)
-    return report_to_response(report, job)
+    report, job, ps, pe = await ReportService(db, current_user).get_report(report_id)
+    return report_to_response(report, job, period_start=ps, period_end=pe)

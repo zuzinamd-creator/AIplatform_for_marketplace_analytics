@@ -1,7 +1,9 @@
 from dataclasses import dataclass
+from datetime import date
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
+    from app.domain.inventory.types import InventoryMovementDraft
     from app.etl.wb.types import WbFinancialProcessResult
 
 
@@ -34,3 +36,5 @@ class ETLResult:
     row_count: int
     analytics_payload: AnalyticsPayload
     wb_financial: "WbFinancialProcessResult | None" = None
+    wb_opening_movements: "list[InventoryMovementDraft] | None" = None
+    wb_batch_first_dates: "dict[tuple[str | None, str | None], date] | None" = None

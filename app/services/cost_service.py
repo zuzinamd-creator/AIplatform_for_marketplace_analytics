@@ -73,13 +73,83 @@ class CostService(TenantScopedService):
             await self.db.refresh(row)
         return row
 
-    async def list_costs(self, *, sku: str | None = None) -> list[CostHistory]:
-        query = select(CostHistory).order_by(CostHistory.effective_from.desc())
+    async def list_costs(
+        self,
+        *,
+        sku: str | None = None,
+        as_of: date | None = None,
+        effective_from: date | None = None,
+        effective_to: date | None = None,
+    ) -> list[CostHistory]:
+        query = select(CostHistory).order_by(
+            CostHistory.internal_sku.asc(),
+            CostHistory.effective_from.desc(),
+        )
         if sku:
             query = query.where(CostHistory.internal_sku == sku)
+        if effective_from is not None:
+            query = query.where(CostHistory.effective_from >= effective_from)
+        if effective_to is not None:
+            query = query.where(CostHistory.effective_from <= effective_to)
         async with self._rls_transaction():
             result = await self.db.execute(query)
-        return list(result.scalars().all())
+        rows = list(result.scalars().all())
+        if as_of is None:
+            return rows
+        return self.filter_costs_as_of(rows, as_of)
+
+    @staticmethod
+    def filter_costs_as_of(rows: list[CostHistory], as_of: date) -> list[CostHistory]:
+        latest_by_sku: dict[str, CostHistory] = {}
+        for row in rows:
+            if row.effective_from > as_of:
+                continue
+            if row.effective_to is not None and row.effective_to < as_of:
+                continue
+            prev = latest_by_sku.get(row.internal_sku)
+            if prev is None or row.effective_from > prev.effective_from:
+                latest_by_sku[row.internal_sku] = row
+        return sorted(
+            latest_by_sku.values(),
+            key=lambda r: (r.internal_sku, r.effective_from),
+            reverse=True,
+        )
+
+    async def update_cost(
+        self,
+        cost_id: UUID,
+        *,
+        product_cost: Decimal | None = None,
+        packaging_cost: Decimal | None = None,
+        inbound_logistics_cost: Decimal | None = None,
+        additional_cost: Decimal | None = None,
+        currency: str | None = None,
+        comment: str | None = None,
+    ) -> CostHistory:
+        row = await self.get_cost(cost_id)
+        if product_cost is not None:
+            row.product_cost = product_cost
+        if packaging_cost is not None:
+            row.packaging_cost = packaging_cost
+        if inbound_logistics_cost is not None:
+            row.inbound_logistics_cost = inbound_logistics_cost
+        if additional_cost is not None:
+            row.additional_cost = additional_cost
+        if currency is not None:
+            row.currency = currency
+        if comment is not None:
+            row.comment = comment
+        row.cost = (
+            row.product_cost
+            + row.packaging_cost
+            + row.inbound_logistics_cost
+            + row.additional_cost
+        )
+        async with self._rls_transaction():
+            self.db.add(row)
+            await self.db.flush()
+            await self.db.refresh(row)
+        return row
 
     async def get_cost(self, cost_id: UUID) -> CostHistory:
         async with self._rls_transaction():

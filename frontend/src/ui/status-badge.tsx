@@ -8,14 +8,13 @@ export function StatusBadge(props: { tone?: "ok" | "warn" | "bad" | "info"; chil
     <span
       className={cx(
         "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium",
-        tone === "ok" && "bg-emerald-500/15 text-emerald-200 ring-1 ring-emerald-500/20",
-        tone === "warn" && "bg-amber-500/15 text-amber-200 ring-1 ring-amber-500/20",
-        tone === "bad" && "bg-rose-500/15 text-rose-200 ring-1 ring-rose-500/20",
-        tone === "info" && "bg-sky-500/15 text-sky-200 ring-1 ring-sky-500/20",
+        tone === "ok" && "bg-semantic-success-bg text-semantic-success ring-1 ring-emerald-200",
+        tone === "warn" && "bg-semantic-warn-bg text-semantic-warn ring-1 ring-amber-200",
+        tone === "bad" && "bg-semantic-danger-bg text-semantic-danger ring-1 ring-red-200",
+        tone === "info" && "bg-semantic-info-bg text-semantic-info ring-1 ring-sky-200",
       )}
     >
       {props.children}
     </span>
   );
 }
-

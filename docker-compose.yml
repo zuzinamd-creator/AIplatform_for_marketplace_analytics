@@ -144,6 +144,24 @@ services:
           memory: 1024M
     restart: unless-stopped
 
+  frontend:
+    image: node:22-alpine
+    working_dir: /app/frontend
+    volumes:
+      - ./frontend:/app/frontend
+    environment:
+      # Browser calls API on the same origin (nginx :8080)
+      VITE_API_BASE_URL: http://localhost:${HTTP_PORT:-8080}
+      VITE_API_PREFIX: /api/v1
+      VITE_HMR_CLIENT_PORT: ${HTTP_PORT:-8080}
+    command: ["sh", "-lc", "npm install && npm run dev -- --host 0.0.0.0 --port 5173"]
+    ports:
+      - "5173:5173"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
   nginx:
     image: nginx:1.27-alpine
     ports:
@@ -153,6 +171,8 @@ services:
     depends_on:
       api:
         condition: service_healthy
+      frontend:
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health"]
       interval: 30s

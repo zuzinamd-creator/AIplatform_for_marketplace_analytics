@@ -1,3 +1,5 @@
+import { generateId } from "../utils/id";
+
 export type AppNotification = {
   id: string;
   title: string;
@@ -29,7 +31,7 @@ export function pushNotification(n: Omit<AppNotification, "id" | "created_at" | 
   const items = loadNotifications();
   const next: AppNotification = {
     ...n,
-    id: crypto.randomUUID(),
+    id: generateId(),
     created_at: new Date().toISOString(),
     read: false,
   };

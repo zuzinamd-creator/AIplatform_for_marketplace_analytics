@@ -3,6 +3,7 @@ import contextlib
 import os
 import signal
 import sys
+from pathlib import Path
 from collections.abc import AsyncIterator
 from uuid import UUID
 
@@ -18,7 +19,16 @@ from app.core.queue import ClaimedJobRecord, get_queue_backend
 from app.core.security_context import TenantSession
 from app.core.startup_validation import validate_environment
 from app.etl.pipeline import ETLPipeline
+from app.etl.report_materialize import materialize_report_file
 from app.etl.storage import read_report_file
+from app.core.queue.etl_retry_policy import (
+    EtlRetryableError,
+    classify_retry_reason,
+    compute_etl_retry_eligible_at,
+    retry_audit_extra,
+)
+from app.etl.worker_shutdown import LegacyReportTooLargeError, WorkerShutdownRequested
+from app.etl.wb.stream_pipeline import process_wb_streamed, wb_streaming_supported
 from app.models.reliability import ProcessKind
 from app.models.report import Marketplace, Report, ReportType
 from app.models.user import User
@@ -36,6 +46,10 @@ _process_supervisor: ProcessSupervisor | None = None
 def _handle_shutdown(*_args) -> None:
     logger.info("worker_shutdown_signal_received")
     _shutdown.set()
+
+
+def is_shutdown_requested() -> bool:
+    return _shutdown.is_set()
 
 
 async def _send_job_heartbeat(job_id: str, user_id: UUID) -> None:
@@ -120,37 +134,92 @@ async def process_next_job() -> bool:
         async with _job_heartbeat_scope(str(job.job_id), job.user_id):
             try:
                 with track_duration(logger, "etl_process_content", job_id=str(job.job_id)):
-                    content = read_report_file(job.file_path)
-                    etl_result = ETLPipeline.process_content(
-                        report_id=job.report_id,
-                        report_created_at=job.report_created_at,
-                        filename=job.original_filename,
-                        content=content,
-                        marketplace=Marketplace(job.marketplace),
-                        report_type=ReportType(job.report_type),
-                    )
+                    marketplace = Marketplace(job.marketplace)
+                    if (
+                        marketplace == Marketplace.WILDBERRIES
+                        and wb_streaming_supported(job.original_filename)
+                    ):
+                        suffix = Path(job.original_filename).suffix.lower() or ".xlsx"
+                        async with SessionLocal() as parse_db:
+                            report_row = await parse_db.execute(
+                                select(Report).where(Report.id == job.report_id)
+                            )
+                            report_for_parse = report_row.scalar_one_or_none()
+                            if not report_for_parse:
+                                raise ValueError("Report not found for streaming parse")
+                            with materialize_report_file(
+                                job.file_path,
+                                suffix=suffix,
+                                expected_checksum=report_for_parse.file_checksum,
+                            ) as path:
+                                etl_result = await process_wb_streamed(
+                                    db=parse_db,
+                                    user_id=job.user_id,
+                                    report=report_for_parse,
+                                    path=path,
+                                    filename=job.original_filename,
+                                    job_id=job.job_id,
+                                    shutdown_check=is_shutdown_requested,
+                                )
+                    else:
+                        content = read_report_file(
+                            job.file_path,
+                            filename=job.original_filename,
+                        )
+                        etl_result = ETLPipeline.process_content(
+                            report_id=job.report_id,
+                            report_created_at=job.report_created_at,
+                            filename=job.original_filename,
+                            content=content,
+                            marketplace=marketplace,
+                            report_type=ReportType(job.report_type),
+                        )
+            except EtlRetryableError as exc:
+                await _mark_job_failed_or_retry(job, str(exc), exc=exc)
+                return True
+            except WorkerShutdownRequested as exc:
+                logger.warning(
+                    "job_graceful_shutdown",
+                    extra={
+                        "job_id": str(job.job_id),
+                        "phase": exc.phase,
+                        "chunks_completed": exc.chunks_completed,
+                    },
+                )
+                await _mark_job_failed_or_retry(
+                    job,
+                    "Worker shutdown: текущий чанк сохранён, задача будет повторена",
+                    exc=exc,
+                )
+                return True
+            except LegacyReportTooLargeError as exc:
+                await _mark_job_failed_or_retry(job, str(exc), exc=exc)
+                return True
             except Exception as exc:
                 logger.exception("job_processing_failed", extra={"error": str(exc)})
-                await _mark_job_failed_or_retry(job, str(exc))
+                await _mark_job_failed_or_retry(job, str(exc), exc=exc)
                 return True
 
             if _shutdown.is_set():
                 logger.warning("job_interrupted_by_shutdown", extra={"job_id": str(job.job_id)})
-                await _mark_job_failed_or_retry(job, "Worker shutdown during processing")
+                await _mark_job_failed_or_retry(
+                    job,
+                    "Worker shutdown during processing (post-parse)",
+                )
                 return True
 
             try:
                 async with SessionLocal() as db:
-                    async with TenantSession.transaction(db, job.user_id):
-                        report_row = await db.execute(
-                            select(Report).where(Report.id == job.report_id)
-                        )
-                        report = report_row.scalar_one_or_none()
-                        user_row = await db.execute(select(User).where(User.id == job.user_id))
-                        user = user_row.scalar_one_or_none()
+                    report_row = await db.execute(
+                        select(Report).where(Report.id == job.report_id)
+                    )
+                    report = report_row.scalar_one_or_none()
+                    user_row = await db.execute(select(User).where(User.id == job.user_id))
+                    user = user_row.scalar_one_or_none()
 
-                        if not report or not user:
-                            logger.error("worker_persist_target_missing")
+                    if not report or not user:
+                        logger.error("worker_persist_target_missing")
+                        async with TenantSession.transaction(db, job.user_id):
                             if user:
                                 await ReportService(db, user).fail_job(
                                     job.job_id,
@@ -159,22 +228,37 @@ async def process_next_job() -> bool:
                                     max_attempts=job.max_attempts,
                                     in_transaction=True,
                                 )
-                            return True
+                        return True
 
-                        report_service = ReportService(db, user)
-                        pipeline = ETLPipeline(db, job.user_id)
-                        with track_duration(logger, "etl_persist_result", job_id=str(job.job_id)):
-                            await pipeline.persist_result(
-                                report,
-                                etl_result,
-                                report_service,
-                                job_id=job.job_id,
-                                in_transaction=True,
-                            )
+                    report_service = ReportService(db, user)
+                    pipeline = ETLPipeline(db, job.user_id)
+                    with track_duration(logger, "etl_persist_result", job_id=str(job.job_id)):
+                        await pipeline.persist_result(
+                            report,
+                            etl_result,
+                            report_service,
+                            job_id=job.job_id,
+                            in_transaction=False,
+                        )
+                    async with TenantSession.transaction(db, job.user_id):
                         await report_service.ack_job(job.job_id, in_transaction=True)
+            except EtlRetryableError as exc:
+                await _mark_job_failed_or_retry(job, str(exc), exc=exc)
+                return True
+            except WorkerShutdownRequested as exc:
+                logger.warning(
+                    "job_graceful_shutdown_during_persist",
+                    extra={"job_id": str(job.job_id), "phase": exc.phase},
+                )
+                await _mark_job_failed_or_retry(
+                    job,
+                    "Worker shutdown: текущий этап persist завершён, задача будет повторена",
+                    exc=exc,
+                )
+                return True
             except Exception as exc:
                 logger.exception("job_persist_failed", extra={"error": str(exc)})
-                await _mark_job_failed_or_retry(job, str(exc))
+                await _mark_job_failed_or_retry(job, str(exc), exc=exc)
                 return True
 
         logger.info("job_completed")
@@ -184,10 +268,29 @@ async def process_next_job() -> bool:
         clear_context()
 
 
-async def _mark_job_failed_or_retry(job: ClaimedJobRecord, error_message: str) -> None:
+async def _mark_job_failed_or_retry(
+    job: ClaimedJobRecord,
+    error_message: str,
+    *,
+    exc: BaseException | None = None,
+) -> None:
     poison = job.attempt_count >= job.max_attempts
+    retry_reason = classify_retry_reason(error_message, exc)
     log_event = "job_dead_lettered" if poison else "job_failed_will_retry"
-    logger.error(log_event, extra={"error": error_message, "job_id": str(job.job_id)})
+    retry_eligible_at = (
+        None if poison else compute_etl_retry_eligible_at(job.attempt_count)
+    )
+    logger.error(
+        log_event,
+        extra=retry_audit_extra(
+            job_id=str(job.job_id),
+            attempt_count=job.attempt_count,
+            max_attempts=job.max_attempts,
+            retry_reason=retry_reason,
+            retry_eligible_at=retry_eligible_at,
+            error_message=error_message,
+        ),
+    )
 
     async with SessionLocal() as db:
         async with TenantSession.transaction(db, job.user_id):
@@ -201,6 +304,7 @@ async def _mark_job_failed_or_retry(job: ClaimedJobRecord, error_message: str) -
                 attempt_count=job.attempt_count,
                 max_attempts=job.max_attempts,
                 in_transaction=True,
+                retry_reason=retry_reason.value,
             )
 
 

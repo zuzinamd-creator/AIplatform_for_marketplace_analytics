@@ -17,9 +17,9 @@ export function AiRunDetailPage() {
       <div className="flex items-end justify-between gap-3">
         <div>
           <div className="text-2xl font-semibold">AI Run detail</div>
-          <div className="text-sm text-slate-300">Raw run object (useful for ops triage).</div>
+          <div className="text-sm text-ink-secondary">Raw run object (useful for ops triage).</div>
         </div>
-        <Link className="text-sm text-sky-300 hover:underline" to="/app/ai/runs">
+        <Link className="text-sm text-brand hover:underline" to="/app/ai/runs">
           Back
         </Link>
       </div>
@@ -28,7 +28,7 @@ export function AiRunDetailPage() {
         <Card className="p-5">Loading…</Card>
       ) : q.data ? (
         <Card className="p-5">
-          <pre className="overflow-auto text-[11px] text-slate-300">{JSON.stringify(q.data, null, 2)}</pre>
+          <pre className="overflow-auto text-[11px] text-ink-secondary">{JSON.stringify(q.data, null, 2)}</pre>
         </Card>
       ) : (
         <Card className="p-5">Not found.</Card>

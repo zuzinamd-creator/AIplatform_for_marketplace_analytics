@@ -122,9 +122,9 @@ export function RecommendationDetailPage() {
       <div className="flex items-end justify-between gap-3">
         <div>
           <div className="text-2xl font-semibold">Рекомендация</div>
-          <div className="text-sm text-slate-300">Доверие к данным, ограничения и история действий продавца.</div>
+          <div className="text-sm text-ink-secondary">Доверие к данным, ограничения и история действий продавца.</div>
         </div>
-        <Link className="text-sm text-sky-300 hover:underline" to="/app/ai/recommendations">
+        <Link className="text-sm text-brand hover:underline" to="/app/ai/recommendations">
           Назад
         </Link>
       </div>
@@ -135,7 +135,7 @@ export function RecommendationDetailPage() {
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <Card className="p-5">
             <div className="text-sm font-semibold">Суть</div>
-            <div className="mt-2 text-sm text-slate-200">{String(r.summary ?? "")}</div>
+            <div className="mt-2 text-sm text-ink-secondary">{String(r.summary ?? "")}</div>
 
             <div className="mt-4 flex flex-wrap gap-2">
               <StatusBadge tone="info">Уверенность: {String(r.confidence_score ?? r.confidence ?? "—")}</StatusBadge>
@@ -147,20 +147,20 @@ export function RecommendationDetailPage() {
               )}
             </div>
 
-            <div className="mt-4 space-y-3 text-xs text-slate-300">
+            <div className="mt-4 space-y-3 text-xs text-ink-secondary">
               {urgency ? (
                 <div>
-                  <span className="font-medium text-slate-200">Срочность: </span>
+                  <span className="font-medium text-ink-secondary">Срочность: </span>
                   {urgency.replace(/_/g, " ")}
                 </div>
               ) : null}
               <div>
-                <div className="font-medium text-slate-200">Почему это важно</div>
+                <div className="font-medium text-ink-secondary">Почему это важно</div>
                 <p className="mt-1">{why || "Перед действием проверьте KPI и качество данных."}</p>
               </div>
               {impact ? (
                 <div>
-                  <div className="font-medium text-slate-200">Ожидаемый эффект</div>
+                  <div className="font-medium text-ink-secondary">Ожидаемый эффект</div>
                   <p className="mt-1">{impact}</p>
                 </div>
               ) : null}
@@ -181,12 +181,12 @@ export function RecommendationDetailPage() {
                 </div>
               )}
               <div>
-                <div className="font-medium text-slate-200">Что сделать</div>
-                <p className="mt-1 text-slate-200">{action}</p>
+                <div className="font-medium text-ink-secondary">Что сделать</div>
+                <p className="mt-1 text-ink-secondary">{action}</p>
               </div>
               {confExplain ? (
                 <div>
-                  <div className="font-medium text-slate-200">Почему такая уверенность</div>
+                  <div className="font-medium text-ink-secondary">Почему такая уверенность</div>
                   <p className="mt-1">{confExplain}</p>
                 </div>
               ) : null}
@@ -213,7 +213,7 @@ export function RecommendationDetailPage() {
               </Button>
             </div>
 
-            <div className="mt-6 rounded-lg border border-slate-800/70 bg-slate-950/40 p-3">
+            <div className="mt-6 rounded-lg border border-surface-subtle bg-surface-inset p-3">
               <div className="text-sm font-semibold">Заметка продавца</div>
               <div className="mt-2 space-y-2">
                 <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Коротко: что и почему нужно сделать…" />
@@ -221,7 +221,7 @@ export function RecommendationDetailPage() {
                   <div className="min-w-[240px]">
                     <Label>Напомнить</Label>
                     <input
-                      className="mt-1 h-9 w-full rounded-md border border-slate-800 bg-slate-950/40 px-2 text-sm"
+                      className="mt-1 h-9 w-full rounded-md border border-surface-subtle bg-surface-inset px-2 text-sm"
                       type="datetime-local"
                       value={reminderDate}
                       onChange={(e) => setReminderDate(e.target.value)}
@@ -245,9 +245,9 @@ export function RecommendationDetailPage() {
               </div>
             </div>
 
-            <div className="mt-5 rounded-lg border border-slate-800/70 bg-slate-950/40 p-3">
-              <div className="text-xs font-medium text-slate-200">Задать вопрос по рекомендации</div>
-              <p className="mt-1 text-[11px] text-slate-500">
+            <div className="mt-5 rounded-lg border border-surface-subtle bg-surface-inset p-3">
+              <div className="text-xs font-medium text-ink-secondary">Задать вопрос по рекомендации</div>
+              <p className="mt-1 text-[11px] text-ink0">
                 Ответы формируются детерминированно из сохранённых доказательств — без автономных действий на маркетплейсе.
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -255,7 +255,7 @@ export function RecommendationDetailPage() {
                   <button
                     key={chip}
                     type="button"
-                    className="rounded border border-slate-700 px-2 py-0.5 text-[11px] text-slate-300 hover:bg-slate-800"
+                    className="rounded border border-surface-subtle px-2 py-0.5 text-[11px] text-ink-secondary hover:bg-surface-inset"
                     onClick={() => ask.mutate(chip)}
                   >
                     {chip}
@@ -264,7 +264,7 @@ export function RecommendationDetailPage() {
               </div>
               <div className="mt-2 flex gap-2">
                 <input
-                  className="h-9 flex-1 rounded-lg border border-slate-800 bg-slate-950/40 px-3 text-sm"
+                  className="h-9 flex-1 rounded-lg border border-surface-subtle bg-surface-inset px-3 text-sm"
                   value={followUp}
                   onChange={(ev) => setFollowUp(ev.target.value)}
                   placeholder="Или напишите вопрос…"
@@ -276,26 +276,26 @@ export function RecommendationDetailPage() {
               {conversation.length > 0 ? (
                 <div className="mt-3 max-h-48 space-y-2 overflow-auto">
                   {conversation.map((turn, i) => (
-                    <div key={i} className="rounded bg-slate-900/50 p-2 text-[11px]">
-                      <div className="text-slate-500">Вопрос: {turn.q}</div>
-                      <div className="mt-1 text-slate-200">{turn.a}</div>
+                    <div key={i} className="rounded bg-surface-inset p-2 text-[11px]">
+                      <div className="text-ink0">Вопрос: {turn.q}</div>
+                      <div className="mt-1 text-ink-secondary">{turn.a}</div>
                     </div>
                   ))}
                 </div>
               ) : null}
             </div>
             {fingerprint ? (
-              <div className="mt-2 text-[11px] text-slate-500">
-                Идентификатор: <span className="text-slate-400">{fingerprint.slice(0, 16)}</span>
+              <div className="mt-2 text-[11px] text-ink0">
+                Идентификатор: <span className="text-ink-muted">{fingerprint.slice(0, 16)}</span>
               </div>
             ) : null}
 
             <div className="mt-5 space-y-2">
-              <div className="text-xs font-medium text-slate-200">Оценка полезности</div>
+              <div className="text-xs font-medium text-ink-secondary">Оценка полезности</div>
               <div className="flex flex-wrap items-center gap-2">
-                <div className="text-xs text-slate-400">Насколько это полезно?</div>
+                <div className="text-xs text-ink-muted">Насколько это полезно?</div>
                 <select
-                  className="h-9 rounded-lg border border-slate-800 bg-slate-950/40 px-3 text-sm text-slate-50"
+                  className="h-9 rounded-lg border border-surface-subtle bg-surface-inset px-3 text-sm text-ink"
                   value={rating}
                   onChange={(e) => setRating(Number(e.target.value))}
                 >
@@ -344,16 +344,16 @@ export function RecommendationDetailPage() {
           <Card className="p-5">
             <div className="text-sm font-semibold">Доверие и доказательства</div>
             {explain.isLoading ? (
-              <div className="mt-3 text-sm text-slate-300">Загрузка объяснимости…</div>
+              <div className="mt-3 text-sm text-ink-secondary">Загрузка объяснимости…</div>
             ) : e ? (
               <>
                 <div className="mt-3">
                   <AiTrustPanel trust={e.trust_context} />
                 </div>
-                <div className="mt-2 text-xs text-slate-300">{String(e.confidence_rationale ?? "")}</div>
-                <div className="mt-4 rounded-lg border border-slate-800/70 bg-slate-950/40 p-3">
+                <div className="mt-2 text-xs text-ink-secondary">{String(e.confidence_rationale ?? "")}</div>
+                <div className="mt-4 rounded-lg border border-surface-subtle bg-surface-inset p-3">
                   <div className="text-sm font-semibold">Почему AI может ошибаться</div>
-                  <div className="mt-2 text-sm text-slate-200">
+                  <div className="mt-2 text-sm text-ink-secondary">
                     {String(
                       e?.trust_context?.confidence_explanation ??
                         confExplain ??
@@ -361,7 +361,7 @@ export function RecommendationDetailPage() {
                     )}
                   </div>
                   {Array.isArray(e?.trust_context?.limitations) && e.trust_context.limitations.length ? (
-                    <ul className="mt-3 space-y-1 text-xs text-slate-300">
+                    <ul className="mt-3 space-y-1 text-xs text-ink-secondary">
                       {e.trust_context.limitations.slice(0, 10).map((l: string) => (
                         <li key={l}>- {l}</li>
                       ))}
@@ -376,44 +376,44 @@ export function RecommendationDetailPage() {
 
                 <div className="mt-4">
                   <div className="text-sm font-semibold">История действий</div>
-                  <div className="mt-2 space-y-2 text-xs text-slate-300">
+                  <div className="mt-2 space-y-2 text-xs text-ink-secondary">
                     {(history.data?.items ?? []).slice(0, 12).map((it) => (
-                      <div key={it.id} className="rounded-md border border-slate-800 bg-slate-950/40 p-2">
-                        <div className="text-slate-200">{it.event_type}</div>
+                      <div key={it.id} className="rounded-md border border-surface-subtle bg-surface-inset p-2">
+                        <div className="text-ink-secondary">{it.event_type}</div>
                         {it.note ? <div className="mt-1">{it.note}</div> : null}
-                        <div className="mt-1 text-slate-500">{new Date(it.created_at).toLocaleString("ru-RU")}</div>
+                        <div className="mt-1 text-ink0">{new Date(it.created_at).toLocaleString("ru-RU")}</div>
                       </div>
                     ))}
                     {!history.isLoading && !(history.data?.items?.length ?? 0) ? (
-                      <div className="text-slate-500">История пустая.</div>
+                      <div className="text-ink0">История пустая.</div>
                     ) : null}
                   </div>
                 </div>
-                <div className="mt-4 rounded-lg border border-slate-800/70 bg-slate-950/40 p-3">
-                  <div className="text-xs font-medium text-slate-200">Доказательства (evidence)</div>
+                <div className="mt-4 rounded-lg border border-surface-subtle bg-surface-inset p-3">
+                  <div className="text-xs font-medium text-ink-secondary">Доказательства (evidence)</div>
                   {nodes.length === 0 ? (
-                    <div className="mt-2 text-xs text-slate-400">Доказательства не приложены.</div>
+                    <div className="mt-2 text-xs text-ink-muted">Доказательства не приложены.</div>
                   ) : (
                     <div className="mt-2 space-y-2">
                       {nodes.slice(0, 12).map((n) => (
-                        <div key={String(n.node_id)} className="rounded-lg border border-slate-800/60 bg-slate-950/30 p-2">
+                        <div key={String(n.node_id)} className="rounded-lg border border-surface-subtle bg-surface-inset p-2">
                           <div className="flex items-center justify-between gap-3">
-                            <div className="truncate text-xs text-slate-200">{String(n.label ?? "Доказательство")}</div>
-                            <div className="text-[11px] text-slate-500">{String(n.source_type ?? "")}</div>
+                            <div className="truncate text-xs text-ink-secondary">{String(n.label ?? "Доказательство")}</div>
+                            <div className="text-[11px] text-ink0">{String(n.source_type ?? "")}</div>
                           </div>
-                          <div className="mt-1 text-[11px] text-slate-400">Источник: {String(n.source_id ?? "")}</div>
+                          <div className="mt-1 text-[11px] text-ink-muted">Источник: {String(n.source_id ?? "")}</div>
                         </div>
                       ))}
                       {edges.length > 0 ? (
-                        <div className="text-[11px] text-slate-500">Связей: {edges.length}</div>
+                        <div className="text-[11px] text-ink0">Связей: {edges.length}</div>
                       ) : null}
                     </div>
                   )}
                 </div>
-                <div className="mt-4 rounded-lg border border-slate-800/70 bg-slate-950/40 p-3">
-                  <div className="text-xs font-medium text-slate-200">Инсайты аналитиков (multi-layer)</div>
+                <div className="mt-4 rounded-lg border border-surface-subtle bg-surface-inset p-3">
+                  <div className="text-xs font-medium text-ink-secondary">Инсайты аналитиков (multi-layer)</div>
                   {domainInsights.length === 0 ? (
-                    <div className="mt-2 text-xs text-slate-400">
+                    <div className="mt-2 text-xs text-ink-muted">
                       Нет инсайтов аналитиков для этой рекомендации (старый прогон или упрощенный режим).
                     </div>
                   ) : (
@@ -421,10 +421,10 @@ export function RecommendationDetailPage() {
                       {domainInsights.slice(0, 10).map((ins) => (
                         <div
                           key={String(ins.insight_id ?? ins.analyst_id)}
-                          className="rounded-lg border border-slate-800/60 bg-slate-950/30 p-2"
+                          className="rounded-lg border border-surface-subtle bg-surface-inset p-2"
                         >
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="text-xs font-medium text-slate-200">
+                            <div className="text-xs font-medium text-ink-secondary">
                               {String(ins.analyst_label ?? ins.analyst_id ?? "Analyst")}
                             </div>
                             <div className="flex flex-wrap gap-1">
@@ -443,17 +443,17 @@ export function RecommendationDetailPage() {
                               </StatusBadge>
                             </div>
                           </div>
-                          <div className="mt-1 text-xs text-slate-300">{String(ins.statement ?? "")}</div>
+                          <div className="mt-1 text-xs text-ink-secondary">{String(ins.statement ?? "")}</div>
                           {ins.reasoning_summary ? (
-                            <div className="mt-1 text-[11px] text-slate-500">{ins.reasoning_summary}</div>
+                            <div className="mt-1 text-[11px] text-ink0">{ins.reasoning_summary}</div>
                           ) : null}
                           {(ins.evidence_refs ?? []).length > 0 ? (
-                            <div className="mt-1 text-[11px] text-slate-500">
+                            <div className="mt-1 text-[11px] text-ink0">
                               Доказательства: {(ins.evidence_refs ?? []).slice(0, 5).join(", ")}
                             </div>
                           ) : null}
                           {(ins.recommended_actions ?? []).length > 0 ? (
-                            <ul className="mt-1 list-inside list-disc text-[11px] text-slate-400">
+                            <ul className="mt-1 list-inside list-disc text-[11px] text-ink-muted">
                               {(ins.recommended_actions ?? []).slice(0, 3).map((a, i) => (
                                 <li key={i}>{a}</li>
                               ))}
@@ -464,15 +464,15 @@ export function RecommendationDetailPage() {
                     </div>
                   )}
                 </div>
-                <div className="mt-3 rounded-lg border border-slate-800/70 bg-slate-950/40 p-3">
-                  <div className="text-xs font-medium text-slate-200">Трассировка рассуждений (raw)</div>
-                  <pre className="mt-2 max-h-48 overflow-auto text-[11px] text-slate-300">
+                <div className="mt-3 rounded-lg border border-surface-subtle bg-surface-inset p-3">
+                  <div className="text-xs font-medium text-ink-secondary">Трассировка рассуждений (raw)</div>
+                  <pre className="mt-2 max-h-48 overflow-auto text-[11px] text-ink-secondary">
                     {JSON.stringify(e.reasoning_trace ?? { steps: [] }, null, 2)}
                   </pre>
                 </div>
               </>
             ) : (
-              <div className="mt-3 text-sm text-slate-300">Объяснимость недоступна.</div>
+              <div className="mt-3 text-sm text-ink-secondary">Объяснимость недоступна.</div>
             )}
           </Card>
         </div>

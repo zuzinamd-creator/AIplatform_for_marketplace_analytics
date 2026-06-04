@@ -1,13 +1,21 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.queue.etl_retry_policy import (
+    RetryReason,
+    compute_etl_retry_eligible_at,
+    retry_audit_extra,
+)
 from app.core.queue.stale import is_etl_job_stale
+from app.core.observability import get_logger
 from app.core.queue.types import ClaimedJobRecord, EnqueuePayload, RecoveryRecord
 from app.core.security_context import QueueSession
 from app.models.job import EtlJob, JobStatus
+
+_queue_logger = get_logger("queue")
 
 
 class PostgresQueueBackend:
@@ -51,11 +59,18 @@ class PostgresQueueBackend:
         return job
 
     async def claim(self) -> ClaimedJobRecord | None:
+        now = datetime.now(UTC)
         stmt = (
             select(EtlJob)
             .where(EtlJob.status == JobStatus.PENDING)
             .where(EtlJob.attempt_count < EtlJob.max_attempts)
             .where(EtlJob.file_path.is_not(None))
+            .where(
+                or_(
+                    EtlJob.processing_started_at.is_(None),
+                    EtlJob.processing_started_at <= now,
+                )
+            )
             .order_by(EtlJob.file_size_bytes.asc().nulls_last(), EtlJob.created_at.asc())
             .limit(1)
             .with_for_update(skip_locked=True)
@@ -67,7 +82,6 @@ class PostgresQueueBackend:
             if job is None:
                 return None
 
-            now = datetime.now(UTC)
             job.status = JobStatus.PROCESSING
             job.attempt_count += 1
             job.claimed_at = now
@@ -95,21 +109,38 @@ class PostgresQueueBackend:
         attempt_count: int,
         max_attempts: int,
         poison: bool = False,
+        retry_reason: RetryReason | str = RetryReason.GENERIC,
     ) -> None:
         job = await self._get_job(UUID(job_id))
         if job is None:
             return
+        reason = RetryReason(retry_reason) if isinstance(retry_reason, str) else retry_reason
         job.last_error = error_message
+        retry_eligible_at: datetime | None = None
         if poison or attempt_count >= max_attempts:
             job.status = JobStatus.DEAD_LETTER
             job.claimed_at = None
+            job.processing_started_at = None
         elif attempt_count < max_attempts:
             job.status = JobStatus.PENDING
             job.claimed_at = None
-            job.processing_started_at = None
+            retry_eligible_at = compute_etl_retry_eligible_at(attempt_count)
+            job.processing_started_at = retry_eligible_at
+            _queue_logger.warning(
+                "etl_job_requeued_with_backoff",
+                extra=retry_audit_extra(
+                    job_id=job_id,
+                    attempt_count=attempt_count,
+                    max_attempts=max_attempts,
+                    retry_reason=reason,
+                    retry_eligible_at=retry_eligible_at,
+                    error_message=error_message,
+                ),
+            )
         else:
             job.status = JobStatus.FAILED
             job.claimed_at = None
+            job.processing_started_at = None
 
     async def requeue(self, job_id: str) -> None:
         job = await self._get_job(UUID(job_id))
@@ -145,8 +176,19 @@ class PostgresQueueBackend:
                 if job.attempt_count < job.max_attempts:
                     job.status = JobStatus.PENDING
                     job.claimed_at = None
-                    job.processing_started_at = None
                     job.last_error = "Visibility timeout expired; job requeued"
+                    job.processing_started_at = compute_etl_retry_eligible_at(job.attempt_count)
+                    _queue_logger.warning(
+                        "etl_job_requeued_with_backoff",
+                        extra=retry_audit_extra(
+                            job_id=str(job.id),
+                            attempt_count=job.attempt_count,
+                            max_attempts=job.max_attempts,
+                            retry_reason=RetryReason.VISIBILITY_TIMEOUT,
+                            retry_eligible_at=job.processing_started_at,
+                            error_message=job.last_error,
+                        ),
+                    )
                 else:
                     job.status = JobStatus.DEAD_LETTER
                     job.last_error = "Max attempts exceeded after visibility timeout"

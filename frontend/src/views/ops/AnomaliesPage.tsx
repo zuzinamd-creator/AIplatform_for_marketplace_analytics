@@ -15,18 +15,18 @@ export function AnomaliesPage() {
     <div className="space-y-6">
       <div>
         <div className="text-2xl font-semibold">Anomalies</div>
-        <div className="text-sm text-slate-300">Operational anomalies are persisted outside ledger transactions.</div>
-        <div className="mt-2 rounded-lg border border-slate-800/70 bg-slate-950/40 p-3 text-xs text-slate-300">
-          <span className="font-medium text-slate-200">Investigation workflow:</span> identify anomaly → correlate with
+        <div className="text-sm text-ink-secondary">Operational anomalies are persisted outside ledger transactions.</div>
+        <div className="mt-2 rounded-lg border border-surface-subtle bg-surface-inset p-3 text-xs text-ink-secondary">
+          <span className="font-medium text-ink-secondary">Investigation workflow:</span> identify anomaly → correlate with
           queue/rebuild state → review affected report(s) → run AI explainability prompt (if relevant).
         </div>
       </div>
 
       <Card className="p-5">
         {q.isLoading ? (
-          <div className="text-sm text-slate-300">Loading…</div>
+          <div className="text-sm text-ink-secondary">Loading…</div>
         ) : (
-          <pre className="overflow-auto text-[11px] text-slate-300">{JSON.stringify(items, null, 2)}</pre>
+          <pre className="overflow-auto text-[11px] text-ink-secondary">{JSON.stringify(items, null, 2)}</pre>
         )}
       </Card>
     </div>

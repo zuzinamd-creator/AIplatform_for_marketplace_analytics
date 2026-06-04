@@ -34,3 +34,15 @@ class Token(BaseModel):
 
     access_token: str = Field(min_length=1, max_length=4096)
     token_type: str = Field(default="bearer", min_length=6, max_length=6)
+
+
+class ForgotPasswordRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    email: EmailStr
+
+
+class MessageResponse(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    message: str = Field(min_length=1, max_length=512)

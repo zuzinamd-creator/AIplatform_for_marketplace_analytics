@@ -24,11 +24,11 @@ export function AiDigestPage() {
       <div className="flex items-end justify-between gap-3">
         <div>
           <div className="text-2xl font-semibold">AI Digest</div>
-          <div className="text-sm text-slate-300">
+          <div className="text-sm text-ink-secondary">
             Summaries over your recommendations — not autonomous marketplace actions.
           </div>
         </div>
-        <Link className="text-sm text-sky-300 hover:underline" to="/app/ai/recommendations">
+        <Link className="text-sm text-brand hover:underline" to="/app/ai/recommendations">
           Inbox
         </Link>
       </div>
@@ -40,8 +40,8 @@ export function AiDigestPage() {
             type="button"
             className={`rounded-lg border px-3 py-1.5 text-xs capitalize ${
               type === t
-                ? "border-sky-700 bg-sky-950/50 text-sky-200"
-                : "border-slate-800 text-slate-400 hover:bg-slate-900/50"
+                ? "border-sky-700 bg-sky-950/50 text-brand"
+                : "border-surface-subtle text-ink-muted hover:bg-surface-inset"
             }`}
             onClick={() => setParams({ type: t })}
           >
@@ -55,21 +55,21 @@ export function AiDigestPage() {
       ) : d ? (
         <Card className="p-5 space-y-4">
           <div className="text-lg font-semibold">{d.headline}</div>
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-ink0">
             Generated {new Date(d.generated_at).toLocaleString()} · {d.active_recommendation_count} item(s)
           </div>
-          <p className="text-xs text-slate-400">{d.advisory_notice}</p>
+          <p className="text-xs text-ink-muted">{d.advisory_notice}</p>
           <div className="space-y-3">
             {d.sections.length === 0 ? (
-              <div className="text-sm text-slate-400">No sections for this period.</div>
+              <div className="text-sm text-ink-muted">No sections for this period.</div>
             ) : (
               d.sections.map((s, i) => (
-                <div key={i} className="rounded-lg border border-slate-800/70 bg-slate-950/40 p-3">
+                <div key={i} className="rounded-lg border border-surface-subtle bg-surface-inset p-3">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="text-sm font-medium text-slate-200">{s.title}</div>
+                    <div className="text-sm font-medium text-ink-secondary">{s.title}</div>
                     <StatusBadge tone={s.priority === "high" ? "warn" : "info"}>{s.priority}</StatusBadge>
                   </div>
-                  <p className="mt-2 text-xs text-slate-300">{s.body}</p>
+                  <p className="mt-2 text-xs text-ink-secondary">{s.body}</p>
                 </div>
               ))
             )}

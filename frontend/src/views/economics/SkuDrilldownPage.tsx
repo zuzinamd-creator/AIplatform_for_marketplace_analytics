@@ -6,7 +6,10 @@ import { ArrowLeft, AlertTriangle, Info } from "lucide-react";
 
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
+import { CHART } from "../../ui/chart-theme";
 import { Card } from "../../ui/card";
+import { Select } from "../../ui/field";
+import { KpiCard } from "../../ui/kpi-card";
 import { PeriodSelector } from "../../ui/period-selector";
 import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
 import { StatusBadge } from "../../ui/status-badge";
@@ -113,34 +116,31 @@ export function SkuDrilldownPage() {
   const critical = warnings.filter((w) => w.severity === "critical");
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="page-shell">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <Link to="/app/economics" className="inline-flex items-center gap-2 text-sm text-slate-300 hover:underline">
-              <ArrowLeft className="h-4 w-4" /> Назад к списку
-            </Link>
-          </div>
-          <div className="mt-2 text-xl font-semibold">SKU: {sku}</div>
-          <div className="mt-1 text-xs text-slate-400">Глубокий разбор: прибыль, маржа, возвраты, затраты и склад.</div>
+          <Link to="/app/economics" className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand hover:underline">
+            <ArrowLeft className="h-4 w-4" /> Назад к списку
+          </Link>
+          <h1 className="page-title mt-3">SKU: {sku}</h1>
+          <p className="page-subtitle">Глубокий разбор: прибыль, маржа, возвраты, затраты и склад.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={marketplace}
-            onChange={(e) => setMarketplace(e.target.value)}
-            className="h-9 rounded-md border border-slate-800 bg-slate-950/40 px-2 text-sm"
-          >
-            <option value="wildberries">Wildberries</option>
-            <option value="ozon">Ozon</option>
-          </select>
-          <PeriodSelector onChange={setPeriodSel} />
-        </div>
+        <Select
+          value={marketplace}
+          onChange={(e) => setMarketplace(e.target.value)}
+          className="h-9 w-auto min-w-[10rem]"
+        >
+          <option value="wildberries">Wildberries</option>
+          <option value="ozon">Ozon</option>
+        </Select>
       </div>
+
+      <PeriodSelector onChange={setPeriodSel} />
 
       {warnings.length ? (
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <AlertTriangle className="h-4 w-4 text-amber-300" />
+            <AlertTriangle className="h-4 w-4 text-semantic-warn" />
             Доверие к данным
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -154,46 +154,33 @@ export function SkuDrilldownPage() {
               </StatusBadge>
             ) : null}
           </div>
-          <ul className="mt-3 space-y-1 text-xs text-slate-300">
+          <ul className="mt-3 space-y-1 text-xs text-ink-secondary">
             {warnings.slice(0, 6).map((w) => (
               <li key={w.code + w.message}>- {w.message}</li>
             ))}
           </ul>
-          <div className="mt-3 text-xs text-slate-400">
+          <div className="mt-3 text-xs text-ink-muted">
             ИИ может быть неточным, потому что: {warnings.slice(0, 2).map((w) => w.message).join("; ")}
           </div>
         </Card>
       ) : null}
 
-      <div className="grid gap-3 md:grid-cols-4">
-        <Card className="p-4">
-          <div className="text-xs text-slate-300">Выручка</div>
-          <div className="mt-1 text-lg font-semibold">{rub(kpis.rev)}</div>
-          {compare ? <div className="mt-1 text-xs text-slate-400">Δ {rub(kpis.rev - kpis.revB)}</div> : null}
-        </Card>
-        <Card className="p-4">
-          <div className="text-xs text-slate-300">Валовая прибыль</div>
-          <div className="mt-1 text-lg font-semibold">{rub(kpis.profit)}</div>
-          {compare ? <div className="mt-1 text-xs text-slate-400">Δ {rub(kpis.profit - kpis.profitB)}</div> : null}
-        </Card>
-        <Card className="p-4">
-          <div className="text-xs text-slate-300">Маржинальный вклад</div>
-          <div className="mt-1 text-lg font-semibold">{rub(kpis.cm)}</div>
-          {compare ? <div className="mt-1 text-xs text-slate-400">Δ {rub(kpis.cm - kpis.cmB)}</div> : null}
-        </Card>
-        <Card className="p-4">
-          <div className="text-xs text-slate-300">Маржа</div>
-          <div className="mt-1 text-lg font-semibold">{kpis.margin === null ? "—" : `${kpis.margin.toFixed(1)} %`}</div>
-          {compare && kpis.marginB !== null && kpis.margin !== null ? (
-            <div className="mt-1 text-xs text-slate-400">Δ {deltaLabel(kpis.margin, kpis.marginB)}%</div>
-          ) : null}
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <KpiCard label="Выручка" value={rub(kpis.rev)} sub={compare ? `Δ ${rub(kpis.rev - kpis.revB)}` : undefined} variant="compact" />
+        <KpiCard label="Валовая прибыль" value={rub(kpis.profit)} sub={compare ? `Δ ${rub(kpis.profit - kpis.profitB)}` : undefined} variant="compact" />
+        <KpiCard label="Маржинальный вклад" value={rub(kpis.cm)} sub={compare ? `Δ ${rub(kpis.cm - kpis.cmB)}` : undefined} variant="compact" />
+        <KpiCard
+          label="Маржа"
+          value={kpis.margin === null ? "—" : `${kpis.margin.toFixed(1)} %`}
+          sub={compare && kpis.marginB !== null && kpis.margin !== null ? `Δ ${deltaLabel(kpis.margin, kpis.marginB)}%` : undefined}
+          variant="compact"
+        />
       </div>
 
       <Card className="p-4">
         <div className="text-sm font-semibold">Почему товар убыточен</div>
-        <div className="mt-2 text-sm text-slate-200">{explainLoss(points)}</div>
-        <div className="mt-3 flex items-start gap-2 text-xs text-slate-400">
+        <div className="mt-2 text-sm text-ink-secondary">{explainLoss(points)}</div>
+        <div className="mt-3 flex items-start gap-2 text-xs text-ink-muted">
           <Info className="mt-0.5 h-4 w-4" />
           <div>
             “Валовая прибыль” зависит от себестоимости. Если себестоимость отсутствует, прибыль и маржа могут быть искажены — это будет видно в предупреждениях.
@@ -209,16 +196,9 @@ export function SkuDrilldownPage() {
               <LineChart data={chartData}>
                 <XAxis dataKey="date" hide />
                 <YAxis hide />
-                <Tooltip
-                  contentStyle={{
-                    background: "rgba(2,6,23,0.95)",
-                    border: "1px solid rgba(30,41,59,0.7)",
-                    borderRadius: 8,
-                  }}
-                  formatter={(value: unknown, name: string) => [rub(Number(value)), name]}
-                />
-                <Line type="monotone" dataKey="revenue" stroke="#38bdf8" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="profit" stroke="#22c55e" strokeWidth={2} dot={false} />
+                <Tooltip contentStyle={CHART.tooltip} formatter={(value: unknown, name: string) => [rub(Number(value)), name]} />
+                <Line type="monotone" dataKey="revenue" stroke={CHART.series.revenue} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="profit" stroke={CHART.series.profit} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -231,17 +211,10 @@ export function SkuDrilldownPage() {
               <LineChart data={chartData}>
                 <XAxis dataKey="date" hide />
                 <YAxis hide />
-                <Tooltip
-                  contentStyle={{
-                    background: "rgba(2,6,23,0.95)",
-                    border: "1px solid rgba(30,41,59,0.7)",
-                    borderRadius: 8,
-                  }}
-                  formatter={(value: unknown, name: string) => [rub(Number(value)), name]}
-                />
-                <Line type="monotone" dataKey="logistics" stroke="#a78bfa" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="ads" stroke="#fbbf24" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="penalties" stroke="#fb7185" strokeWidth={2} dot={false} />
+                <Tooltip contentStyle={CHART.tooltip} formatter={(value: unknown, name: string) => [rub(Number(value)), name]} />
+                <Line type="monotone" dataKey="logistics" stroke={CHART.series.logistics} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="ads" stroke={CHART.series.ads} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="penalties" stroke={CHART.series.returns} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -254,15 +227,8 @@ export function SkuDrilldownPage() {
               <LineChart data={chartData}>
                 <XAxis dataKey="date" hide />
                 <YAxis hide />
-                <Tooltip
-                  contentStyle={{
-                    background: "rgba(2,6,23,0.95)",
-                    border: "1px solid rgba(30,41,59,0.7)",
-                    borderRadius: 8,
-                  }}
-                  formatter={(value: unknown) => [pct(String(value)), "Маржа"]}
-                />
-                <Line type="monotone" dataKey="margin" stroke="#34d399" strokeWidth={2} dot={false} />
+                <Tooltip contentStyle={CHART.tooltip} formatter={(value: unknown) => [pct(String(value)), "Маржа"]} />
+                <Line type="monotone" dataKey="margin" stroke={CHART.series.profit} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -275,15 +241,8 @@ export function SkuDrilldownPage() {
               <LineChart data={chartData}>
                 <XAxis dataKey="date" hide />
                 <YAxis hide />
-                <Tooltip
-                  contentStyle={{
-                    background: "rgba(2,6,23,0.95)",
-                    border: "1px solid rgba(30,41,59,0.7)",
-                    borderRadius: 8,
-                  }}
-                  formatter={(value: unknown) => [rub(Number(value)), "Возвраты"]}
-                />
-                <Line type="monotone" dataKey="returns" stroke="#f97316" strokeWidth={2} dot={false} />
+                <Tooltip contentStyle={CHART.tooltip} formatter={(value: unknown) => [rub(Number(value)), "Возвраты"]} />
+                <Line type="monotone" dataKey="returns" stroke={CHART.series.returns} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -293,29 +252,29 @@ export function SkuDrilldownPage() {
       <Card className="p-4">
         <div className="text-sm font-semibold">Что ухудшилось относительно прошлого периода</div>
         {compare ? (
-          <div className="mt-2 text-sm text-slate-200">
+          <div className="mt-2 text-sm text-ink-secondary">
             Прибыль: {rub(kpis.profit)} (Δ {rub(kpis.profit - kpis.profitB)}), выручка: {rub(kpis.rev)} (Δ {rub(kpis.rev - kpis.revB)}), маржа:{" "}
             {kpis.margin === null ? "—" : `${kpis.margin.toFixed(1)}%`}{" "}
             {kpis.marginB === null || kpis.margin === null ? "" : `(Δ ${deltaLabel(kpis.margin, kpis.marginB)}%)`}.
           </div>
         ) : (
-          <div className="mt-2 text-sm text-slate-400">Включите сравнение периодов в селекторе периода, чтобы увидеть, что изменилось.</div>
+          <div className="mt-2 text-sm text-ink-muted">Включите сравнение периодов в селекторе периода, чтобы увидеть, что изменилось.</div>
         )}
       </Card>
 
       <Card className="p-4">
         <div className="text-sm font-semibold">Рекомендации и уверенность ИИ</div>
-        <div className="mt-2 text-sm text-slate-400">
+        <div className="mt-2 text-sm text-ink-muted">
           Рекомендации по SKU берутся из общей ленты рекомендаций. Если есть предупреждения по данным (себестоимость/выплаты), приоритизация и уверенность ИИ автоматически понижаются.
         </div>
         <div className="mt-3">
-          <Link to="/app/ai/recommendations" className="text-sm text-slate-200 hover:underline">
+          <Link to="/app/ai/recommendations" className="link-muted">
             Открыть рекомендации
           </Link>
         </div>
       </Card>
 
-      {a.isLoading ? <div className="text-sm text-slate-400">Загрузка…</div> : null}
+      {a.isLoading ? <div className="text-sm text-ink-muted">Загрузка…</div> : null}
       {a.error ? <div className="text-sm text-red-300">Ошибка загрузки SKU.</div> : null}
     </div>
   );

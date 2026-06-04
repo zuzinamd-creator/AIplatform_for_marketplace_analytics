@@ -28,6 +28,36 @@
   - `docs/product/local_deployment.md`
   - `docs/product/local_operations.md`
 
+## ETL-воркер и очередь (production)
+
+Архитектура обработки WB-отчётов (без изменения схемы БД):
+
+| Компонент | Назначение |
+|-----------|------------|
+| `app/etl/worker.py` | Claim → parse → phased persist → ack; heartbeat на весь job |
+| `app/etl/wb/stream_pipeline.py` | Потоковый parse + phase-1 по чанкам (`.xlsx`/`.csv`) |
+| `app/etl/wb/persist.py` | 3 фазы: ledger → inventory/reconciliation → aggregates |
+| `app/core/queue/postgres_backend.py` | `SKIP LOCKED` очередь `etl_jobs`, fair claim по `file_size_bytes` |
+
+**Память:** файлы материализуются на диск (`report_materialize`), парсинг — `openpyxl` read_only; полный список `normalized_rows` в RAM не держится.
+
+**Graceful shutdown (SIGTERM/SIGINT):** текущий чанк дочитывается и коммитится, следующий не стартует; job уходит в retry (идемпотентные `ON CONFLICT`).
+
+**Retry и backoff:** при ошибке (в т.ч. `lock_timeout` на фазе 3) job → `PENDING`, но не claimable до `processing_started_at` (экспоненциальная задержка, база `JOB_RETRY_BASE_DELAY_SECONDS`, по умолчанию 30s). В логах: `retry_reason`, `attempt`, `retry_eligible_at` (`job_failed_will_retry`, `etl_job_requeued_with_backoff`).
+
+**Фаза 3 (агрегаты):** пересчёт по **полному леджеру за затронутые даты**; SKU-метрики за период сначала удаляются, затем UPSERT; day-level — `ON CONFLICT DO UPDATE`. `SET LOCAL lock_timeout` (`ETL_AGGREGATE_LOCK_TIMEOUT_MS`) снижает риск зависания при конкуренции воркеров.
+
+**Legacy `.xls`:** лимит 50MB в `read_report_file`; при превышении — понятная ошибка с просьбой конвертировать в `.xlsx`.
+
+**Stale jobs:** восстановление по heartbeat (не только `claimed_at`); см. `docs/PR_P0_ETL_STABILIZATION.md`.
+
+Переменные окружения (фрагмент):
+
+- `WORKER_HEARTBEAT_INTERVAL_SECONDS` — интервал heartbeat (default 15)
+- `JOB_RETRY_BASE_DELAY_SECONDS` — база exponential backoff (default 30)
+- `ETL_AGGREGATE_LOCK_TIMEOUT_MS` — lock timeout фазы 3 (default 5000)
+- `JOB_MAX_ATTEMPTS`, `JOB_VISIBILITY_TIMEOUT_SECONDS`
+
 ## Что умеет система
 
 - Детерминированная финансовая аналитика по периодам (выручка/прибыль/маржа/возвраты/выплаты).
@@ -106,7 +136,34 @@ docker compose up --build
 ## Загрузка отчётов (UX)
 
 - UI: `/app/reports/upload`
+- Список: `/app/reports` — только отчёты текущего пользователя (RLS + `user_id`), до **200** последних загрузок.
+- Колонки **«Период»** (`period_start` / `period_end`): даты «с» и «по» из проводок после ETL; до обработки — «—».
 - После загрузки смотрите подсказки “Что нужно загрузить…” (coverage‑driven).
+
+## Себестоимость (UX)
+
+- UI: `/app/costs` — таблица загруженных строк (не JSON).
+- Режим **«На дату»** (`GET /api/v1/costs?as_of=YYYY-MM-DD`) — актуальная себестоимость по SKU на выбранный день.
+- **Ручное редактирование** ячеек сумм: `PATCH /api/v1/costs/{id}` (клик по ячейке в таблице).
+- Импорт: шаблон Excel + `POST /api/v1/costs/import/v2`.
+
+## Production frontend (VPS без Docker)
+
+На сервере UI отдаёт **nginx** из `/var/www/marketplace-analytics` (не Vite dev).  
+На VPS с 2 GB RAM **отключите** опциональный preview: `sudo systemctl disable --now marketplace-frontend.service`.
+
+**Деплой одной командой** (остановка preview, очистка Node, проверка RAM, лимит heap 1 GB):
+
+```bash
+cd /root/AIplatform_for_marketplace_analytics && bash scripts/deploy-frontend.sh
+```
+
+Первичная установка systemd + ежедневная очистка npm/vite: `sudo bash scripts/install-frontend-ops.sh`  
+Подробнее: `docs/ops/frontend-deploy.md`
+
+При изменениях API: `sudo systemctl restart marketplace-backend`
+
+Проверка: `curl -s http://127.0.0.1/ | grep surface-muted` — в HTML должна быть светлая тема (`bg-surface-muted`), не `slate-950`.
 
 ## AI анализ
 
@@ -129,6 +186,8 @@ docker compose up --build
 - Неполная себестоимость → искаженная прибыль/маржа/замороженный капитал.
 - Пропуски периодов → неправильные тренды/сравнения.
 - Stale rebuild/очередь → данные могут быть не “как сейчас”.
+- Несколько `marketplace-worker` на одной БД → конкуренция на фазе 3; ожидайте `lock_timeout` + backoff, не бесконечный spin.
+- Прерванный streaming-job (shutdown) → retry с уже записанными чанками phase-1 (безопасно за счёт idempotency).
 
 ## Полная карта API (коротко)
 
@@ -197,6 +256,8 @@ npm run dev
 
 ```powershell
 .\.venv\Scripts\python -m pytest tests/unit -q
+$env:RUN_INTEGRATION_TESTS="true"
+.\.venv\Scripts\python -m pytest tests/integration/test_phase3_aggregate_contention.py -v
 .\.venv\Scripts\python -m pytest tests/integration -m integration
 .\.venv\Scripts\python -m ruff check .
 .\.venv\Scripts\python -m mypy app tests
@@ -1752,8 +1813,8 @@ For multiple transactions in one test, prefer the `session_factory` fixture (new
 - `POST /api/v1/auth/login`
 - `GET /api/v1/auth/me`
 - `POST /api/v1/reports/upload`
-- `GET /api/v1/reports`
-- `GET /api/v1/reports/{id}`
+- `GET /api/v1/reports?skip=&limit=` (default `limit=200`, max `500`)
+- `GET /api/v1/reports/{id}` — поля `period_start`, `period_end` (из ledger после ETL)
 
 **Operations (read-only, additive):**
 
@@ -1769,8 +1830,9 @@ For multiple transactions in one test, prefer the `session_factory` fixture (new
 **Costs (additive):**
 
 - `POST /api/v1/costs`
-- `POST /api/v1/costs/import`
-- `GET /api/v1/costs`
+- `POST /api/v1/costs/import` / `POST /api/v1/costs/import/v2` / `POST /api/v1/costs/import/preview`
+- `GET /api/v1/costs?sku=&as_of=&effective_from=&effective_to=`
+- `PATCH /api/v1/costs/{id}` — обновление сумм без повторного импорта
 - `GET /api/v1/costs/{id}`
 
 **Analytics (read-only, additive):**
@@ -2470,6 +2532,10 @@ npm run dev
 | Script | Purpose |
 |--------|---------|
 | `scripts/local/start-all.ps1` / `.sh` | Docker compose up + health wait |
+| `scripts/deploy-frontend.sh` | RAM-safe build + publish to `/var/www/marketplace-analytics` |
+| `scripts/install-frontend-ops.sh` | systemd units + daily cleanup timer |
+| `scripts/cleanup-frontend-artifacts.sh` | trim npm/vite cache and logs |
+| `scripts/local/start-dev-no-docker.sh` | API :8000 + Vite :5173 без Docker |
 | `scripts/local/stop-all.ps1` / `.sh` | `docker compose down` |
 | `scripts/local/reset-db.ps1` / `.sh` | Wipe volumes + migrate + restart |
 | `scripts/local/run-local-smoke-test.py` | Health, auth, ops/AI status |

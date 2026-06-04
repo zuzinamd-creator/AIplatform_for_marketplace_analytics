@@ -1,3 +1,4 @@
+from datetime import date
 from urllib.parse import quote
 from uuid import UUID
 
@@ -13,7 +14,7 @@ from app.core.template_paths import (
     cost_import_template_resolution,
 )
 from app.models.user import User
-from app.schemas.cost import CostCreateRequest, CostResponse
+from app.schemas.cost import CostCreateRequest, CostResponse, CostUpdateRequest
 from app.schemas.cost_import import CostImportPreviewResponse, CostImportResultResponse
 from app.services.cost_service import CostService
 
@@ -42,11 +43,38 @@ async def create_cost(
 @router.get("", response_model=list[CostResponse])
 async def list_costs(
     sku: str | None = None,
+    as_of: date | None = None,
+    effective_from: date | None = None,
+    effective_to: date | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list[CostResponse]:
-    rows = await CostService(db, current_user).list_costs(sku=sku)
+    rows = await CostService(db, current_user).list_costs(
+        sku=sku,
+        as_of=as_of,
+        effective_from=effective_from,
+        effective_to=effective_to,
+    )
     return [CostResponse.model_validate(row) for row in rows]
+
+
+@router.patch("/{cost_id}", response_model=CostResponse)
+async def update_cost(
+    cost_id: UUID,
+    payload: CostUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> CostResponse:
+    row = await CostService(db, current_user).update_cost(
+        cost_id,
+        product_cost=payload.product_cost,
+        packaging_cost=payload.packaging_cost,
+        inbound_logistics_cost=payload.inbound_logistics_cost,
+        additional_cost=payload.additional_cost,
+        currency=payload.currency,
+        comment=payload.comment,
+    )
+    return CostResponse.model_validate(row)
 
 
 @router.get("/import/template")

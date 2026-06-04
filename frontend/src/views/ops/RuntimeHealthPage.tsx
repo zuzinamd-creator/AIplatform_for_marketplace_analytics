@@ -13,16 +13,16 @@ export function RuntimeHealthPage() {
     <div className="space-y-6">
       <div>
         <div className="text-2xl font-semibold">Runtime health</div>
-        <div className="text-sm text-slate-300">Read-only runtime probe (for operational visibility only).</div>
+        <div className="text-sm text-ink-secondary">Read-only runtime probe (for operational visibility only).</div>
       </div>
 
       <Card className="p-5">
         {q.isLoading ? (
-          <div className="text-sm text-slate-300">Loading…</div>
+          <div className="text-sm text-ink-secondary">Loading…</div>
         ) : q.data ? (
-          <pre className="overflow-auto text-[11px] text-slate-300">{JSON.stringify(q.data, null, 2)}</pre>
+          <pre className="overflow-auto text-[11px] text-ink-secondary">{JSON.stringify(q.data, null, 2)}</pre>
         ) : (
-          <div className="text-sm text-slate-300">No data.</div>
+          <div className="text-sm text-ink-secondary">No data.</div>
         )}
       </Card>
     </div>

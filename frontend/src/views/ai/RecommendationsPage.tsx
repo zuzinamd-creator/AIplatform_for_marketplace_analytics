@@ -175,15 +175,15 @@ export function RecommendationsPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="text-2xl font-semibold">{t("ai.inbox_title")}</div>
-          <div className="text-sm text-slate-300">
+          <div className="text-sm text-ink-secondary">
             {t("ai.inbox_subtitle")}
           </div>
         </div>
         <div className="flex gap-3 text-sm">
-          <Link className="text-sky-300 hover:underline" to="/app/ai/today">
+          <Link className="text-brand hover:underline" to="/app/ai/today">
             {t("ai.todays_focus")}
           </Link>
-          <Link className="text-sky-300 hover:underline" to="/app/ai/digest?type=daily">
+          <Link className="text-brand hover:underline" to="/app/ai/digest?type=daily">
             {t("ai.daily_digest")}
           </Link>
         </div>
@@ -191,21 +191,21 @@ export function RecommendationsPage() {
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <Card className="p-3 text-xs">
-          <div className="text-slate-400">{t("ai.stats_open")}</div>
+          <div className="text-ink-muted">{t("ai.stats_open")}</div>
           <div className="text-lg font-semibold">{st?.total ?? "—"}</div>
         </Card>
         <Card className="p-3 text-xs">
-          <div className="text-slate-400">{t("ai.stats_conversion")}</div>
+          <div className="text-ink-muted">{t("ai.stats_conversion")}</div>
           <div className="text-lg font-semibold">
             {m?.action_conversion_rate != null ? `${(m.action_conversion_rate * 100).toFixed(0)}%` : "—"}
           </div>
         </Card>
         <Card className="p-3 text-xs">
-          <div className="text-slate-400">{t("ai.stats_completed")}</div>
+          <div className="text-ink-muted">{t("ai.stats_completed")}</div>
           <div className="text-lg font-semibold">{m?.completed_count ?? st?.completed_count ?? "—"}</div>
         </Card>
         <Card className="p-3 text-xs">
-          <div className="text-slate-400">{t("ai.stats_ignored_7d")}</div>
+          <div className="text-ink-muted">{t("ai.stats_ignored_7d")}</div>
           <div className="text-lg font-semibold">{st?.ignored_7d ?? m?.ignored_count ?? "—"}</div>
         </Card>
       </div>
@@ -218,8 +218,8 @@ export function RecommendationsPage() {
             onClick={() => setFilter(f)}
             className={`rounded-lg border px-3 py-1 text-xs capitalize ${
               filter === f
-                ? "border-sky-700 bg-sky-950/50 text-sky-200"
-                : "border-slate-800 text-slate-400"
+                ? "border-sky-700 bg-sky-950/50 text-brand"
+                : "border-surface-subtle text-ink-muted"
             }`}
           >
             {f}
@@ -231,7 +231,7 @@ export function RecommendationsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-sm font-semibold">Запуск анализа</div>
-            <div className="mt-1 text-xs text-slate-400">
+            <div className="mt-1 text-xs text-ink-muted">
               Создаёт рекомендацию во входящих (не сырой JSON). Используйте после загрузки отчётов и себестоимости.
             </div>
           </div>
@@ -263,11 +263,11 @@ export function RecommendationsPage() {
           </div>
         </div>
         {lastRun ? (
-          <div className="mt-4 rounded-lg border border-sky-900/40 bg-slate-950/50 p-4">
+          <div className="mt-4 rounded-lg border border-brand-muted bg-surface-inset p-4">
             <InsightPreview data={lastRun} />
             {lastRun.id ? (
               <Link
-                className="mt-3 inline-block text-xs text-sky-300 hover:underline"
+                className="mt-3 inline-block text-xs text-brand hover:underline"
                 to={`/app/ai/recommendations/${String(lastRun.id)}`}
               >
                 Открыть карточку рекомендации →
@@ -280,7 +280,7 @@ export function RecommendationsPage() {
             {streamInsight ? (
               <InsightPreview data={streamInsight} />
             ) : (
-              <pre className="max-h-32 overflow-auto rounded-lg border border-slate-800/70 bg-slate-950/40 p-2 text-[11px] text-slate-400">
+              <pre className="max-h-32 overflow-auto rounded-lg border border-surface-subtle bg-surface-inset p-2 text-[11px] text-ink-muted">
                 {streamText}
               </pre>
             )}
@@ -293,7 +293,7 @@ export function RecommendationsPage() {
       ) : items.length === 0 ? (
         <Card className="p-10 text-center">
           <div className="text-sm font-medium">{t("ai.inbox_empty_title")}</div>
-          <div className="mt-1 text-xs text-slate-400">{t("ai.inbox_empty_hint")}</div>
+          <div className="mt-1 text-xs text-ink-muted">{t("ai.inbox_empty_hint")}</div>
         </Card>
       ) : filter === "inbox" ? (
         (
@@ -305,7 +305,7 @@ export function RecommendationsPage() {
         ).map(([band, label]) =>
           grouped[band].length > 0 ? (
             <div key={band} className="space-y-2">
-              <div className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</div>
+              <div className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</div>
               {grouped[band].map((r: any) => (
                 <RecommendationRow key={String(r.id)} r={r} onWorkflow={(action) => workflow.mutate({ id: String(r.id), action })} />
               ))}
@@ -337,10 +337,10 @@ function RecommendationRow(props: { r: any; onWorkflow: (action: string) => void
     <Card className="p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <Link to={`/app/ai/recommendations/${r.id}`} className="min-w-0 flex-1 hover:underline">
-          <div className="truncate text-sm font-medium text-slate-100">
+          <div className="truncate text-sm font-medium text-ink">
             {String(r.title ?? r.summary ?? t("ai.rec_fallback_title"))}
           </div>
-          <div className="mt-1 line-clamp-2 text-xs text-slate-400">{String(u.why_this_matters ?? r.summary ?? "")}</div>
+          <div className="mt-1 line-clamp-2 text-xs text-ink-muted">{String(u.why_this_matters ?? r.summary ?? "")}</div>
         </Link>
         <div className="flex flex-wrap gap-1">
           {tier ? <StatusBadge tone={tier === "today" ? "warn" : "info"}>{tier}</StatusBadge> : null}

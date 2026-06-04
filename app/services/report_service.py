@@ -1,12 +1,13 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.queue import EnqueuePayload, get_queue_backend
+from app.models.finance.ledger import FinancialLedgerEntry
 from app.models.job import EtlJob
 from app.models.report import Marketplace, Report, ReportType
 from app.models.user import User
@@ -20,7 +21,10 @@ class ReportService(TenantScopedService):
         self._queue = get_queue_backend(db)
 
     async def find_by_checksum(self, file_checksum: str) -> Report | None:
-        query = select(Report).where(Report.file_checksum == file_checksum)
+        query = select(Report).where(
+            Report.file_checksum == file_checksum,
+            Report.user_id == self.user.id,
+        )
         async with self._rls_transaction():
             result = await self.db.execute(query)
         return result.scalar_one_or_none()
@@ -114,22 +118,57 @@ class ReportService(TenantScopedService):
     async def list_reports(
         self,
         skip: int = 0,
-        limit: int = 50,
-    ) -> list[tuple[Report, EtlJob | None]]:
-        query = select(Report).order_by(Report.created_at.desc()).offset(skip).limit(limit)
+        limit: int = 200,
+    ) -> list[tuple[Report, EtlJob | None, date | None, date | None]]:
+        query = (
+            select(Report)
+            .where(Report.user_id == self.user.id)
+            .order_by(Report.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
         async with self._rls_transaction():
             result = await self.db.execute(query)
             reports = list(result.scalars().all())
-        return [(report, await self._latest_job(report.id)) for report in reports]
+        period_bounds = await self._period_bounds_for_reports([r.id for r in reports])
+        rows: list[tuple[Report, EtlJob | None, date | None, date | None]] = []
+        for report in reports:
+            job = await self._latest_job(report.id)
+            ps, pe = period_bounds.get(report.id, (None, None))
+            rows.append((report, job, ps, pe))
+        return rows
 
-    async def get_report(self, report_id: UUID) -> tuple[Report, EtlJob | None]:
-        query = select(Report).where(Report.id == report_id)
+    async def _period_bounds_for_reports(
+        self,
+        report_ids: list[UUID],
+    ) -> dict[UUID, tuple[date | None, date | None]]:
+        if not report_ids:
+            return {}
+        query = (
+            select(
+                FinancialLedgerEntry.report_id,
+                func.min(FinancialLedgerEntry.operation_date).label("period_start"),
+                func.max(FinancialLedgerEntry.operation_date).label("period_end"),
+            )
+            .where(FinancialLedgerEntry.report_id.in_(report_ids))
+            .group_by(FinancialLedgerEntry.report_id)
+        )
+        async with self._rls_transaction():
+            result = await self.db.execute(query)
+        return {
+            row.report_id: (row.period_start, row.period_end)
+            for row in result.all()
+        }
+
+    async def get_report(self, report_id: UUID) -> tuple[Report, EtlJob | None, date | None, date | None]:
+        query = select(Report).where(Report.id == report_id, Report.user_id == self.user.id)
         async with self._rls_transaction():
             result = await self.db.execute(query)
         report = result.scalar_one_or_none()
         if not report:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
-        return report, await self._latest_job(report.id)
+        ps, pe = (await self._period_bounds_for_reports([report.id])).get(report.id, (None, None))
+        return report, await self._latest_job(report.id), ps, pe
 
     async def _latest_job(self, report_id: UUID) -> EtlJob | None:
         query = (
@@ -183,8 +222,16 @@ class ReportService(TenantScopedService):
         attempt_count: int,
         max_attempts: int,
         in_transaction: bool = False,
+        retry_reason: str | None = None,
     ) -> None:
+        from app.core.queue.etl_retry_policy import RetryReason, classify_retry_reason
+
         poison = attempt_count >= max_attempts
+        reason = (
+            RetryReason(retry_reason)
+            if retry_reason
+            else classify_retry_reason(error_message)
+        )
 
         async def _apply() -> None:
             await self._queue.fail(
@@ -193,6 +240,7 @@ class ReportService(TenantScopedService):
                 attempt_count=attempt_count,
                 max_attempts=max_attempts,
                 poison=poison,
+                retry_reason=reason,
             )
 
         if in_transaction:

@@ -18,6 +18,17 @@ class CostCreateRequest(BaseModel):
     comment: str | None = Field(default=None, max_length=1024)
 
 
+class CostUpdateRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    product_cost: Decimal | None = Field(default=None, gt=0)
+    packaging_cost: Decimal | None = Field(default=None, ge=0)
+    inbound_logistics_cost: Decimal | None = Field(default=None, ge=0)
+    additional_cost: Decimal | None = Field(default=None, ge=0)
+    currency: str | None = Field(default=None, min_length=3, max_length=3)
+    comment: str | None = Field(default=None, max_length=1024)
+
+
 class CostResponse(BaseModel):
     model_config = ConfigDict(strict=True, from_attributes=True)
 

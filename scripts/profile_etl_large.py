@@ -151,7 +151,7 @@ async def profile_persist_stages(
 
     token = _set_stage("rebuild_aggregates")
     t0 = time.perf_counter()
-    await persist._rebuild_aggregates(result=wb_result)
+    await persist._rebuild_aggregates(result=wb_result, report_id=report.id)
     timings["rebuild_aggregates"] = time.perf_counter() - t0
     _reset_stage(token)
 

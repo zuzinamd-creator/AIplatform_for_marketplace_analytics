@@ -24,7 +24,7 @@ export function SettingsPage() {
     <div className="space-y-6">
       <div>
         <div className="text-2xl font-semibold">Настройки</div>
-        <div className="text-sm text-slate-300">
+        <div className="text-sm text-ink-secondary">
           Профиль рабочего пространства и уведомления. Пока сохраняется локально, без серверных настроек.
         </div>
       </div>
@@ -70,11 +70,11 @@ export function SettingsPage() {
             <option value="demo">Демо (для демонстраций)</option>
             <option value="full">Полный (показывать все страницы)</option>
           </Select>
-          <div className="text-xs text-slate-400">
+          <div className="text-xs text-ink-muted">
             В MVP внутренние “операторские” страницы скрыты из навигации. Поддержка/диагностика остаётся доступной.
           </div>
         </div>
-        <label className="flex items-center gap-2 text-sm text-slate-200">
+        <label className="flex items-center gap-2 text-sm text-ink-secondary">
           <input
             type="checkbox"
             checked={settings.show_internal_ops}
@@ -93,7 +93,7 @@ export function SettingsPage() {
             ["rebuild_alerts", "Показывать статус пересборки данных"],
           ] as const
         ).map(([key, label]) => (
-          <label key={key} className="flex items-center gap-2 text-sm text-slate-200">
+          <label key={key} className="flex items-center gap-2 text-sm text-ink-secondary">
             <input
               type="checkbox"
               checked={settings[key]}
@@ -102,7 +102,7 @@ export function SettingsPage() {
             {label}
           </label>
         ))}
-        <div className="text-xs text-slate-400">
+        <div className="text-xs text-ink-muted">
           Email‑уведомления требуют серверной доставки — пока недоступно. Баннеры в интерфейсе используют эти настройки.
         </div>
       </Card>

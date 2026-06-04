@@ -8,32 +8,15 @@ import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { isDemoMode } from "../../state/settings";
 import { trackUsage } from "../../state/usage";
+import { CHART } from "../../ui/chart-theme";
 import { Card } from "../../ui/card";
+import { CollapsibleSection } from "../../ui/collapsible-section";
+import { KpiCard } from "../../ui/kpi-card";
 import { StatusBadge } from "../../ui/status-badge";
 import { PeriodSelector } from "../../ui/period-selector";
 import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
 import { toast } from "../../ui/toast";
 import { FirstRunChecklist } from "../../ui/first-run-checklist";
-
-function kpiCard(props: {
-  icon: React.ReactNode;
-  label: string;
-  value: React.ReactNode;
-  sub?: React.ReactNode;
-}) {
-  return (
-    <Card className="p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-xs text-slate-300">{props.label}</div>
-          <div className="mt-1 text-xl font-semibold">{props.value}</div>
-          {props.sub ? <div className="mt-1 text-xs text-slate-400">{props.sub}</div> : null}
-        </div>
-        <div className="rounded-lg bg-slate-950/40 p-2 text-slate-200">{props.icon}</div>
-      </div>
-    </Card>
-  );
-}
 
 export function DashboardPage() {
   useEffect(() => {
@@ -130,12 +113,12 @@ export function DashboardPage() {
   const pct = (delta: number, base: number) => (base !== 0 ? (delta / base) * 100 : null);
 
   return (
-    <div className="space-y-6">
+    <div className="page-shell">
       <FirstRunChecklist />
-      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="text-2xl font-semibold">Финансовая аналитика продавца</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="page-title">Финансовая аналитика продавца</h1>
             {demo ? (
               <StatusBadge tone="info">
                 <Sparkles className="mr-1 inline h-3 w-3" />
@@ -143,24 +126,21 @@ export function DashboardPage() {
               </StatusBadge>
             ) : null}
           </div>
-          <div className="text-sm text-slate-300">Периодная аналитика с прозрачностью, полнотой и предупреждениями.</div>
+          <p className="page-subtitle">Периодная аналитика с прозрачностью, полнотой и предупреждениями.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            className="rounded-lg bg-sky-500/90 px-3 py-2 text-sm font-medium text-white hover:bg-sky-400"
+            className="btn-primary"
             to="/app/reports/upload"
             onClick={() => trackUsage("cta_upload")}
           >
             Загрузить отчёт
           </Link>
-          <Link
-            className="rounded-lg bg-slate-800 px-3 py-2 text-sm text-slate-100 hover:bg-slate-700"
-            to="/app/ai/recommendations"
-          >
+          <Link className="btn-secondary" to="/app/ai/recommendations">
             Рекомендации ИИ
           </Link>
           <button
-            className="rounded-lg bg-emerald-500/90 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-400"
+            className="btn-accent"
             onClick={async () => {
               try {
                 const res = await runAiPeriod.refetch();
@@ -177,102 +157,100 @@ export function DashboardPage() {
 
       <PeriodSelector onChange={setPeriodSel} />
 
-      <Card className="p-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold">Что требует внимания сегодня</div>
-            <div className="mt-1 text-xs text-slate-400">
-              Ежедневное рабочее место продавца: риски, утечки прибыли, задачи и доверие к данным.
-            </div>
-          </div>
-          <Link to="/app/today" className="text-sm text-sky-300 hover:underline">
-            Открыть брифинг “Сегодня” →
-          </Link>
-        </div>
-        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+      <CollapsibleSection
+        title="Что требует внимания сегодня"
+        subtitle="Ежедневное рабочее место продавца: риски, утечки прибыли, задачи и доверие к данным."
+        actions={<Link to="/app/today" className="link-muted">Брифинг «Сегодня» →</Link>}
+      >
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <Card className="p-4">
-            <div className="text-xs text-slate-300">Критические проблемы</div>
-            <div className="mt-2 text-sm text-slate-200">
+            <div className="text-xs font-medium text-ink-muted">Критические проблемы</div>
+            <div className="mt-2 text-sm text-ink-secondary">
               {(todaysFocus.data?.dangerous ?? []).slice(0, 3).join(" · ") || "Нет критичных флагов."}
             </div>
           </Card>
           <Card className="p-4">
-            <div className="text-xs text-slate-300">Утечки прибыли</div>
-            <div className="mt-2 text-sm text-slate-200">
+            <div className="text-xs font-medium text-ink-muted">Утечки прибыли</div>
+            <div className="mt-2 text-sm text-ink-secondary">
               Проверьте маржу и затраты по SKU в экономике.
             </div>
-            <Link to="/app/finance/reconciliation" className="mt-2 inline-block text-xs text-sky-300 hover:underline">
+            <Link to="/app/finance/reconciliation" className="link-muted mt-3 inline-block text-xs">
               Сверка выплат →
             </Link>
           </Card>
           <Card className="p-4">
-            <div className="text-xs text-slate-300">Доверие к марже</div>
-            <div className="mt-2 text-sm text-slate-200">
+            <div className="text-xs font-medium text-ink-muted">Доверие к марже</div>
+            <div className="mt-2 text-sm text-ink-secondary">
               {completeness ? `Полнота аналитики: ${completeness}%` : "Полнота неизвестна"}
               {(aiOps.data as any)?.degraded_intelligence_mode ? " · ИИ осторожен" : ""}
             </div>
-            <Link to="/app/finance/costs" className="mt-2 inline-block text-xs text-sky-300 hover:underline">
+            <Link to="/app/finance/costs" className="link-muted mt-3 inline-block text-xs">
               Покрытие затрат →
             </Link>
           </Card>
         </div>
-      </Card>
+      </CollapsibleSection>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-        {kpiCard({
-          icon: <Database className="h-4 w-4" />,
-          label: "Продажи (выбранный период)",
-          value: kpiSummary.isLoading ? "…" : (kpiSummary.data?.kpis.total_revenue ?? "0"),
-          sub: (
-            <span>
-              Валовая прибыль: {kpiSummary.data?.kpis.total_profit ?? "0"} · Маржинальность:{" "}
-              {kpiSummary.data?.kpis.margin_pct ?? "—"}% {stale ? "· данные устарели" : ""}
-              {compare && deltaRevenue !== null ? (
-                <>
-                  {" "}
-                  · Δвыручка: {deltaRevenue.toFixed(0)}{" "}
-                  {pct(deltaRevenue, bRevenue) !== null ? `(${pct(deltaRevenue, bRevenue)!.toFixed(1)}%)` : ""}
-                </>
-              ) : null}
-            </span>
-          ),
-        })}
-        {kpiCard({
-          icon: <Server className="h-4 w-4" />,
-          label: "Обработка данных",
-          value: queue.isLoading ? "…" : queued,
-          sub: <span>Задач в очереди/обработке</span>,
-        })}
-        {kpiCard({
-          icon: <Bot className="h-4 w-4" />,
-          label: "Рекомендации ИИ",
-          value: recommendations.isLoading ? "…" : recCount,
-          sub: (
-            <span>
-              {(aiOps.data as Record<string, unknown>)?.degraded_intelligence_mode
-                ? "Осторожный режим"
-                : "Обычный режим"}
-            </span>
-          ),
-        })}
-        {kpiCard({
-          icon: <AlertTriangle className="h-4 w-4" />,
-          label: "Обновление аналитики",
-          value: runtime.isLoading ? "…" : (rebuild.running ?? 0) + (rebuild.pending_dispatch ?? 0),
-          sub: <span>Пересборки активны или в очереди</span>,
-        })}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <div className="lg:col-span-5">
+          <KpiCard
+            variant="hero"
+            icon={<Database className="h-5 w-5" />}
+            label="Продажи (выбранный период)"
+            value={kpiSummary.isLoading ? "…" : (kpiSummary.data?.kpis.total_revenue ?? "0")}
+            sub={
+              <span>
+                Валовая прибыль: {kpiSummary.data?.kpis.total_profit ?? "0"} · Маржинальность:{" "}
+                {kpiSummary.data?.kpis.margin_pct ?? "—"}% {stale ? "· данные устарели" : ""}
+                {compare && deltaRevenue !== null ? (
+                  <>
+                    {" "}
+                    · Δвыручка: {deltaRevenue.toFixed(0)}{" "}
+                    {pct(deltaRevenue, bRevenue) !== null ? `(${pct(deltaRevenue, bRevenue)!.toFixed(1)}%)` : ""}
+                  </>
+                ) : null}
+              </span>
+            }
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:col-span-7">
+          <KpiCard
+            icon={<Server className="h-4 w-4" />}
+            label="Обработка данных"
+            value={queue.isLoading ? "…" : queued}
+            sub={<span>Задач в очереди/обработке</span>}
+          />
+          <KpiCard
+            icon={<Bot className="h-4 w-4" />}
+            label="Рекомендации ИИ"
+            value={recommendations.isLoading ? "…" : recCount}
+            sub={
+              <span>
+                {(aiOps.data as Record<string, unknown>)?.degraded_intelligence_mode
+                  ? "Осторожный режим"
+                  : "Обычный режим"}
+              </span>
+            }
+          />
+          <KpiCard
+            icon={<AlertTriangle className="h-4 w-4" />}
+            label="Обновление аналитики"
+            value={runtime.isLoading ? "…" : (rebuild.running ?? 0) + (rebuild.pending_dispatch ?? 0)}
+            sub={<span>Пересборки активны или в очереди</span>}
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <Card className="p-5 md:col-span-2">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-semibold">Тренд продаж и прибыли (по дням)</div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Card className="p-6 md:col-span-2">
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-sm font-semibold text-ink">Тренд продаж и прибыли (по дням)</div>
             <StatusBadge tone={stale ? "warn" : "info"}>
               <LineChartIcon className="mr-1 inline h-3 w-3" />
               {stale ? "устарело" : "актуально"}
             </StatusBadge>
           </div>
-          <div className="mt-4 h-64">
+          <div className="chart-panel mt-5">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={(kpiTrend.data?.points ?? []).map((p) => ({
@@ -281,20 +259,20 @@ export function DashboardPage() {
                   profit: Number(p.net_profit),
                 }))}
               >
-                <XAxis dataKey="date" tick={{ fill: "#94a3b8", fontSize: 12 }} />
-                <YAxis tick={{ fill: "#94a3b8", fontSize: 12 }} />
-                <Tooltip contentStyle={{ background: "#0b1220", border: "1px solid #1f2937" }} />
-                <Line type="monotone" dataKey="revenue" stroke="#38bdf8" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="profit" stroke="#34d399" strokeWidth={2} dot={false} />
+                <XAxis dataKey="date" tick={CHART.axis} />
+                <YAxis tick={CHART.axis} />
+                <Tooltip contentStyle={CHART.tooltip} />
+                <Line type="monotone" dataKey="revenue" stroke={CHART.series.revenue} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="profit" stroke={CHART.series.profit} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-2 text-xs text-slate-400">
+          <div className="mt-3 text-xs text-ink-muted">
             Данные проанализированы за период: {start} → {end} · Последнее обновление: {freshness?.data_as_of ?? "—"}
             {completeness ? <> · Полнота аналитики: {completeness}%</> : null}
           </div>
           {integrityWarnings.length ? (
-            <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">
+            <div className="mt-4 rounded-xl border border-amber-200 bg-semantic-warn-bg p-4 text-xs text-semantic-warn">
               <div className="font-semibold">Предупреждения целостности</div>
               <ul className="mt-2 list-disc space-y-1 pl-5">
                 {integrityWarnings.slice(0, 4).map((w) => (
@@ -305,21 +283,21 @@ export function DashboardPage() {
           ) : null}
         </Card>
 
-        <Card className="p-5">
-          <div className="text-sm font-semibold">Топ SKU по продажам</div>
-          <div className="mt-2 text-xs text-slate-400">
+        <Card className="p-6">
+          <div className="text-sm font-semibold text-ink">Топ SKU по продажам</div>
+          <div className="mt-2 text-xs text-ink-muted">
             Период: {start} → {end} · {marketplace}
           </div>
-          <div className="mt-4 space-y-2">
+          <div className="mt-5 space-y-3">
             {(topSkus.data?.items ?? []).length === 0 ? (
-              <div className="text-sm text-slate-300">Пока нет метрик по SKU.</div>
+              <div className="text-sm text-ink-muted">Пока нет метрик по SKU.</div>
             ) : (
               (topSkus.data?.items ?? []).map((row) => (
-                <div key={row.sku} className="flex items-center justify-between gap-3">
-                  <div className="truncate text-sm text-slate-200">{row.sku}</div>
-                  <div className="text-right text-xs text-slate-300">
+                <div key={row.sku} className="flex items-center justify-between gap-3 border-b border-surface-subtle/60 pb-2 last:border-0 last:pb-0">
+                  <div className="truncate text-sm font-medium text-ink-secondary">{row.sku}</div>
+                  <div className="text-right text-xs text-ink-muted">
                     {row.revenue}
-                    <div className="text-[11px] text-slate-500">
+                    <div className="text-[11px] text-ink-faint">
                       {row.contribution_pct ? `Доля: ${row.contribution_pct}%` : "—"}
                     </div>
                   </div>
@@ -327,7 +305,7 @@ export function DashboardPage() {
               ))
             )}
           </div>
-          <div className="mt-4 space-y-2 text-xs text-slate-400">
+          <div className="mt-5 space-y-2 text-xs text-ink-muted">
             <div>
               Диапазон данных: {coverage.data?.available_min_date ?? "—"} → {coverage.data?.available_max_date ?? "—"}
             </div>
@@ -341,10 +319,10 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <Card className="p-5 md:col-span-2">
-          <div className="text-sm font-semibold">Затраты и возвраты (по дням)</div>
-          <div className="mt-4 h-64">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Card className="p-6 md:col-span-2">
+          <div className="text-sm font-semibold text-ink">Затраты и возвраты (по дням)</div>
+          <div className="chart-panel mt-5">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={(financeTrend.data?.points ?? []).map((p) => ({
@@ -355,25 +333,25 @@ export function DashboardPage() {
                   payout: Number(p.payout),
                 }))}
               >
-                <XAxis dataKey="date" tick={{ fill: "#94a3b8", fontSize: 12 }} />
-                <YAxis tick={{ fill: "#94a3b8", fontSize: 12 }} />
-                <Tooltip contentStyle={{ background: "#0b1220", border: "1px solid #1f2937" }} />
-                <Line type="monotone" dataKey="logistics" stroke="#fbbf24" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="ads" stroke="#a78bfa" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="returns" stroke="#fb7185" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="payout" stroke="#60a5fa" strokeWidth={2} dot={false} />
+                <XAxis dataKey="date" tick={CHART.axis} />
+                <YAxis tick={CHART.axis} />
+                <Tooltip contentStyle={CHART.tooltip} />
+                <Line type="monotone" dataKey="logistics" stroke={CHART.series.logistics} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="ads" stroke={CHART.series.ads} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="returns" stroke={CHART.series.returns} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="payout" stroke={CHART.series.payout} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-2 text-xs text-slate-400">
+          <div className="mt-3 text-xs text-ink-muted">
             Логистика · Продвижение · Возвраты · Выплаты
           </div>
         </Card>
 
-        <Card className="p-5">
-          <div className="text-sm font-semibold">Финансовая сводка</div>
-          <div className="mt-2 text-xs text-slate-400">Период: {start} → {end}</div>
-          <div className="mt-4 space-y-2 text-sm text-slate-200">
+        <Card className="p-6">
+          <div className="text-sm font-semibold text-ink">Финансовая сводка</div>
+          <div className="mt-2 text-xs text-ink-muted">Период: {start} → {end}</div>
+          <div className="mt-5 space-y-2.5 text-sm text-ink-secondary">
             <div className="flex justify-between gap-3"><span>Продажа, руб.</span><span>{financeSummary.data?.kpis.sales_revenue ?? "—"}</span></div>
             <div className="flex justify-between gap-3"><span>Возвраты, руб.</span><span>{financeSummary.data?.kpis.returns_amount ?? "—"}</span></div>
             <div className="flex justify-between gap-3"><span>Стоимость логистики, руб.</span><span>{financeSummary.data?.kpis.logistics ?? "—"}</span></div>
@@ -381,7 +359,7 @@ export function DashboardPage() {
             <div className="flex justify-between gap-3"><span>Штрафы, руб.</span><span>{financeSummary.data?.kpis.penalties ?? "—"}</span></div>
             <div className="flex justify-between gap-3"><span>Хранение, руб.</span><span>{financeSummary.data?.kpis.storage_fee ?? "—"}</span></div>
             <div className="flex justify-between gap-3"><span>К перечислению, руб.</span><span>{financeSummary.data?.kpis.payout ?? "—"}</span></div>
-            <div className="mt-2 border-t border-slate-800 pt-2 flex justify-between gap-3 font-semibold">
+            <div className="mt-3 flex justify-between gap-3 border-t border-surface-subtle pt-3 font-semibold text-ink">
               <span>Валовая прибыль, руб.</span><span>{financeSummary.data?.kpis.gross_profit ?? "—"}</span>
             </div>
             <div className="flex justify-between gap-3">
@@ -391,48 +369,53 @@ export function DashboardPage() {
               <span>Процент возвратов</span><span>{financeSummary.data?.kpis.return_rate_pct ?? "—"}%</span>
             </div>
           </div>
-          <div className="mt-3 text-xs text-slate-400">
+          <div className="mt-4 text-xs text-ink-muted">
             Некоторые показатели могут быть неполными, если не загружены нужные отчёты или себестоимость.
           </div>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <Card className="p-5">
-          <div className="text-sm font-semibold">Ежедневный сценарий</div>
-          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-300">
-            <li>Загрузите свежий отчёт (если есть)</li>
-            <li>
-              Проверьте <Link className="text-sky-300 hover:underline" to="/app/status">статус системы</Link> (очередь/пересборки)
-            </li>
-            <li>
-              Откройте <Link className="text-sky-300 hover:underline" to="/app/ai/recommendations">входящие ИИ</Link> или{" "}
-              <Link className="text-sky-300 hover:underline" to="/app/ai/today">фокус на сегодня</Link>
-              {" · "}
-              <Link className="text-sky-300 hover:underline" to="/app/ai/digest?type=daily">ежедневный дайджест</Link>
-            </li>
-            <li>Сохраните/отклоните рекомендации и оставьте обратную связь</li>
-          </ol>
-        </Card>
-        <Card className="p-5">
-          <div className="text-sm font-semibold">Доверие к данным</div>
-          <p className="mt-2 text-sm text-slate-300">
-            Финансовые KPI берутся из read-only аналитического слоя. Если данные устарели — проверьте пересборки и очередь;
-            в режиме устаревания трактуйте выводы ИИ осторожно.
-          </p>
-          <Link to="/app/onboarding" className="mt-3 inline-block text-sm text-sky-300 hover:underline">
-            Завершить настройку →
-          </Link>
-        </Card>
-      </div>
+      <CollapsibleSection
+        title="Ежедневный сценарий и доверие к данным"
+        subtitle="Справочные блоки для регулярной работы с аналитикой."
+      >
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div>
+            <div className="text-sm font-semibold text-ink">Ежедневный сценарий</div>
+            <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-ink-secondary">
+              <li>Загрузите свежий отчёт (если есть)</li>
+              <li>
+                Проверьте <Link className="link-muted" to="/app/status">статус системы</Link> (очередь/пересборки)
+              </li>
+              <li>
+                Откройте <Link className="link-muted" to="/app/ai/recommendations">входящие ИИ</Link> или{" "}
+                <Link className="link-muted" to="/app/ai/today">фокус на сегодня</Link>
+                {" · "}
+                <Link className="link-muted" to="/app/ai/digest?type=daily">ежедневный дайджест</Link>
+              </li>
+              <li>Сохраните/отклоните рекомендации и оставьте обратную связь</li>
+            </ol>
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-ink">Доверие к данным</div>
+            <p className="mt-3 text-sm leading-relaxed text-ink-secondary">
+              Финансовые KPI берутся из read-only аналитического слоя. Если данные устарели — проверьте пересборки и очередь;
+              в режиме устаревания трактуйте выводы ИИ осторожно.
+            </p>
+            <Link to="/app/onboarding" className="link-muted mt-4 inline-block text-sm">
+              Завершить настройку →
+            </Link>
+          </div>
+        </div>
+      </CollapsibleSection>
 
       {demo ? (
-        <Card className="border-sky-500/30 bg-sky-500/10 p-5">
-          <div className="text-sm font-semibold text-sky-100">Демо-сценарий</div>
-          <p className="mt-2 text-sm text-slate-200">
+        <Card className="border-sky-200 bg-brand-subtle p-6">
+          <div className="text-sm font-semibold text-brand">Демо-сценарий</div>
+          <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
             1) Загрузка отчёта → 2) Обработка → 3) Рекомендация ИИ → 4) Объяснимость → 5) Действие и оценка полезности.
           </p>
-          <Link to="/app/support" className="mt-3 inline-block text-sm text-sky-300 hover:underline">
+          <Link to="/app/support" className="link-muted mt-3 inline-block text-sm">
             Отладка демо →
           </Link>
         </Card>

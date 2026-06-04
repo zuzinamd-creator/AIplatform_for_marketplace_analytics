@@ -5,6 +5,7 @@ import { Package, Snowflake, Skull, Timer } from "lucide-react";
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { Card } from "../../ui/card";
+import { Select } from "../../ui/field";
 import { PeriodSelector } from "../../ui/period-selector";
 import { loadPeriodSelection, type PeriodSelection } from "../../state/period";
 import { StatusBadge } from "../../ui/status-badge";
@@ -56,26 +57,25 @@ export function InventoryEconomicsPage() {
   }, [inv.data]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="page-shell">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <div className="text-xl font-semibold">Склад и оборот</div>
-          <div className="mt-1 text-xs text-slate-400">
-            Оборот, замороженный капитал, медленные товары и “мертвые” остатки — без прогнозов, только детерминированная аналитика.
-          </div>
+          <h1 className="page-title">Склад и оборот</h1>
+          <p className="page-subtitle">
+            Оборот, замороженный капитал, медленные товары и «мертвые» остатки — без прогнозов, только детерминированная аналитика.
+          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={marketplace}
-            onChange={(e) => setMarketplace(e.target.value)}
-            className="h-9 rounded-md border border-slate-800 bg-slate-950/40 px-2 text-sm"
-          >
-            <option value="wildberries">Wildberries</option>
-            <option value="ozon">Ozon</option>
-          </select>
-          <PeriodSelector onChange={setPeriodSel} />
-        </div>
+        <Select
+          value={marketplace}
+          onChange={(e) => setMarketplace(e.target.value)}
+          className="h-9 w-auto min-w-[10rem]"
+        >
+          <option value="wildberries">Wildberries</option>
+          <option value="ozon">Ozon</option>
+        </Select>
       </div>
+
+      <PeriodSelector onChange={setPeriodSel} />
 
       {warnings.length ? (
         <Card className="p-4">
@@ -90,7 +90,7 @@ export function InventoryEconomicsPage() {
               <StatusBadge tone="warn">Предупреждений: {warnings.length}</StatusBadge>
             </div>
           </div>
-          <ul className="mt-3 space-y-1 text-xs text-slate-300">
+          <ul className="mt-3 space-y-1 text-xs text-ink-secondary">
             {warnings.slice(0, 4).map((w) => (
               <li key={w.code + w.message}>- {w.message}</li>
             ))}
@@ -102,11 +102,11 @@ export function InventoryEconomicsPage() {
         <Card className="p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-xs text-slate-300">Замороженный капитал (топ-50 SKU)</div>
+              <div className="text-xs text-ink-secondary">Замороженный капитал (топ-50 SKU)</div>
               <div className="mt-1 text-lg font-semibold">{rub(summary.frozen)}</div>
-              <div className="mt-1 text-xs text-slate-400">Расчет: остаток × себестоимость (если задана).</div>
+              <div className="mt-1 text-xs text-ink-muted">Расчет: остаток × себестоимость (если задана).</div>
             </div>
-            <div className="rounded-lg bg-slate-950/40 p-2 text-slate-200">
+            <div className="rounded-lg bg-surface-inset p-2 text-ink-secondary">
               <Snowflake className="h-5 w-5" />
             </div>
           </div>
@@ -114,11 +114,11 @@ export function InventoryEconomicsPage() {
         <Card className="p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-xs text-slate-300">Остатки (ед.)</div>
+              <div className="text-xs text-ink-secondary">Остатки (ед.)</div>
               <div className="mt-1 text-lg font-semibold">{summary.stock.toLocaleString("ru-RU")}</div>
-              <div className="mt-1 text-xs text-slate-400">Снимок: {inv.data?.snapshot_date ?? "—"}</div>
+              <div className="mt-1 text-xs text-ink-muted">Снимок: {inv.data?.snapshot_date ?? "—"}</div>
             </div>
-            <div className="rounded-lg bg-slate-950/40 p-2 text-slate-200">
+            <div className="rounded-lg bg-surface-inset p-2 text-ink-secondary">
               <Package className="h-5 w-5" />
             </div>
           </div>
@@ -126,13 +126,13 @@ export function InventoryEconomicsPage() {
         <Card className="p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-xs text-slate-300">Медленные / мертвые</div>
+              <div className="text-xs text-ink-secondary">Медленные / мертвые</div>
               <div className="mt-1 text-lg font-semibold">
                 {slow.data?.items.length ?? 0} / {dead.data?.items.length ?? 0}
               </div>
-              <div className="mt-1 text-xs text-slate-400">Пороги: 30 / 60 дней без продаж.</div>
+              <div className="mt-1 text-xs text-ink-muted">Пороги: 30 / 60 дней без продаж.</div>
             </div>
-            <div className="rounded-lg bg-slate-950/40 p-2 text-slate-200">
+            <div className="rounded-lg bg-surface-inset p-2 text-ink-secondary">
               <Timer className="h-5 w-5" />
             </div>
           </div>
@@ -142,8 +142,8 @@ export function InventoryEconomicsPage() {
       <Card className="p-4">
         <div className="text-sm font-semibold">Оборот и риск по SKU (топ-50 по замороженному капиталу)</div>
         <div className="mt-3 overflow-auto">
-          <table className="w-full min-w-[1000px] text-sm">
-            <thead className="text-left text-xs text-slate-400">
+          <table className="table-shell w-full min-w-[1000px] text-sm">
+            <thead className="text-left">
               <tr>
                 <th className="py-2">SKU</th>
                 <th className="py-2">Остаток</th>
@@ -156,9 +156,9 @@ export function InventoryEconomicsPage() {
                 <th className="py-2">Риск</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-900/60">
+            <tbody className="divide-y divide-surface-subtle">
               {(inv.data?.items ?? []).map((r) => (
-                <tr key={r.sku} className="hover:bg-slate-950/30">
+                <tr key={r.sku} className="hover:bg-surface-inset">
                   <td className="py-2 font-medium">{r.sku}</td>
                   <td className="py-2">{r.stock_units.toLocaleString("ru-RU")}</td>
                   <td className="py-2">{r.sold_units.toLocaleString("ru-RU")}</td>
@@ -180,7 +180,7 @@ export function InventoryEconomicsPage() {
               ))}
               {!inv.isLoading && !(inv.data?.items?.length ?? 0) ? (
                 <tr>
-                  <td className="py-6 text-slate-400" colSpan={9}>
+                  <td className="py-6 text-ink-muted" colSpan={9}>
                     Нет данных по складу за выбранный период.
                   </td>
                 </tr>
@@ -197,7 +197,7 @@ export function InventoryEconomicsPage() {
           </div>
           <div className="mt-3 overflow-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-xs text-slate-400">
+              <thead className="text-left text-xs text-ink-muted">
                 <tr>
                   <th className="py-2">SKU</th>
                   <th className="py-2">Остаток</th>
@@ -205,7 +205,7 @@ export function InventoryEconomicsPage() {
                   <th className="py-2">Дней без продаж</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-900/60">
+              <tbody className="divide-y divide-surface-subtle">
                 {(slow.data?.items ?? []).map((r) => (
                   <tr key={r.sku}>
                     <td className="py-2 font-medium">{r.sku}</td>
@@ -216,7 +216,7 @@ export function InventoryEconomicsPage() {
                 ))}
                 {!slow.isLoading && !(slow.data?.items?.length ?? 0) ? (
                   <tr>
-                    <td className="py-6 text-slate-400" colSpan={4}>
+                    <td className="py-6 text-ink-muted" colSpan={4}>
                       Нет медленных товаров по выбранным критериям.
                     </td>
                   </tr>
@@ -232,7 +232,7 @@ export function InventoryEconomicsPage() {
           </div>
           <div className="mt-3 overflow-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-xs text-slate-400">
+              <thead className="text-left text-xs text-ink-muted">
                 <tr>
                   <th className="py-2">SKU</th>
                   <th className="py-2">Остаток</th>
@@ -240,7 +240,7 @@ export function InventoryEconomicsPage() {
                   <th className="py-2">Дней без продаж</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-900/60">
+              <tbody className="divide-y divide-surface-subtle">
                 {(dead.data?.items ?? []).map((r) => (
                   <tr key={r.sku}>
                     <td className="py-2 font-medium">{r.sku}</td>
@@ -251,7 +251,7 @@ export function InventoryEconomicsPage() {
                 ))}
                 {!dead.isLoading && !(dead.data?.items?.length ?? 0) ? (
                   <tr>
-                    <td className="py-6 text-slate-400" colSpan={4}>
+                    <td className="py-6 text-ink-muted" colSpan={4}>
                       Мертвые остатки не обнаружены.
                     </td>
                   </tr>

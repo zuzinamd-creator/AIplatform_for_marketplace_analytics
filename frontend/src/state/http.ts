@@ -81,7 +81,7 @@ export type CostImportResultResponse = {
   issues: CostImportIssue[];
 };
 import type { Token, UserCreate, UserResponse } from "./types-auth";
-import type { CostCreateRequest, CostResponse } from "./types-costs";
+import type { CostCreateRequest, CostListParams, CostResponse, CostUpdateRequest } from "./types-costs";
 import type { ReportResponse, ReportUploadResponse } from "./types-reports";
 import type { WorkflowEventCreateRequest, WorkflowEventResponse, WorkflowHistoryResponse } from "./types-workflow";
 import type {
@@ -146,8 +146,11 @@ export function formatApiError(err: unknown): string {
         })
         .join("; ");
     }
-    if (err.response?.status === 401) return "Incorrect email or password.";
-    if (err.response?.status === 422) return "Check email format and password (min 8 characters).";
+    if (err.response?.status === 401) return "Неверный email или пароль.";
+    if (err.response?.status === 422) return "Проверьте формат email и пароль (минимум 8 символов).";
+    if (err.response?.status === 503) {
+      return "Отправка email недоступна. Обратитесь к администратору.";
+    }
     if (err.response?.status === 500) {
       return "Server error — try again or check docker compose logs api";
     }
@@ -180,10 +183,14 @@ export const api = {
       const { data } = await http.get("/auth/me");
       return unwrap<UserResponse>(data);
     },
+    async forgotPassword(email: string) {
+      const { data } = await http.post("/auth/forgot-password", { email });
+      return unwrap<{ message: string }>(data);
+    },
   },
 
   reports: {
-    async list(skip = 0, limit = 50) {
+    async list(skip = 0, limit = 200) {
       const { data } = await http.get("/reports", { params: { skip, limit } });
       return unwrap<ReportResponse[]>(data);
     },
@@ -215,9 +222,13 @@ export const api = {
       const { data } = await http.post("/costs", payload);
       return unwrap<CostResponse>(data);
     },
-    async list(sku?: string) {
-      const { data } = await http.get("/costs", { params: { sku } });
+    async list(params?: CostListParams) {
+      const { data } = await http.get("/costs", { params: params ?? {} });
       return unwrap<CostResponse[]>(data);
+    },
+    async update(costId: string, payload: CostUpdateRequest) {
+      const { data } = await http.patch(`/costs/${costId}`, payload);
+      return unwrap<CostResponse>(data);
     },
     async import(file: File) {
       const form = new FormData();

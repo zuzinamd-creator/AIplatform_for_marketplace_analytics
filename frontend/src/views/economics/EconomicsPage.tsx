@@ -6,7 +6,9 @@ import { Filter, Search, TrendingUp } from "lucide-react";
 
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
+import { CHART } from "../../ui/chart-theme";
 import { Card } from "../../ui/card";
+import { Input, Select } from "../../ui/field";
 import { PeriodSelector } from "../../ui/period-selector";
 import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
 import { StatusBadge } from "../../ui/status-badge";
@@ -46,11 +48,11 @@ function integrityBanner(integrity?: { warnings: Array<{ code: string; severity:
   const warning = warnings.filter((w) => w.severity === "warning");
   if (!warnings.length && !score) return null;
   return (
-    <Card className="p-4">
+    <Card className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <div className="text-sm font-semibold">Доверие к данным</div>
-          <div className="mt-1 text-xs text-slate-300">
+          <div className="text-sm font-semibold text-ink">Доверие к данным</div>
+          <div className="mt-1 text-xs text-ink-muted">
             {score ? `Полнота: ${Number(score).toLocaleString("ru-RU", { maximumFractionDigits: 0 })} / 100` : "Полнота: —"}
           </div>
         </div>
@@ -61,14 +63,14 @@ function integrityBanner(integrity?: { warnings: Array<{ code: string; severity:
         </div>
       </div>
       {warnings.length ? (
-        <ul className="mt-3 space-y-1 text-xs text-slate-300">
+        <ul className="mt-3 space-y-1 text-xs text-ink-secondary">
           {warnings.slice(0, 4).map((w) => (
             <li key={w.code + w.message}>- {w.message}</li>
           ))}
           {warnings.length > 4 ? <li>— и ещё {warnings.length - 4}</li> : null}
         </ul>
       ) : null}
-      <div className="mt-3 text-xs text-slate-400">
+      <div className="mt-3 text-xs text-ink-muted">
         ИИ может быть неточным, если отсутствует себестоимость или есть расхождения выплат. В таком случае рекомендации показываются с пониженной уверенностью.
       </div>
     </Card>
@@ -152,46 +154,47 @@ export function EconomicsPage() {
   }, [b.data]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="page-shell">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <div className="text-xl font-semibold">Экономика товаров</div>
-          <div className="mt-1 text-xs text-slate-400">Прибыльность, маржа и то, что “съедает” прибыль по SKU.</div>
+          <h1 className="page-title">Экономика товаров</h1>
+          <p className="page-subtitle">Прибыльность, маржа и то, что «съедает» прибыль по SKU.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <select
+        <div className="flex flex-wrap items-center gap-3">
+          <Select
             value={marketplace}
             onChange={(e) => setMarketplace(e.target.value)}
-            className="h-9 rounded-md border border-slate-800 bg-slate-950/40 px-2 text-sm"
+            className="h-9 w-auto min-w-[10rem]"
           >
             <option value="wildberries">Wildberries</option>
             <option value="ozon">Ozon</option>
-          </select>
-          <PeriodSelector onChange={setPeriodSel} />
+          </Select>
         </div>
       </div>
 
+      <PeriodSelector onChange={setPeriodSel} />
+
       {integrityBanner(a.data?.integrity ?? null)}
 
-      <Card className="p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-sm text-slate-200">
-            <Filter className="h-4 w-4" /> Фильтры
+      <Card className="overflow-hidden p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-ink-secondary">
+            <Filter className="h-4 w-4 text-ink-muted" /> Фильтры
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
-              <input
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-ink-faint" />
+              <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Поиск по SKU…"
-                className="h-9 w-64 rounded-md border border-slate-800 bg-slate-950/40 pl-8 pr-2 text-sm"
+                className="h-9 w-64 pl-9"
               />
             </div>
-            <select
+            <Select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
-              className="h-9 rounded-md border border-slate-800 bg-slate-950/40 px-2 text-sm"
+              className="h-9 w-auto min-w-[11rem]"
             >
               <option value="contribution_margin">Маржинальный вклад</option>
               <option value="gross_profit">Валовая прибыль</option>
@@ -200,19 +203,16 @@ export function EconomicsPage() {
               <option value="returns">Возвраты</option>
               <option value="ads">Реклама</option>
               <option value="return_rate">Доля возвратов</option>
-            </select>
-            <button
-              onClick={() => setOrder((o) => (o === "asc" ? "desc" : "asc"))}
-              className="h-9 rounded-md border border-slate-800 bg-slate-950/40 px-3 text-sm text-slate-200 hover:bg-slate-900/40"
-            >
+            </Select>
+            <button type="button" onClick={() => setOrder((o) => (o === "asc" ? "desc" : "asc"))} className="btn-secondary h-9">
               {order === "asc" ? "По возрастанию" : "По убыванию"}
             </button>
           </div>
         </div>
 
-        <div className="mt-4 overflow-auto">
-          <table className="w-full min-w-[1100px] text-sm">
-            <thead className="text-left text-xs text-slate-400">
+        <div className="mt-5 overflow-auto rounded-xl border border-surface-subtle">
+          <table className="table-shell w-full min-w-[1100px] text-sm">
+            <thead className="text-left">
               <tr>
                 <th className="py-2">SKU</th>
                 <th className="py-2">Статус</th>
@@ -227,45 +227,45 @@ export function EconomicsPage() {
                 <th className="py-2">Тренд прибыли</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-900/60">
+            <tbody>
               {(a.data?.items ?? []).map((r) => {
                 const bRow = compareBySku.get(r.sku);
                 const status = badgeForSku(r);
                 const spark = sparkBySku.get(r.sku) ?? [];
                 return (
-                  <tr key={r.sku} className="hover:bg-slate-950/30">
-                    <td className="py-2 font-medium">
-                      <Link to={`/app/economics/sku/${encodeURIComponent(r.sku)}`} className="text-slate-200 hover:underline">
+                  <tr key={r.sku}>
+                    <td className="px-3 py-3 font-medium">
+                      <Link to={`/app/economics/sku/${encodeURIComponent(r.sku)}`} className="text-ink-secondary hover:text-brand hover:underline">
                         {r.sku}
                       </Link>
                     </td>
-                    <td className="py-2">
+                    <td className="px-3 py-3">
                       <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
                     </td>
-                    <td className="py-2">{rub(r.revenue)}</td>
-                    <td className="py-2">{rub(r.gross_profit)}</td>
-                    <td className="py-2">
+                    <td className="px-3 py-3">{rub(r.revenue)}</td>
+                    <td className="px-3 py-3">{rub(r.gross_profit)}</td>
+                    <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
                         <span>{rub(r.contribution_margin)}</span>
                         {compare ? (
-                          <span className="text-xs text-slate-400">
+                          <span className="text-xs text-ink-muted">
                             Δ {rub(Number(r.contribution_margin) - (bRow?.cm ?? 0))}
                           </span>
                         ) : null}
                       </div>
                     </td>
-                    <td className="py-2">
+                    <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
                         <span>{pct(r.margin_pct ?? null)}</span>
                         {compare && bRow?.m !== null ? (
-                          <span className="text-xs text-slate-400">Δ {(Number(r.margin_pct ?? 0) - (bRow?.m ?? 0)).toFixed(1)}%</span>
+                          <span className="text-xs text-ink-muted">Δ {(Number(r.margin_pct ?? 0) - (bRow?.m ?? 0)).toFixed(1)}%</span>
                         ) : null}
                       </div>
                     </td>
-                    <td className="py-2">{rub(r.logistics)}</td>
-                    <td className="py-2">{rub(r.ads)}</td>
-                    <td className="py-2">{rub(r.penalties)}</td>
-                    <td className="py-2">{rub(r.returns_amount)}</td>
+                    <td className="px-3 py-3">{rub(r.logistics)}</td>
+                    <td className="px-3 py-3">{rub(r.ads)}</td>
+                    <td className="px-3 py-3">{rub(r.penalties)}</td>
+                    <td className="px-3 py-3">{rub(r.returns_amount)}</td>
                     <td className="py-2 w-[180px]">
                       <div className="h-10 w-[170px]">
                         {spark.length ? (
@@ -273,19 +273,15 @@ export function EconomicsPage() {
                             <LineChart data={spark}>
                               <YAxis hide domain={["auto", "auto"]} />
                               <Tooltip
-                                contentStyle={{
-                                  background: "rgba(2,6,23,0.95)",
-                                  border: "1px solid rgba(30,41,59,0.7)",
-                                  borderRadius: 8,
-                                }}
+                                contentStyle={CHART.tooltip}
                                 labelFormatter={() => ""}
                                 formatter={(value: unknown) => [rub(Number(value)), "Прибыль"]}
                               />
-                              <Line type="monotone" dataKey="y" stroke="#22c55e" strokeWidth={2} dot={false} />
+                              <Line type="monotone" dataKey="y" stroke={CHART.series.spark} strokeWidth={2} dot={false} />
                             </LineChart>
                           </ResponsiveContainer>
                         ) : (
-                          <div className="flex h-full items-center gap-2 text-xs text-slate-500">
+                          <div className="flex h-full items-center gap-2 text-xs text-ink-faint">
                             <TrendingUp className="h-4 w-4" /> —
                           </div>
                         )}
@@ -296,7 +292,7 @@ export function EconomicsPage() {
               })}
               {!a.isLoading && !(a.data?.items?.length ?? 0) ? (
                 <tr>
-                  <td className="py-6 text-slate-400" colSpan={11}>
+                  <td className="px-3 py-8 text-center text-ink-muted" colSpan={11}>
                     Нет данных по SKU за выбранный период. Проверьте период и загрузку отчетов.
                   </td>
                 </tr>
@@ -305,10 +301,10 @@ export function EconomicsPage() {
           </table>
         </div>
 
-        <div className="mt-4 text-xs text-slate-400">
-          <span className="font-medium">Пояснение:</span> выплата — это денежный поток, прибыль — это P&amp;L (выручка минус возвраты и затраты). Если есть предупреждение “расхождение выплат”, используйте экран сверки выплат.
+        <div className="mt-5 text-xs leading-relaxed text-ink-muted">
+          <span className="font-medium text-ink-secondary">Пояснение:</span> выплата — это денежный поток, прибыль — это P&amp;L (выручка минус возвраты и затраты). Если есть предупреждение “расхождение выплат”, используйте экран сверки выплат.
           <div className="mt-2">
-            <Link to="/app/finance/reconciliation" className="inline-flex items-center gap-2 text-slate-200 hover:underline">
+            <Link to="/app/finance/reconciliation" className="link-muted inline-flex items-center gap-2">
               Перейти к “Финансовая сверка”
             </Link>
           </div>

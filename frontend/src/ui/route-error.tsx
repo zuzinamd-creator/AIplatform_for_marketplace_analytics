@@ -12,7 +12,7 @@ export function RouteError(props: { error?: unknown; status?: number; title?: st
     <div className="mx-auto max-w-2xl px-4 py-10">
       <Card className="p-6">
         <div className="text-lg font-semibold">{props.title ?? "Что-то пошло не так"}</div>
-        <div className="mt-2 text-sm text-slate-300">
+        <div className="mt-2 text-sm text-ink-secondary">
           {props.status ? `Статус ${props.status}. ` : null}
           {msg}
         </div>

@@ -27,3 +27,5 @@ class WbFinancialProcessResult:
     default_date: date
     row_count: int
     etl_anomalies: tuple[EtlAnomalyDraft, ...] = ()
+    streamed: bool = False
+    earliest_movement_date: date | None = None

@@ -49,7 +49,7 @@ export function InsightPreview(props: { data: unknown }) {
   const insight = asInsight(props.data);
   if (!insight) {
     return (
-      <div className="text-xs text-slate-400">Нет данных для отображения рекомендации.</div>
+      <div className="text-xs text-ink-muted">Нет данных для отображения рекомендации.</div>
     );
   }
 
@@ -59,11 +59,11 @@ export function InsightPreview(props: { data: unknown }) {
   const urgency = insight.urgency ? URGENCY_RU[insight.urgency] ?? insight.urgency : null;
 
   return (
-    <div className="space-y-3 text-sm text-slate-200">
-      {insight.title ? <div className="text-base font-semibold text-slate-50">{insight.title}</div> : null}
+    <div className="space-y-3 text-sm text-ink-secondary">
+      {insight.title ? <div className="text-base font-semibold text-ink">{insight.title}</div> : null}
       {insight.summary ? <p className="leading-relaxed">{insight.summary}</p> : null}
       {(impact || urgency || insight.confidence_hint != null) && (
-        <div className="flex flex-wrap gap-2 text-xs text-slate-400">
+        <div className="flex flex-wrap gap-2 text-xs text-ink-muted">
           {impact ? <span>Эффект: {impact}</span> : null}
           {urgency ? <span>Срочность: {urgency}</span> : null}
           {insight.confidence_hint != null ? (
@@ -73,14 +73,14 @@ export function InsightPreview(props: { data: unknown }) {
       )}
       {insight.why ? (
         <div>
-          <div className="text-xs font-medium text-slate-400">Зачем это важно</div>
-          <p className="mt-1 text-slate-300">{insight.why}</p>
+          <div className="text-xs font-medium text-ink-muted">Зачем это важно</div>
+          <p className="mt-1 text-ink-secondary">{insight.why}</p>
         </div>
       ) : null}
       {insight.bullets && insight.bullets.length > 0 ? (
         <div>
-          <div className="text-xs font-medium text-slate-400">Наблюдения</div>
-          <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-300">
+          <div className="text-xs font-medium text-ink-muted">Наблюдения</div>
+          <ul className="mt-1 list-disc space-y-1 pl-5 text-ink-secondary">
             {insight.bullets.map((b, i) => (
               <li key={i}>{b}</li>
             ))}
@@ -89,8 +89,8 @@ export function InsightPreview(props: { data: unknown }) {
       ) : null}
       {insight.recommended_actions && insight.recommended_actions.length > 0 ? (
         <div>
-          <div className="text-xs font-medium text-slate-400">Рекомендуемые действия</div>
-          <ol className="mt-1 list-decimal space-y-1 pl-5 text-slate-300">
+          <div className="text-xs font-medium text-ink-muted">Рекомендуемые действия</div>
+          <ol className="mt-1 list-decimal space-y-1 pl-5 text-ink-secondary">
             {insight.recommended_actions.map((a, i) => (
               <li key={i}>{a}</li>
             ))}

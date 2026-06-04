@@ -3,7 +3,7 @@ import React from "react";
 import { cx } from "./cx";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost" | "danger";
+  variant?: "primary" | "secondary" | "ghost" | "danger" | "accent";
   size?: "sm" | "md" | "icon";
 };
 
@@ -16,16 +16,17 @@ export function Button({ className, variant = "primary", size = "md", ...props }
         size === "md" && "h-10 px-4 text-sm",
         size === "icon" && "h-9 w-9",
         variant === "primary" &&
-          "bg-sky-500/90 text-slate-50 hover:bg-sky-400 focus-visible:ring-2 focus-visible:ring-sky-300",
+          "bg-brand text-white shadow-sm hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-brand/40",
         variant === "secondary" &&
-          "bg-slate-800 text-slate-50 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400",
-        variant === "ghost" && "bg-transparent text-slate-100 hover:bg-slate-800/60",
+          "border border-surface-subtle bg-surface text-ink-secondary shadow-sm hover:bg-surface-inset focus-visible:ring-2 focus-visible:ring-brand/30",
+        variant === "accent" &&
+          "bg-semantic-success text-white shadow-sm hover:bg-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500/40",
+        variant === "ghost" && "bg-transparent text-ink-secondary hover:bg-surface-inset",
         variant === "danger" &&
-          "bg-rose-500/90 text-white hover:bg-rose-400 focus-visible:ring-2 focus-visible:ring-rose-300",
+          "bg-semantic-danger text-white shadow-sm hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500/40",
         className,
       )}
       {...props}
     />
   );
 }
-

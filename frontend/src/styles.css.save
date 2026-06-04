@@ -1,0 +1,96 @@
+@i-rotate-135mport url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-surface-muted font-sans text-ink antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .page-shell {
+    @apply space-y-8;
+  }
+
+  .page-title {
+    @apply text-2xl font-semibold tracking-tight text-ink md:text-3xl;
+  }
+
+  .page-subtitle {
+    @apply mt-1.5 max-w-2xl text-sm leading-relaxed text-ink-muted;
+  }
+
+  .btn-primary {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-brand px-4 text-sm font-medium text-white shadow-sm transition hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-secondary {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-surface-subtle bg-surface px-4 text-sm font-medium text-ink-secondary shadow-sm transition hover:bg-surface-inset focus-visible:ring-2 focus-visible:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-accent {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-semantic-success px-4 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500/40 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .link-muted {
+    @apply text-sm font-medium text-brand hover:text-brand-hover hover:underline;
+  }
+
+  .disclosure-panel {
+    @apply overflow-hidden rounded-2xl border border-surface-subtle/80 bg-surface shadow-card;
+  }
+
+  .disclosure-summary {
+    @apply flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-ink transition hover:bg-surface-inset;
+  }
+
+  .disclosure-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .disclosure-summary::after {
+    content: "";
+    @apply h-2 w-2 shrink-0 rotate-45 border-b-2 border-r-2 border-ink-faint transition;
+  }
+
+  .disclosure-panel[open] .disclosure-summary::after {
+    @apply -rotate-135 mt-1;
+  }
+
+  .disclosure-body {
+    @apply border-t border-surface-subtle/60 px-5 py-5;
+  }
+
+  .chart-panel {
+    @apply h-64 w-full;
+  }
+
+  .table-shell thead {
+    @apply border-b border-surface-subtle bg-surface-inset text-xs font-medium uppercase tracking-wide text-ink-muted;
+  }
+
+  .table-shell tbody tr {
+    @apply border-b border-surface-subtle/60 transition hover:bg-surface-inset/80;
+  }
+
+  .nav-item-active {
+    @apply bg-brand-subtle font-medium text-brand;
+  }
+
+  .nav-item-idle {
+    @apply text-ink-secondary hover:bg-surface-inset;
+  }
+}
