@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.observability import get_logger
 from app.core.queue import get_queue_backend
+from app.core.queue.stale import is_etl_job_stale
 from app.core.security_context import QueueSession, TenantSession
 from app.models.inventory.staging import WarehouseStockSnapshotStaging
 from app.models.job import EtlJob, JobStatus
@@ -138,15 +139,7 @@ class TenantRecoveryService:
             for job in result.scalars().all():
                 if job.claimed_at is None:
                     continue
-                stale_by_claim = now.timestamp() > (
-                    job.claimed_at.timestamp() + job.visibility_timeout_seconds
-                )
-                stale_by_heartbeat = (
-                    job.last_heartbeat_at is not None
-                    and now.timestamp()
-                    > job.last_heartbeat_at.timestamp() + job.visibility_timeout_seconds
-                )
-                if not stale_by_claim and not stale_by_heartbeat:
+                if not is_etl_job_stale(job, now):
                     continue
                 if job.attempt_count < job.max_attempts:
                     job.status = JobStatus.PENDING

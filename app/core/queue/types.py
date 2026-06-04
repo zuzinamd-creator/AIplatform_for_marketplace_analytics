@@ -16,6 +16,7 @@ class EnqueuePayload:
     job_type: str = "etl_process_report"
     max_attempts: int = 3
     visibility_timeout_seconds: int = 1800
+    file_size_bytes: int | None = None
 
 
 @dataclass(frozen=True)

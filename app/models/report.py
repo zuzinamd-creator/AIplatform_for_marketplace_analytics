@@ -56,7 +56,8 @@ class Report(Base, TenantMixin, TimestampMixin):
     original_filename: Mapped[str] = mapped_column(String(512), nullable=False)
     file_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     file_checksum: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
-    # Legacy column; API status is projected from etl_jobs (see report_projection.py).
+    # DEPRECATED for lifecycle: API/UI must use etl_jobs via derive_report_status().
+    # Do not write this column in worker/persist paths; row_count/processed_at are authoritative.
     status: Mapped[ReportStatus] = mapped_column(
         Enum(ReportStatus, name="report_status_enum", values_callable=lambda x: [e.value for e in x]),
         default=ReportStatus.PENDING,

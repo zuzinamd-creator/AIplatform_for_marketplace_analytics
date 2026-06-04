@@ -45,7 +45,11 @@ async def upload_report(
                 filename,
                 spooled.iter_chunks(),
             )
-            job = await report_service.finalize_upload(existing, storage_path)
+            job = await report_service.finalize_upload(
+                existing,
+                storage_path,
+                file_size_bytes=spooled.size_bytes,
+            )
             return ReportUploadResponse(
                 report=report_to_response(existing, job),
                 message="Report upload completed (resumed previous attempt)",
@@ -73,7 +77,11 @@ async def upload_report(
         spooled.iter_chunks(),
     )
 
-    job = await report_service.finalize_upload(report, storage_path)
+    job = await report_service.finalize_upload(
+        report,
+        storage_path,
+        file_size_bytes=spooled.size_bytes,
+    )
 
     return ReportUploadResponse(
         report=report_to_response(report, job),

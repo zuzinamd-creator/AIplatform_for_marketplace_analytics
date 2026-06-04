@@ -10,8 +10,10 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.analytics.aggregation import AggregationEngine
+from app.domain.analytics.aggregation import AggregationEngine, DailyAggregateDraft, SkuDailyMetricDraft
+from app.domain.economics.sku_unit_economics_builder import SkuUnitEconomicsBuilder, SkuUnitEconomicsDraft
 from app.domain.finance.types import LedgerEntryDraft, SkuCostSnapshot
+from app.etl.db_batch import INSERT_BATCH_SIZE, iter_batches
 from app.etl.wb.types import WbFinancialProcessResult
 from app.models.cost_history import CostHistory
 from app.models.economics.sku_unit_economics import SkuUnitEconomicsDaily
@@ -46,23 +48,50 @@ class WbPersistAggregatesMixin:
             )
         return costs
 
-    async def _rebuild_aggregates(self, *, result: WbFinancialProcessResult) -> None:
+    async def _rebuild_aggregates(
+        self,
+        *,
+        result: WbFinancialProcessResult,
+        costs_by_sku: dict[str, list[SkuCostSnapshot]] | None = None,
+    ) -> None:
         affected_dates = {item.aggregate_date for item in result.daily_aggregates}
-        for metric_date in affected_dates:
-            await self._rebuild_daily_for_date(metric_date)
-            await self._rebuild_sku_for_date(metric_date)
-            await self._rebuild_sku_unit_economics_for_date(metric_date)
+        if not affected_dates:
+            return
 
-    async def _rebuild_daily_for_date(self, metric_date: date) -> None:
-        entries = await self.db.execute(
+        costs = (
+            costs_by_sku
+            if costs_by_sku is not None
+            else await self.load_cost_snapshots(self.db, self.user_id)
+        )
+        drafts = await self._load_ledger_drafts_for_dates(affected_dates)
+        if not drafts:
+            return
+
+        daily, sku_rows = AggregationEngine.build(
+            drafts,
+            marketplace=Marketplace.WILDBERRIES,
+            costs_by_sku=costs,
+            default_date=result.default_date,
+        )
+        unit_econ_rows = SkuUnitEconomicsBuilder.build(
+            drafts,
+            marketplace=Marketplace.WILDBERRIES,
+            costs_by_sku=costs,
+            affected_dates=affected_dates,
+        )
+
+        await self._batch_upsert_daily_aggregates(daily, affected_dates)
+        await self._batch_upsert_sku_daily_metrics(sku_rows, affected_dates)
+        await self._batch_upsert_sku_unit_economics(unit_econ_rows)
+
+    async def _load_ledger_drafts_for_dates(self, dates: set[date]) -> list[LedgerEntryDraft]:
+        result = await self.db.execute(
             select(FinancialLedgerEntry).where(
                 FinancialLedgerEntry.user_id == self.user_id,
-                FinancialLedgerEntry.operation_date == metric_date,
+                FinancialLedgerEntry.operation_date.in_(dates),
             )
         )
-        ledger = list(entries.scalars().all())
-        costs = await self.load_cost_snapshots(self.db, self.user_id)
-        drafts = [
+        return [
             LedgerEntryDraft(
                 operation_date=item.operation_date,
                 sku=item.sku,
@@ -72,33 +101,19 @@ class WbPersistAggregatesMixin:
                 currency=item.currency,
                 source_row_id=item.source_row_id,
             )
-            for item in ledger
+            for item in result.scalars().all()
         ]
-        daily, _ = AggregationEngine.build(
-            drafts,
-            marketplace=Marketplace.WILDBERRIES,
-            costs_by_sku=costs,
-            default_date=metric_date,
-        )
-        if not daily:
-            return
-        row = daily[0]
-        stmt = insert(DailyAggregate).values(
-            user_id=self.user_id,
-            aggregate_date=row.aggregate_date,
-            marketplace=row.marketplace,
-            revenue=row.revenue,
-            net_profit=row.net_profit,
-            margin=row.margin,
-            roi=row.roi,
-            return_rate=row.return_rate,
-            buyout_rate=row.buyout_rate,
-            average_check=row.average_check,
-            units_sold=row.units_sold,
-        )
-        stmt = stmt.on_conflict_do_update(
-            constraint="uq_daily_aggregate_day_marketplace",
-            set_={
+
+    async def _batch_upsert_daily_aggregates(
+        self,
+        daily: list[DailyAggregateDraft],
+        affected_dates: set[date],
+    ) -> None:
+        values = [
+            {
+                "user_id": self.user_id,
+                "aggregate_date": row.aggregate_date,
+                "marketplace": row.marketplace,
                 "revenue": row.revenue,
                 "net_profit": row.net_profit,
                 "margin": row.margin,
@@ -107,180 +122,128 @@ class WbPersistAggregatesMixin:
                 "buyout_rate": row.buyout_rate,
                 "average_check": row.average_check,
                 "units_sold": row.units_sold,
+            }
+            for row in daily
+            if row.aggregate_date in affected_dates
+        ]
+        if not values:
+            return
+        upsert = insert(DailyAggregate)
+        upsert = upsert.on_conflict_do_update(
+            constraint="uq_daily_aggregate_day_marketplace",
+            set_={
+                "revenue": upsert.excluded.revenue,
+                "net_profit": upsert.excluded.net_profit,
+                "margin": upsert.excluded.margin,
+                "roi": upsert.excluded.roi,
+                "return_rate": upsert.excluded.return_rate,
+                "buyout_rate": upsert.excluded.buyout_rate,
+                "average_check": upsert.excluded.average_check,
+                "units_sold": upsert.excluded.units_sold,
             },
         )
-        await self.db.execute(stmt)
+        for batch in iter_batches(values, batch_size=INSERT_BATCH_SIZE):
+            await self.db.execute(upsert, batch)
 
-    async def _rebuild_sku_for_date(self, metric_date: date) -> None:
-        entries = await self.db.execute(
-            select(FinancialLedgerEntry).where(
-                FinancialLedgerEntry.user_id == self.user_id,
-                FinancialLedgerEntry.operation_date == metric_date,
-                FinancialLedgerEntry.sku.is_not(None),
-            )
-        )
-        ledger = list(entries.scalars().all())
-        costs = await self.load_cost_snapshots(self.db, self.user_id)
-        drafts = [
-            LedgerEntryDraft(
-                operation_date=item.operation_date,
-                sku=item.sku,
-                nm_id=item.nm_id,
-                operation_type=item.operation_type,
-                amount=item.amount,
-                currency=item.currency,
-                source_row_id=item.source_row_id,
-            )
-            for item in ledger
+    async def _batch_upsert_sku_daily_metrics(
+        self,
+        sku_rows: list[SkuDailyMetricDraft],
+        affected_dates: set[date],
+    ) -> None:
+        values = [
+            {
+                "user_id": self.user_id,
+                "sku": row.sku,
+                "metric_date": row.metric_date,
+                "marketplace": row.marketplace,
+                "revenue": row.revenue,
+                "net_profit": row.net_profit,
+                "margin": row.margin,
+                "roi": row.roi,
+                "return_rate": row.return_rate,
+                "buyout_rate": row.buyout_rate,
+                "average_check": row.average_check,
+                "units_sold": row.units_sold,
+            }
+            for row in sku_rows
+            if row.metric_date in affected_dates and row.sku
         ]
-        _, sku_rows = AggregationEngine.build(
-            drafts,
-            marketplace=Marketplace.WILDBERRIES,
-            costs_by_sku=costs,
-            default_date=metric_date,
-        )
-        for row in sku_rows:
-            if row.metric_date != metric_date or not row.sku:
-                continue
-            stmt = insert(SkuDailyMetric).values(
-                user_id=self.user_id,
-                sku=row.sku,
-                metric_date=row.metric_date,
-                marketplace=row.marketplace,
-                revenue=row.revenue,
-                net_profit=row.net_profit,
-                margin=row.margin,
-                roi=row.roi,
-                return_rate=row.return_rate,
-                buyout_rate=row.buyout_rate,
-                average_check=row.average_check,
-                units_sold=row.units_sold,
-            )
-            stmt = stmt.on_conflict_do_update(
-                constraint="uq_sku_daily_metric",
-                set_={
-                    "revenue": row.revenue,
-                    "net_profit": row.net_profit,
-                    "margin": row.margin,
-                    "roi": row.roi,
-                    "return_rate": row.return_rate,
-                    "buyout_rate": row.buyout_rate,
-                    "average_check": row.average_check,
-                    "units_sold": row.units_sold,
-                },
-            )
-            await self.db.execute(stmt)
-
-    async def _rebuild_sku_unit_economics_for_date(self, metric_date: date) -> None:
-        # Compute SKU-level economics breakdown from ledger + effective costs.
-        entries = await self.db.execute(
-            select(FinancialLedgerEntry).where(
-                FinancialLedgerEntry.user_id == self.user_id,
-                FinancialLedgerEntry.operation_date == metric_date,
-                FinancialLedgerEntry.sku.is_not(None),
-            )
-        )
-        ledger = list(entries.scalars().all())
-        if not ledger:
+        if not values:
             return
+        upsert = insert(SkuDailyMetric)
+        upsert = upsert.on_conflict_do_update(
+            constraint="uq_sku_daily_metric",
+            set_={
+                "revenue": upsert.excluded.revenue,
+                "net_profit": upsert.excluded.net_profit,
+                "margin": upsert.excluded.margin,
+                "roi": upsert.excluded.roi,
+                "return_rate": upsert.excluded.return_rate,
+                "buyout_rate": upsert.excluded.buyout_rate,
+                "average_check": upsert.excluded.average_check,
+                "units_sold": upsert.excluded.units_sold,
+            },
+        )
+        for batch in iter_batches(values, batch_size=INSERT_BATCH_SIZE):
+            await self.db.execute(upsert, batch)
 
-        costs = await self.load_cost_snapshots(self.db, self.user_id)
-
-        by_sku: dict[str, list[FinancialLedgerEntry]] = {}
-        for e in ledger:
-            if not e.sku:
-                continue
-            by_sku.setdefault(str(e.sku), []).append(e)
-
-        for sku, rows in by_sku.items():
-            sums: dict[str, Decimal] = {}
-            units_sold = 0
-            for r in rows:
-                op = r.operation_type.value
-                sums[op] = sums.get(op, Decimal("0")) + Decimal(r.amount)
-                if r.operation_type.value == "sale" and Decimal(r.amount) > 0:
-                    units_sold += 1
-
-            revenue = sums.get("sale", Decimal("0"))
-            returns_amount = abs(sums.get("return", Decimal("0")))
-            payout = sums.get("payout", Decimal("0"))
-            commissions = abs(sums.get("commission", Decimal("0")))
-            logistics = abs(sums.get("logistics", Decimal("0")))
-            storage = abs(sums.get("storage_fee", Decimal("0")))
-            ads = abs(sums.get("advertisement", Decimal("0")))
-            penalties = abs(sums.get("penalty", Decimal("0")))
-            acquiring = abs(sums.get("acquiring", Decimal("0")))
-            deductions = abs(sums.get("deduction", Decimal("0")))
-            compensation = sums.get("compensation", Decimal("0"))
-
-            # COGS: units_sold × effective unit cost on that day.
-            unit_cost = None
-            history = costs.get(sku, [])
-            if history:
-                applicable = [item for item in history if item.effective_from <= metric_date]
-                if applicable:
-                    unit_cost = max(applicable, key=lambda item: item.effective_from).total_unit_cost
-            cogs = (unit_cost * Decimal(units_sold)) if unit_cost is not None else Decimal("0")
-
-            # Gross profit / contribution margin:
-            # profit = (revenue - returns) + compensation - (fees...) - cogs
-            gross_profit = (revenue - returns_amount) + compensation
-            contribution_margin = gross_profit - commissions - logistics - storage - ads - penalties - acquiring - deductions - cogs
-
-            margin_pct = (contribution_margin / revenue * Decimal("100")) if revenue > 0 else None
-            return_rate = (returns_amount / revenue * Decimal("100")) if revenue > 0 else None
-            ad_cost_ratio = (ads / revenue * Decimal("100")) if revenue > 0 else None
-            logistics_burden = (logistics / revenue * Decimal("100")) if revenue > 0 else None
-
-            stmt = insert(SkuUnitEconomicsDaily).values(
-                user_id=self.user_id,
-                sku=sku,
-                metric_date=metric_date,
-                marketplace=Marketplace.WILDBERRIES,
-                units_sold=units_sold,
-                revenue=revenue,
-                returns_amount=returns_amount,
-                payout=payout,
-                commissions=commissions,
-                logistics=logistics,
-                storage=storage,
-                ads=ads,
-                penalties=penalties,
-                acquiring=acquiring,
-                deductions=deductions,
-                compensation=compensation,
-                acceptance_fees=Decimal("0"),
-                loyalty_compensation=Decimal("0"),
-                cogs=cogs,
-                gross_profit=gross_profit,
-                contribution_margin=contribution_margin,
-                margin_pct=margin_pct,
-                return_rate=return_rate,
-                ad_cost_ratio=ad_cost_ratio,
-                logistics_burden=logistics_burden,
-            )
-            stmt = stmt.on_conflict_do_update(
-                constraint="uq_sku_unit_econ_daily",
-                set_={
-                    "units_sold": units_sold,
-                    "revenue": revenue,
-                    "returns_amount": returns_amount,
-                    "payout": payout,
-                    "commissions": commissions,
-                    "logistics": logistics,
-                    "storage": storage,
-                    "ads": ads,
-                    "penalties": penalties,
-                    "acquiring": acquiring,
-                    "deductions": deductions,
-                    "compensation": compensation,
-                    "cogs": cogs,
-                    "gross_profit": gross_profit,
-                    "contribution_margin": contribution_margin,
-                    "margin_pct": margin_pct,
-                    "return_rate": return_rate,
-                    "ad_cost_ratio": ad_cost_ratio,
-                    "logistics_burden": logistics_burden,
-                },
-            )
-            await self.db.execute(stmt)
+    async def _batch_upsert_sku_unit_economics(self, rows: list[SkuUnitEconomicsDraft]) -> None:
+        if not rows:
+            return
+        values = [
+            {
+                "user_id": self.user_id,
+                "sku": row.sku,
+                "metric_date": row.metric_date,
+                "marketplace": row.marketplace,
+                "units_sold": row.units_sold,
+                "revenue": row.revenue,
+                "returns_amount": row.returns_amount,
+                "payout": row.payout,
+                "commissions": row.commissions,
+                "logistics": row.logistics,
+                "storage": row.storage,
+                "ads": row.ads,
+                "penalties": row.penalties,
+                "acquiring": row.acquiring,
+                "deductions": row.deductions,
+                "compensation": row.compensation,
+                "acceptance_fees": Decimal("0"),
+                "loyalty_compensation": Decimal("0"),
+                "cogs": row.cogs,
+                "gross_profit": row.gross_profit,
+                "contribution_margin": row.contribution_margin,
+                "margin_pct": row.margin_pct,
+                "return_rate": row.return_rate,
+                "ad_cost_ratio": row.ad_cost_ratio,
+                "logistics_burden": row.logistics_burden,
+            }
+            for row in rows
+        ]
+        upsert = insert(SkuUnitEconomicsDaily)
+        upsert = upsert.on_conflict_do_update(
+            constraint="uq_sku_unit_econ_daily",
+            set_={
+                "units_sold": upsert.excluded.units_sold,
+                "revenue": upsert.excluded.revenue,
+                "returns_amount": upsert.excluded.returns_amount,
+                "payout": upsert.excluded.payout,
+                "commissions": upsert.excluded.commissions,
+                "logistics": upsert.excluded.logistics,
+                "storage": upsert.excluded.storage,
+                "ads": upsert.excluded.ads,
+                "penalties": upsert.excluded.penalties,
+                "acquiring": upsert.excluded.acquiring,
+                "deductions": upsert.excluded.deductions,
+                "compensation": upsert.excluded.compensation,
+                "cogs": upsert.excluded.cogs,
+                "gross_profit": upsert.excluded.gross_profit,
+                "contribution_margin": upsert.excluded.contribution_margin,
+                "margin_pct": upsert.excluded.margin_pct,
+                "return_rate": upsert.excluded.return_rate,
+                "ad_cost_ratio": upsert.excluded.ad_cost_ratio,
+                "logistics_burden": upsert.excluded.logistics_burden,
+            },
+        )
+        for batch in iter_batches(values, batch_size=INSERT_BATCH_SIZE):
+            await self.db.execute(upsert, batch)

@@ -52,7 +52,13 @@ class ReportService(TenantScopedService):
             await self.db.refresh(report)
         return report
 
-    async def finalize_upload(self, report: Report, storage_path: str) -> EtlJob:
+    async def finalize_upload(
+        self,
+        report: Report,
+        storage_path: str,
+        *,
+        file_size_bytes: int | None = None,
+    ) -> EtlJob:
         """Persist storage path and enqueue ETL in one tenant transaction."""
         async with self._rls_transaction():
             report.file_path = storage_path
@@ -72,12 +78,18 @@ class ReportService(TenantScopedService):
                 report_created_at=report.created_at,
                 max_attempts=settings.job_max_attempts,
                 visibility_timeout_seconds=settings.job_visibility_timeout_seconds,
+                file_size_bytes=file_size_bytes,
             )
             job = await self._queue.enqueue(payload)
             await self.db.refresh(job)
             return job
 
-    async def enqueue_processing(self, report: Report) -> EtlJob:
+    async def enqueue_processing(
+        self,
+        report: Report,
+        *,
+        file_size_bytes: int | None = None,
+    ) -> EtlJob:
         if not report.file_checksum or not report.file_path:
             raise ValueError("file_checksum and file_path are required to enqueue ETL job")
 
@@ -92,6 +104,7 @@ class ReportService(TenantScopedService):
             report_created_at=report.created_at,
             max_attempts=settings.job_max_attempts,
             visibility_timeout_seconds=settings.job_visibility_timeout_seconds,
+            file_size_bytes=file_size_bytes,
         )
         async with self._rls_transaction():
             job = await self._queue.enqueue(payload)

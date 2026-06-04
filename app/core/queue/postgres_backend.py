@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.queue.stale import is_etl_job_stale
 from app.core.queue.types import ClaimedJobRecord, EnqueuePayload, RecoveryRecord
 from app.core.security_context import QueueSession
 from app.models.job import EtlJob, JobStatus
@@ -42,6 +43,7 @@ class PostgresQueueBackend:
             report_type=payload.report_type,
             original_filename=payload.original_filename,
             report_created_at=payload.report_created_at,
+            file_size_bytes=payload.file_size_bytes,
         )
         self.db.add(job)
         await self.db.flush()
@@ -54,7 +56,7 @@ class PostgresQueueBackend:
             .where(EtlJob.status == JobStatus.PENDING)
             .where(EtlJob.attempt_count < EtlJob.max_attempts)
             .where(EtlJob.file_path.is_not(None))
-            .order_by(EtlJob.created_at.asc())
+            .order_by(EtlJob.file_size_bytes.asc().nulls_last(), EtlJob.created_at.asc())
             .limit(1)
             .with_for_update(skip_locked=True)
         )
@@ -137,15 +139,7 @@ class PostgresQueueBackend:
             for job in result.scalars().all():
                 if job.claimed_at is None:
                     continue
-                stale_by_claim = now.timestamp() > (
-                    job.claimed_at.timestamp() + job.visibility_timeout_seconds
-                )
-                stale_by_heartbeat = (
-                    job.last_heartbeat_at is not None
-                    and now.timestamp()
-                    > job.last_heartbeat_at.timestamp() + job.visibility_timeout_seconds
-                )
-                if not stale_by_claim and not stale_by_heartbeat:
+                if not is_etl_job_stale(job, now):
                     continue
 
                 if job.attempt_count < job.max_attempts:

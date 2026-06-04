@@ -144,6 +144,7 @@ class ETLPipeline:
                     file_checksum=report.file_checksum or "",
                     storage_uri=report.file_path or "",
                     result=wb_enriched,
+                    costs_by_sku=costs,
                 )
             else:
                 async with TenantSession.transaction(self.db, self.user_id):
@@ -152,6 +153,7 @@ class ETLPipeline:
                         file_checksum=report.file_checksum or "",
                         storage_uri=report.file_path or "",
                         result=wb_enriched,
+                        costs_by_sku=costs,
                     )
             analytics_payload = extend_analytics_payload(
                 dict(wb_enriched.analytics_payload),

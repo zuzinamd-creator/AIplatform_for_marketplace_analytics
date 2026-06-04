@@ -3,6 +3,7 @@ import contextlib
 import os
 import signal
 import sys
+from collections.abc import AsyncIterator
 from uuid import UUID
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -37,19 +38,39 @@ def _handle_shutdown(*_args) -> None:
     _shutdown.set()
 
 
+async def _send_job_heartbeat(job_id: str, user_id: UUID) -> None:
+    async with SessionLocal() as db:
+        async with TenantSession.transaction(db, user_id):
+            await get_queue_backend(db).heartbeat(job_id)
+    logger.info("job_heartbeat", extra={"job_id": job_id})
+
+
 async def _heartbeat_loop(job_id: str, user_id: UUID, interval: float | None = None) -> None:
     interval = interval or float(settings.worker_heartbeat_interval_seconds)
     while not _shutdown.is_set():
-        await asyncio.sleep(interval)
         if _current_job is None or str(_current_job.job_id) != job_id:
             return
         try:
-            async with SessionLocal() as db:
-                async with TenantSession.transaction(db, user_id):
-                    await get_queue_backend(db).heartbeat(job_id)
-            logger.info("job_heartbeat", extra={"job_id": job_id})
+            await _send_job_heartbeat(job_id, user_id)
         except Exception as exc:
             logger.warning("job_heartbeat_failed", extra={"error": str(exc)})
+        await asyncio.sleep(interval)
+
+
+@contextlib.asynccontextmanager
+async def _job_heartbeat_scope(job_id: str, user_id: UUID) -> AsyncIterator[None]:
+    """Keep queue heartbeat alive for the full job lifecycle (parse + persist + ack/fail)."""
+    try:
+        await _send_job_heartbeat(job_id, user_id)
+    except Exception as exc:
+        logger.warning("job_heartbeat_initial_failed", extra={"error": str(exc)})
+    heartbeat_task = asyncio.create_task(_heartbeat_loop(job_id, user_id))
+    try:
+        yield
+    finally:
+        heartbeat_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await heartbeat_task
 
 
 async def process_next_job() -> bool:
@@ -95,72 +116,75 @@ async def process_next_job() -> bool:
     )
     logger.info("job_processing_started", extra={"job_id": str(job.job_id)})
 
-    heartbeat_task = asyncio.create_task(_heartbeat_loop(str(job.job_id), job.user_id))
-
     try:
-        with track_duration(logger, "etl_process_content", job_id=str(job.job_id)):
-            content = read_report_file(job.file_path)
-            etl_result = ETLPipeline.process_content(
-                report_id=job.report_id,
-                report_created_at=job.report_created_at,
-                filename=job.original_filename,
-                content=content,
-                marketplace=Marketplace(job.marketplace),
-                report_type=ReportType(job.report_type),
-            )
-    except Exception as exc:
-        logger.exception("job_processing_failed", extra={"error": str(exc)})
-        await _mark_job_failed_or_retry(job, str(exc))
-        return True
-    finally:
-        heartbeat_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await heartbeat_task
-
-    if _shutdown.is_set():
-        logger.warning("job_interrupted_by_shutdown", extra={"job_id": str(job.job_id)})
-        await _mark_job_failed_or_retry(job, "Worker shutdown during processing")
-        return True
-
-    async with SessionLocal() as db:
-        async with TenantSession.transaction(db, job.user_id):
-            report_row = await db.execute(select(Report).where(Report.id == job.report_id))
-            report = report_row.scalar_one_or_none()
-            user_row = await db.execute(select(User).where(User.id == job.user_id))
-            user = user_row.scalar_one_or_none()
-
-            if not report or not user:
-                logger.error("worker_persist_target_missing")
-                if user:
-                    await ReportService(db, user).fail_job(
-                        job.job_id,
-                        error_message="Persist target missing",
-                        attempt_count=job.attempt_count,
-                        max_attempts=job.max_attempts,
-                        in_transaction=True,
+        async with _job_heartbeat_scope(str(job.job_id), job.user_id):
+            try:
+                with track_duration(logger, "etl_process_content", job_id=str(job.job_id)):
+                    content = read_report_file(job.file_path)
+                    etl_result = ETLPipeline.process_content(
+                        report_id=job.report_id,
+                        report_created_at=job.report_created_at,
+                        filename=job.original_filename,
+                        content=content,
+                        marketplace=Marketplace(job.marketplace),
+                        report_type=ReportType(job.report_type),
                     )
+            except Exception as exc:
+                logger.exception("job_processing_failed", extra={"error": str(exc)})
+                await _mark_job_failed_or_retry(job, str(exc))
                 return True
 
-            report_service = ReportService(db, user)
-            pipeline = ETLPipeline(db, job.user_id)
-            with track_duration(logger, "etl_persist_result", job_id=str(job.job_id)):
-                await pipeline.persist_result(
-                    report,
-                    etl_result,
-                    report_service,
-                    job_id=job.job_id,
-                    in_transaction=True,
-                )
-            await report_service.ack_job(job.job_id, in_transaction=True)
+            if _shutdown.is_set():
+                logger.warning("job_interrupted_by_shutdown", extra={"job_id": str(job.job_id)})
+                await _mark_job_failed_or_retry(job, "Worker shutdown during processing")
+                return True
 
-    logger.info("job_completed")
-    _current_job = None
-    clear_context()
-    return True
+            try:
+                async with SessionLocal() as db:
+                    async with TenantSession.transaction(db, job.user_id):
+                        report_row = await db.execute(
+                            select(Report).where(Report.id == job.report_id)
+                        )
+                        report = report_row.scalar_one_or_none()
+                        user_row = await db.execute(select(User).where(User.id == job.user_id))
+                        user = user_row.scalar_one_or_none()
+
+                        if not report or not user:
+                            logger.error("worker_persist_target_missing")
+                            if user:
+                                await ReportService(db, user).fail_job(
+                                    job.job_id,
+                                    error_message="Persist target missing",
+                                    attempt_count=job.attempt_count,
+                                    max_attempts=job.max_attempts,
+                                    in_transaction=True,
+                                )
+                            return True
+
+                        report_service = ReportService(db, user)
+                        pipeline = ETLPipeline(db, job.user_id)
+                        with track_duration(logger, "etl_persist_result", job_id=str(job.job_id)):
+                            await pipeline.persist_result(
+                                report,
+                                etl_result,
+                                report_service,
+                                job_id=job.job_id,
+                                in_transaction=True,
+                            )
+                        await report_service.ack_job(job.job_id, in_transaction=True)
+            except Exception as exc:
+                logger.exception("job_persist_failed", extra={"error": str(exc)})
+                await _mark_job_failed_or_retry(job, str(exc))
+                return True
+
+        logger.info("job_completed")
+        return True
+    finally:
+        _current_job = None
+        clear_context()
 
 
 async def _mark_job_failed_or_retry(job: ClaimedJobRecord, error_message: str) -> None:
-    global _current_job
     poison = job.attempt_count >= job.max_attempts
     log_event = "job_dead_lettered" if poison else "job_failed_will_retry"
     logger.error(log_event, extra={"error": error_message, "job_id": str(job.job_id)})
@@ -178,8 +202,6 @@ async def _mark_job_failed_or_retry(job: ClaimedJobRecord, error_message: str) -
                 max_attempts=job.max_attempts,
                 in_transaction=True,
             )
-    _current_job = None
-    clear_context()
 
 
 async def run_worker() -> None:

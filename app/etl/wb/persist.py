@@ -5,6 +5,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.finance.types import SkuCostSnapshot
 from app.domain.inventory.snapshot_types import InventoryLossAnalytics
 from app.etl.wb.inventory_snapshot_rebuild import InventorySnapshotRebuildService
 from app.etl.wb.persist_aggregates import WbPersistAggregatesMixin
@@ -27,6 +28,7 @@ class WbFinancialPersistService(WbPersistLayersMixin, WbPersistAggregatesMixin):
         file_checksum: str,
         storage_uri: str,
         result: WbFinancialProcessResult,
+        costs_by_sku: dict[str, list[SkuCostSnapshot]] | None = None,
     ) -> InventoryLossAnalytics | None:
         snapshot_service = InventorySnapshotRebuildService(self.db, self.user_id)
         await snapshot_service.validate_opening_balances_for_movements(
@@ -45,7 +47,7 @@ class WbFinancialPersistService(WbPersistLayersMixin, WbPersistAggregatesMixin):
         earliest_affected = _earliest_movement_date(result)
         loss_analytics = await snapshot_service.rebuild(earliest_affected_date=earliest_affected)
         await self._persist_reconciliation(report_id=report.id, result=result)
-        await self._rebuild_aggregates(result=result)
+        await self._rebuild_aggregates(result=result, costs_by_sku=costs_by_sku)
         return loss_analytics
 
 

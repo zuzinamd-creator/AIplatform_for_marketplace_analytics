@@ -48,6 +48,15 @@ class InventorySnapshotRebuildService:
         exclude_report_id: UUID | None = None,
     ) -> None:
         batch_first_dates = self._batch_first_operation_dates(movements)
+        opening_keys = {
+            (movement.sku, movement.warehouse_name)
+            for movement in movements
+            if is_opening_balance_movement(movement.canonical_payload) and movement.sku
+        }
+        persisted_first_by_key = await self._batch_first_ledger_operation_dates(
+            opening_keys,
+            exclude_report_id=exclude_report_id,
+        )
         for movement in movements:
             if not is_opening_balance_movement(movement.canonical_payload):
                 continue
@@ -64,11 +73,7 @@ class InventorySnapshotRebuildService:
                     first_ledger_operation_date=None,
                 )
                 continue
-            persisted_first = await self._first_ledger_operation_date(
-                sku=sku,
-                warehouse_name=movement.warehouse_name,
-                exclude_report_id=exclude_report_id,
-            )
+            persisted_first = persisted_first_by_key.get((sku, movement.warehouse_name))
             batch_first = batch_first_dates.get((sku, movement.warehouse_name))
             first_date = earliest_first_ledger_date(persisted_first, batch_first)
             validate_opening_balance_integrity(
@@ -186,6 +191,36 @@ class InventorySnapshotRebuildService:
         if row[0] is None or row[1] is None:
             return None
         return row[0], row[1]
+
+    async def _batch_first_ledger_operation_dates(
+        self,
+        keys: set[tuple[str, str | None]],
+        *,
+        exclude_report_id: UUID | None,
+    ) -> dict[tuple[str, str | None], date]:
+        if not keys:
+            return {}
+        skus = {sku for sku, _ in keys}
+        stmt = (
+            select(
+                InventoryLedgerEntry.sku,
+                InventoryLedgerEntry.warehouse_name,
+                func.min(InventoryLedgerEntry.operation_date),
+            )
+            .where(
+                InventoryLedgerEntry.user_id == self.user_id,
+                InventoryLedgerEntry.sku.in_(skus),
+            )
+            .group_by(InventoryLedgerEntry.sku, InventoryLedgerEntry.warehouse_name)
+        )
+        if exclude_report_id is not None:
+            stmt = stmt.where(InventoryLedgerEntry.report_id != exclude_report_id)
+        result = await self.db.execute(stmt)
+        out: dict[tuple[str, str | None], date] = {}
+        for sku, warehouse_name, first_date in result.all():
+            if first_date is not None:
+                out[(sku, warehouse_name)] = first_date
+        return out
 
     async def _first_ledger_operation_date(
         self,
