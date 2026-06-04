@@ -6,26 +6,14 @@ import { Filter, Search, TrendingUp } from "lucide-react";
 
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
+import { formatMetric, formatPct, formatRub, chartRubTooltip } from "../../utils/format";
 import { CHART } from "../../ui/chart-theme";
 import { Card } from "../../ui/card";
+import { CollapsibleSection } from "../../ui/collapsible-section";
 import { Input, Select } from "../../ui/field";
 import { PeriodSelector } from "../../ui/period-selector";
 import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
 import { StatusBadge } from "../../ui/status-badge";
-
-function rub(v: string | number | null | undefined): string {
-  if (v === null || v === undefined) return "—";
-  const n = typeof v === "number" ? v : Number(v);
-  if (!Number.isFinite(n)) return String(v);
-  return n.toLocaleString("ru-RU", { maximumFractionDigits: 0 }) + " ₽";
-}
-
-function pct(v: string | null | undefined): string {
-  if (!v) return "—";
-  const n = Number(v);
-  if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString("ru-RU", { maximumFractionDigits: 1 }) + " %";
-}
 
 function badgeForSku(row: {
   contribution_margin: string;
@@ -53,7 +41,7 @@ function integrityBanner(integrity?: { warnings: Array<{ code: string; severity:
         <div>
           <div className="text-sm font-semibold text-ink">Доверие к данным</div>
           <div className="mt-1 text-xs text-ink-muted">
-            {score ? `Полнота: ${Number(score).toLocaleString("ru-RU", { maximumFractionDigits: 0 })} / 100` : "Полнота: —"}
+            {score ? `Полнота: ${formatMetric(score)} / 100` : "Полнота: —"}
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -176,7 +164,11 @@ export function EconomicsPage() {
 
       {integrityBanner(a.data?.integrity ?? null)}
 
-      <Card className="overflow-hidden p-5">
+      <CollapsibleSection
+        title="Таблица SKU"
+        subtitle="Фильтры, сортировка и сравнение с предыдущим периодом"
+        defaultOpen
+      >
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm font-medium text-ink-secondary">
             <Filter className="h-4 w-4 text-ink-muted" /> Фильтры
@@ -242,30 +234,32 @@ export function EconomicsPage() {
                     <td className="px-3 py-3">
                       <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
                     </td>
-                    <td className="px-3 py-3">{rub(r.revenue)}</td>
-                    <td className="px-3 py-3">{rub(r.gross_profit)}</td>
+                    <td className="px-3 py-3">{formatRub(r.revenue)}</td>
+                    <td className="px-3 py-3">{formatRub(r.gross_profit)}</td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
-                        <span>{rub(r.contribution_margin)}</span>
+                        <span>{formatRub(r.contribution_margin)}</span>
                         {compare ? (
                           <span className="text-xs text-ink-muted">
-                            Δ {rub(Number(r.contribution_margin) - (bRow?.cm ?? 0))}
+                            Δ {formatRub(Number(r.contribution_margin) - (bRow?.cm ?? 0))}
                           </span>
                         ) : null}
                       </div>
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
-                        <span>{pct(r.margin_pct ?? null)}</span>
+                        <span>{formatPct(r.margin_pct ?? null)}</span>
                         {compare && bRow?.m !== null ? (
-                          <span className="text-xs text-ink-muted">Δ {(Number(r.margin_pct ?? 0) - (bRow?.m ?? 0)).toFixed(1)}%</span>
+                          <span className="text-xs text-ink-muted">
+                            Δ {formatMetric(Number(r.margin_pct ?? 0) - (bRow?.m ?? 0), { suffix: " %" })}
+                          </span>
                         ) : null}
                       </div>
                     </td>
-                    <td className="px-3 py-3">{rub(r.logistics)}</td>
-                    <td className="px-3 py-3">{rub(r.ads)}</td>
-                    <td className="px-3 py-3">{rub(r.penalties)}</td>
-                    <td className="px-3 py-3">{rub(r.returns_amount)}</td>
+                    <td className="px-3 py-3">{formatRub(r.logistics)}</td>
+                    <td className="px-3 py-3">{formatRub(r.ads)}</td>
+                    <td className="px-3 py-3">{formatRub(r.penalties)}</td>
+                    <td className="px-3 py-3">{formatRub(r.returns_amount)}</td>
                     <td className="py-2 w-[180px]">
                       <div className="h-10 w-[170px]">
                         {spark.length ? (
@@ -275,7 +269,7 @@ export function EconomicsPage() {
                               <Tooltip
                                 contentStyle={CHART.tooltip}
                                 labelFormatter={() => ""}
-                                formatter={(value: unknown) => [rub(Number(value)), "Прибыль"]}
+                                formatter={chartRubTooltip}
                               />
                               <Line type="monotone" dataKey="y" stroke={CHART.series.spark} strokeWidth={2} dot={false} />
                             </LineChart>
@@ -309,7 +303,7 @@ export function EconomicsPage() {
             </Link>
           </div>
         </div>
-      </Card>
+      </CollapsibleSection>
     </div>
   );
 }

@@ -4,15 +4,19 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { loadPeriodSelection } from "../../state/period";
+import { formatRub } from "../../utils/format";
 import { Card } from "../../ui/card";
+import { CollapsibleSection } from "../../ui/collapsible-section";
+import { KpiCard } from "../../ui/kpi-card";
 import { PeriodSelector } from "../../ui/period-selector";
 import { StatusBadge } from "../../ui/status-badge";
+import { WarnCallout } from "../../ui/warn-callout";
 
-function Row(props: { label: string; value: string }) {
+function Row(props: { label: string; value: unknown }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-t border-surface-subtle py-2 text-sm">
+    <div className="flex items-center justify-between gap-3 border-t border-surface-subtle py-2.5 text-sm">
       <div className="text-ink-secondary">{props.label}</div>
-      <div className="text-ink">{props.value}</div>
+      <div className="font-medium text-ink">{formatRub(props.value)}</div>
     </div>
   );
 }
@@ -33,33 +37,41 @@ export function ReconciliationPage() {
   const b = rec.data?.breakdown;
 
   return (
-    <div className="space-y-6">
+    <div className="page-shell">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <div className="text-2xl font-semibold">Финансовая сверка</div>
-          <div className="text-sm text-ink-secondary">
+          <h1 className="page-title">Финансовая сверка</h1>
+          <p className="page-subtitle">
             Детальный разбор: почему <span className="font-medium">выплата</span> не равна{" "}
             <span className="font-medium">прибыли</span>.
-          </div>
+          </p>
         </div>
         <StatusBadge tone={stale ? "warn" : "info"}>{stale ? "данные устарели" : "актуально"}</StatusBadge>
       </div>
 
       <PeriodSelector onChange={(s) => setRange(s.range)} />
 
+      {b ? (
+        <div className="kpi-row md:grid-cols-3">
+          <KpiCard variant="hero" label="Фактическая выплата" value={formatRub(b.actual_payout)} />
+          <KpiCard label="Прибыль (contribution)" value={formatRub(b.profit)} />
+          <KpiCard label="Разница выплат" value={formatRub(b.payout_difference)} />
+        </div>
+      ) : null}
+
       {w.length ? (
-        <Card className="border-amber-500/30 bg-amber-500/10 p-4">
-          <div className="text-sm font-semibold text-amber-100">Предупреждения</div>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-100">
+        <WarnCallout title="Предупреждения">
+          <ul className="list-disc space-y-1 pl-5">
             {w.map((x) => (
               <li key={x.code}>{x.message}</li>
             ))}
           </ul>
-        </Card>
+        </WarnCallout>
       ) : null}
 
+      <CollapsibleSection title="Компоненты периода" subtitle="Детальный разбор статей" defaultOpen>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <Card className="p-4">
+        <Card className="p-5">
           <div className="text-sm font-semibold">Компоненты периода</div>
           <div className="mt-2 text-xs text-ink-muted">
             Период: {range.start} → {range.end} · Маркетплейс: {marketplace}
@@ -100,6 +112,7 @@ export function ReconciliationPage() {
           </div>
         </Card>
       </div>
+      </CollapsibleSection>
     </div>
   );
 }

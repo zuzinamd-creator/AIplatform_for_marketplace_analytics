@@ -2,7 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
 import { api } from "../../state/http";
+import { formatMetric, formatUsd } from "../../utils/format";
 import { Card } from "../../ui/card";
+import { CollapsibleSection } from "../../ui/collapsible-section";
+import { KpiCard } from "../../ui/kpi-card";
 import { StatusBadge } from "../../ui/status-badge";
 import { AiTrustNotice } from "../../ui/trust-banners";
 
@@ -19,33 +22,21 @@ export function AiUsagePage() {
   const u = usage.data;
 
   return (
-    <div className="space-y-6">
+    <div className="page-shell">
       <div>
-        <div className="text-2xl font-semibold">AI Usage & Providers</div>
-        <div className="text-sm text-ink-secondary">Operational visibility — tokens, cost caps, provider health.</div>
+        <h1 className="page-title">Использование ИИ и провайдеры</h1>
+        <p className="page-subtitle">Токены, лимиты расходов и состояние провайдеров (только просмотр).</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Card className="p-3 text-xs">
-          <div className="text-ink-muted">Today spend</div>
-          <div className="text-lg font-semibold">${c?.daily_spend_usd?.toFixed(4) ?? "—"}</div>
-          <div className="text-ink0">cap ${c?.daily_cap_usd ?? "—"}</div>
-        </Card>
-        <Card className="p-3 text-xs">
-          <div className="text-ink-muted">Remaining today</div>
-          <div className="text-lg font-semibold">${c?.daily_cap_remaining_usd?.toFixed(4) ?? "—"}</div>
-        </Card>
-        <Card className="p-3 text-xs">
-          <div className="text-ink-muted">Est. monthly</div>
-          <div className="text-lg font-semibold">${p?.estimated_monthly_cost_usd?.toFixed(2) ?? "—"}</div>
-        </Card>
-        <Card className="p-3 text-xs">
-          <div className="text-ink-muted">Tokens (period)</div>
-          <div className="text-lg font-semibold">{u?.tokens_total ?? "—"}</div>
-        </Card>
+      <div className="kpi-row">
+        <KpiCard variant="hero" label="Расход сегодня" value={formatUsd(c?.daily_spend_usd)} sub={`Лимит: ${formatUsd(c?.daily_cap_usd)}`} />
+        <KpiCard label="Остаток на сегодня" value={formatUsd(c?.daily_cap_remaining_usd)} />
+        <KpiCard label="Оценка за месяц" value={formatUsd(p?.estimated_monthly_cost_usd)} />
+        <KpiCard label="Токены (период)" value={formatMetric(u?.tokens_total)} />
       </div>
 
-      <Card className="p-5">
+      <CollapsibleSection title="Статус провайдеров" subtitle="Primary, failover, circuit breaker" defaultOpen>
+      <Card className="border-0 p-0 shadow-none">
         <div className="text-sm font-semibold">Provider status</div>
         {p ? (
           <div className="mt-3 space-y-2 text-xs text-ink-secondary">
@@ -70,8 +61,10 @@ export function AiUsagePage() {
           <div className="mt-2 text-sm text-ink-muted">Loading…</div>
         )}
       </Card>
+      </CollapsibleSection>
 
-      <Card className="p-5">
+      <CollapsibleSection title="Детализация расходов" subtitle="По workflow и дорогим запускам">
+      <Card className="border-0 p-0 shadow-none">
         <div className="text-sm font-semibold">Cost breakdown</div>
         {c ? (
           <div className="mt-3 grid gap-4 md:grid-cols-2 text-xs text-ink-secondary">
@@ -80,7 +73,7 @@ export function AiUsagePage() {
               <ul className="mt-1 list-inside list-disc">
                 {(c.by_workflow ?? []).map((w, i) => (
                   <li key={i}>
-                    {String((w as any).workflow)} — {(w as any).runs} runs, ${Number((w as any).cost_usd).toFixed(4)}
+                    {String((w as any).workflow)} — {(w as any).runs} runs, {formatUsd((w as any).cost_usd)}
                   </li>
                 ))}
               </ul>
@@ -93,7 +86,7 @@ export function AiUsagePage() {
                     <Link className="text-brand hover:underline" to={`/app/ai/runs/${(r as any).run_id}`}>
                       {(r as any).run_id?.slice(0, 8)}
                     </Link>{" "}
-                    — ${Number((r as any).cost_usd).toFixed(4)}
+                    — {formatUsd((r as any).cost_usd)}
                   </li>
                 ))}
               </ul>
@@ -101,6 +94,7 @@ export function AiUsagePage() {
           </div>
         ) : null}
       </Card>
+      </CollapsibleSection>
 
       <AiTrustNotice />
     </div>

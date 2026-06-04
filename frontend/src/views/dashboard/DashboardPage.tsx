@@ -8,11 +8,13 @@ import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { isDemoMode } from "../../state/settings";
 import { trackUsage } from "../../state/usage";
+import { formatMetric, formatPct, formatRub, chartRubTooltip } from "../../utils/format";
 import { CHART } from "../../ui/chart-theme";
 import { Card } from "../../ui/card";
 import { CollapsibleSection } from "../../ui/collapsible-section";
 import { KpiCard } from "../../ui/kpi-card";
 import { StatusBadge } from "../../ui/status-badge";
+import { WarnCallout } from "../../ui/warn-callout";
 import { PeriodSelector } from "../../ui/period-selector";
 import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
 import { toast } from "../../ui/toast";
@@ -181,7 +183,7 @@ export function DashboardPage() {
           <Card className="p-4">
             <div className="text-xs font-medium text-ink-muted">Доверие к марже</div>
             <div className="mt-2 text-sm text-ink-secondary">
-              {completeness ? `Полнота аналитики: ${completeness}%` : "Полнота неизвестна"}
+              {completeness ? `Полнота аналитики: ${formatPct(completeness)}` : "Полнота неизвестна"}
               {(aiOps.data as any)?.degraded_intelligence_mode ? " · ИИ осторожен" : ""}
             </div>
             <Link to="/app/finance/costs" className="link-muted mt-3 inline-block text-xs">
@@ -197,16 +199,18 @@ export function DashboardPage() {
             variant="hero"
             icon={<Database className="h-5 w-5" />}
             label="Продажи (выбранный период)"
-            value={kpiSummary.isLoading ? "…" : (kpiSummary.data?.kpis.total_revenue ?? "0")}
+            value={kpiSummary.isLoading ? "…" : formatRub(kpiSummary.data?.kpis.total_revenue)}
             sub={
               <span>
-                Валовая прибыль: {kpiSummary.data?.kpis.total_profit ?? "0"} · Маржинальность:{" "}
-                {kpiSummary.data?.kpis.margin_pct ?? "—"}% {stale ? "· данные устарели" : ""}
+                Валовая прибыль: {formatRub(kpiSummary.data?.kpis.total_profit)} · Маржинальность:{" "}
+                {formatPct(kpiSummary.data?.kpis.margin_pct)} {stale ? "· данные устарели" : ""}
                 {compare && deltaRevenue !== null ? (
                   <>
                     {" "}
-                    · Δвыручка: {deltaRevenue.toFixed(0)}{" "}
-                    {pct(deltaRevenue, bRevenue) !== null ? `(${pct(deltaRevenue, bRevenue)!.toFixed(1)}%)` : ""}
+                    · Δвыручка: {formatRub(deltaRevenue)}{" "}
+                    {pct(deltaRevenue, bRevenue) !== null
+                      ? `(${formatPct(pct(deltaRevenue, bRevenue))})`
+                      : ""}
                   </>
                 ) : null}
               </span>
@@ -217,7 +221,7 @@ export function DashboardPage() {
           <KpiCard
             icon={<Server className="h-4 w-4" />}
             label="Обработка данных"
-            value={queue.isLoading ? "…" : queued}
+            value={queue.isLoading ? "…" : formatMetric(queued)}
             sub={<span>Задач в очереди/обработке</span>}
           />
           <KpiCard
@@ -261,7 +265,7 @@ export function DashboardPage() {
               >
                 <XAxis dataKey="date" tick={CHART.axis} />
                 <YAxis tick={CHART.axis} />
-                <Tooltip contentStyle={CHART.tooltip} />
+                <Tooltip contentStyle={CHART.tooltip} formatter={chartRubTooltip} />
                 <Line type="monotone" dataKey="revenue" stroke={CHART.series.revenue} strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="profit" stroke={CHART.series.profit} strokeWidth={2} dot={false} />
               </LineChart>
@@ -269,17 +273,16 @@ export function DashboardPage() {
           </div>
           <div className="mt-3 text-xs text-ink-muted">
             Данные проанализированы за период: {start} → {end} · Последнее обновление: {freshness?.data_as_of ?? "—"}
-            {completeness ? <> · Полнота аналитики: {completeness}%</> : null}
+            {completeness ? <> · Полнота аналитики: {formatPct(completeness)}</> : null}
           </div>
           {integrityWarnings.length ? (
-            <div className="mt-4 rounded-xl border border-amber-200 bg-semantic-warn-bg p-4 text-xs text-semantic-warn">
-              <div className="font-semibold">Предупреждения целостности</div>
-              <ul className="mt-2 list-disc space-y-1 pl-5">
+            <WarnCallout title="Предупреждения целостности" className="mt-4">
+              <ul className="list-disc space-y-1 pl-5 text-xs">
                 {integrityWarnings.slice(0, 4).map((w) => (
                   <li key={w.code}>{w.message}</li>
                 ))}
               </ul>
-            </div>
+            </WarnCallout>
           ) : null}
         </Card>
 
@@ -296,9 +299,9 @@ export function DashboardPage() {
                 <div key={row.sku} className="flex items-center justify-between gap-3 border-b border-surface-subtle/60 pb-2 last:border-0 last:pb-0">
                   <div className="truncate text-sm font-medium text-ink-secondary">{row.sku}</div>
                   <div className="text-right text-xs text-ink-muted">
-                    {row.revenue}
+                    {formatRub(row.revenue)}
                     <div className="text-[11px] text-ink-faint">
-                      {row.contribution_pct ? `Доля: ${row.contribution_pct}%` : "—"}
+                      {row.contribution_pct ? `Доля: ${formatPct(row.contribution_pct)}` : "—"}
                     </div>
                   </div>
                 </div>
@@ -335,7 +338,7 @@ export function DashboardPage() {
               >
                 <XAxis dataKey="date" tick={CHART.axis} />
                 <YAxis tick={CHART.axis} />
-                <Tooltip contentStyle={CHART.tooltip} />
+                <Tooltip contentStyle={CHART.tooltip} formatter={chartRubTooltip} />
                 <Line type="monotone" dataKey="logistics" stroke={CHART.series.logistics} strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="ads" stroke={CHART.series.ads} strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="returns" stroke={CHART.series.returns} strokeWidth={2} dot={false} />
@@ -352,21 +355,21 @@ export function DashboardPage() {
           <div className="text-sm font-semibold text-ink">Финансовая сводка</div>
           <div className="mt-2 text-xs text-ink-muted">Период: {start} → {end}</div>
           <div className="mt-5 space-y-2.5 text-sm text-ink-secondary">
-            <div className="flex justify-between gap-3"><span>Продажа, руб.</span><span>{financeSummary.data?.kpis.sales_revenue ?? "—"}</span></div>
-            <div className="flex justify-between gap-3"><span>Возвраты, руб.</span><span>{financeSummary.data?.kpis.returns_amount ?? "—"}</span></div>
-            <div className="flex justify-between gap-3"><span>Стоимость логистики, руб.</span><span>{financeSummary.data?.kpis.logistics ?? "—"}</span></div>
-            <div className="flex justify-between gap-3"><span>Затраты на продвижение, руб.</span><span>{financeSummary.data?.kpis.advertisement ?? "—"}</span></div>
-            <div className="flex justify-between gap-3"><span>Штрафы, руб.</span><span>{financeSummary.data?.kpis.penalties ?? "—"}</span></div>
-            <div className="flex justify-between gap-3"><span>Хранение, руб.</span><span>{financeSummary.data?.kpis.storage_fee ?? "—"}</span></div>
-            <div className="flex justify-between gap-3"><span>К перечислению, руб.</span><span>{financeSummary.data?.kpis.payout ?? "—"}</span></div>
+            <div className="flex justify-between gap-3"><span>Продажа, руб.</span><span>{formatRub(financeSummary.data?.kpis.sales_revenue)}</span></div>
+            <div className="flex justify-between gap-3"><span>Возвраты, руб.</span><span>{formatRub(financeSummary.data?.kpis.returns_amount)}</span></div>
+            <div className="flex justify-between gap-3"><span>Стоимость логистики, руб.</span><span>{formatRub(financeSummary.data?.kpis.logistics)}</span></div>
+            <div className="flex justify-between gap-3"><span>Затраты на продвижение, руб.</span><span>{formatRub(financeSummary.data?.kpis.advertisement)}</span></div>
+            <div className="flex justify-between gap-3"><span>Штрафы, руб.</span><span>{formatRub(financeSummary.data?.kpis.penalties)}</span></div>
+            <div className="flex justify-between gap-3"><span>Хранение, руб.</span><span>{formatRub(financeSummary.data?.kpis.storage_fee)}</span></div>
+            <div className="flex justify-between gap-3"><span>К перечислению, руб.</span><span>{formatRub(financeSummary.data?.kpis.payout)}</span></div>
             <div className="mt-3 flex justify-between gap-3 border-t border-surface-subtle pt-3 font-semibold text-ink">
-              <span>Валовая прибыль, руб.</span><span>{financeSummary.data?.kpis.gross_profit ?? "—"}</span>
+              <span>Валовая прибыль, руб.</span><span>{formatRub(financeSummary.data?.kpis.gross_profit)}</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span>Маржинальность, %</span><span>{financeSummary.data?.kpis.margin_pct ?? "—"}</span>
+              <span>Маржинальность, %</span><span>{formatPct(financeSummary.data?.kpis.margin_pct)}</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span>Процент возвратов</span><span>{financeSummary.data?.kpis.return_rate_pct ?? "—"}%</span>
+              <span>Процент возвратов</span><span>{formatPct(financeSummary.data?.kpis.return_rate_pct)}</span>
             </div>
           </div>
           <div className="mt-4 text-xs text-ink-muted">

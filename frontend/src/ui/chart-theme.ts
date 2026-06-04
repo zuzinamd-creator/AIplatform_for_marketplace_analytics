@@ -7,6 +7,8 @@ export const CHART = {
     border: "1px solid #e2e8f0",
     borderRadius: 10,
     color: "#0f172a",
+    fontSize: 12,
+    padding: "8px 12px",
   },
   series: {
     revenue: "#3b82f6",

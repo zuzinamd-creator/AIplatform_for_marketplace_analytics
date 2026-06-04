@@ -1874,6 +1874,27 @@ Stack:
 - React Query cache + retry UX
 - TailwindCSS-based design primitives
 
+#### Visual refresh (display-only, no API/backend changes)
+
+Seller-facing UI polish: typography (Inter), calmer chart palette, unified buttons/fields, hero KPI rows, and collapsible secondary sections.
+
+| Area | Files |
+|------|--------|
+| Tokens & layout | `frontend/src/styles.css`, `frontend/tailwind.config.js` |
+| Formatters (≤2 decimals) | `frontend/src/utils/format.ts` |
+| Charts | `frontend/src/ui/chart-theme.ts` |
+| Components | `frontend/src/ui/button.tsx`, `field.tsx`, `kpi-card.tsx`, `collapsible-section.tsx`, `warn-callout.tsx`, `card.tsx` |
+| Pages | `DashboardPage`, `EconomicsPage`, `SkuDrilldownPage`, `InventoryEconomicsPage`, `CostsPage`, `CostCoveragePage`, `ReconciliationPage`, `AiUsagePage`, `RecommendationsPage` |
+
+Behavior:
+
+- All monetary and percentage metrics render with **at most two** fractional digits (`formatMetric` / `formatRub` / `formatPct`).
+- Key KPIs use `KpiCard variant="hero"` at the top of dashboard, economics, finance, and AI usage views.
+- Secondary blocks (import preview, SKU tables, provider breakdown, charts) use `CollapsibleSection` (`<details>`).
+- Warnings use `WarnCallout` instead of low-contrast amber-on-white text.
+
+Details: `docs/frontend/design_system.md`.
+
 Run (local):
 
 ```bash

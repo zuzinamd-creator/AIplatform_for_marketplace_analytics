@@ -6,32 +6,26 @@ import { ArrowLeft, AlertTriangle, Info } from "lucide-react";
 
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
+import {
+  chartPctTooltip,
+  chartRubTooltip,
+  formatMetric,
+  formatPct,
+  formatRub,
+} from "../../utils/format";
 import { CHART } from "../../ui/chart-theme";
 import { Card } from "../../ui/card";
+import { CollapsibleSection } from "../../ui/collapsible-section";
 import { Select } from "../../ui/field";
 import { KpiCard } from "../../ui/kpi-card";
 import { PeriodSelector } from "../../ui/period-selector";
 import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
 import { StatusBadge } from "../../ui/status-badge";
 
-function rub(v: string | number | null | undefined): string {
-  if (v === null || v === undefined) return "—";
-  const n = typeof v === "number" ? v : Number(v);
-  if (!Number.isFinite(n)) return String(v);
-  return n.toLocaleString("ru-RU", { maximumFractionDigits: 0 }) + " ₽";
-}
-
-function pct(v: string | null | undefined): string {
-  if (!v) return "—";
-  const n = Number(v);
-  if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString("ru-RU", { maximumFractionDigits: 1 }) + " %";
-}
-
-function deltaLabel(a: number, b: number): string {
+function deltaMetric(a: number, b: number): string {
   const d = a - b;
   const sign = d > 0 ? "+" : "";
-  return sign + d.toLocaleString("ru-RU", { maximumFractionDigits: 1 });
+  return sign + formatMetric(d);
 }
 
 function explainLoss(points: Array<{ gross_profit: string; revenue: string; logistics: string; ads: string; penalties: string; returns_amount: string }>) {
@@ -48,7 +42,7 @@ function explainLoss(points: Array<{ gross_profit: string; revenue: string; logi
   const top = drivers.find((d) => d.v > 0);
   if (rev <= 0) return "Нет выручки в выбранный период — проверьте отчёты или период.";
   if (profit >= 0) return "Товар прибыльный в выбранный период. Смотрите, что можно улучшить по логистике/рекламе/возвратам.";
-  return `Товар убыточен: прибыль ${rub(profit)} при выручке ${rub(rev)}. Сильнее всего съедает прибыль: ${top ? `${top.k} (${rub(top.v)})` : "затраты/возвраты"}.`;
+  return `Товар убыточен: прибыль ${formatRub(profit)} при выручке ${formatRub(rev)}. Сильнее всего съедает прибыль: ${top ? `${top.k} (${formatRub(top.v)})` : "затраты/возвраты"}.`;
 }
 
 export function SkuDrilldownPage() {
@@ -150,7 +144,7 @@ export function SkuDrilldownPage() {
             ) : null}
             {integrity?.financial_completeness_score ? (
               <StatusBadge tone="info">
-                Полнота: {Number(integrity.financial_completeness_score).toLocaleString("ru-RU", { maximumFractionDigits: 0 })} / 100
+                Полнота: {formatMetric(integrity.financial_completeness_score)} / 100
               </StatusBadge>
             ) : null}
           </div>
@@ -165,15 +159,18 @@ export function SkuDrilldownPage() {
         </Card>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Выручка" value={rub(kpis.rev)} sub={compare ? `Δ ${rub(kpis.rev - kpis.revB)}` : undefined} variant="compact" />
-        <KpiCard label="Валовая прибыль" value={rub(kpis.profit)} sub={compare ? `Δ ${rub(kpis.profit - kpis.profitB)}` : undefined} variant="compact" />
-        <KpiCard label="Маржинальный вклад" value={rub(kpis.cm)} sub={compare ? `Δ ${rub(kpis.cm - kpis.cmB)}` : undefined} variant="compact" />
+      <div className="kpi-row">
+        <KpiCard variant="hero" label="Выручка" value={formatRub(kpis.rev)} sub={compare ? `Δ ${formatRub(kpis.rev - kpis.revB)}` : undefined} />
+        <KpiCard label="Валовая прибыль" value={formatRub(kpis.profit)} sub={compare ? `Δ ${formatRub(kpis.profit - kpis.profitB)}` : undefined} />
+        <KpiCard label="Маржинальный вклад" value={formatRub(kpis.cm)} sub={compare ? `Δ ${formatRub(kpis.cm - kpis.cmB)}` : undefined} />
         <KpiCard
           label="Маржа"
-          value={kpis.margin === null ? "—" : `${kpis.margin.toFixed(1)} %`}
-          sub={compare && kpis.marginB !== null && kpis.margin !== null ? `Δ ${deltaLabel(kpis.margin, kpis.marginB)}%` : undefined}
-          variant="compact"
+          value={formatPct(kpis.margin)}
+          sub={
+            compare && kpis.marginB !== null && kpis.margin !== null
+              ? `Δ ${deltaMetric(kpis.margin, kpis.marginB)} %`
+              : undefined
+          }
         />
       </div>
 
@@ -188,15 +185,16 @@ export function SkuDrilldownPage() {
         </div>
       </Card>
 
+      <CollapsibleSection title="Графики по дням" subtitle="Выручка, затраты, маржа и возвраты" defaultOpen>
       <div className="grid gap-3 lg:grid-cols-2">
         <Card className="p-4">
-          <div className="text-sm font-semibold">Выручка vs прибыль</div>
-          <div className="mt-3 h-56">
+          <div className="section-title">Выручка vs прибыль</div>
+          <div className="chart-panel mt-3">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <XAxis dataKey="date" hide />
                 <YAxis hide />
-                <Tooltip contentStyle={CHART.tooltip} formatter={(value: unknown, name: string) => [rub(Number(value)), name]} />
+                <Tooltip contentStyle={CHART.tooltip} formatter={chartRubTooltip} />
                 <Line type="monotone" dataKey="revenue" stroke={CHART.series.revenue} strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="profit" stroke={CHART.series.profit} strokeWidth={2} dot={false} />
               </LineChart>
@@ -205,13 +203,13 @@ export function SkuDrilldownPage() {
         </Card>
 
         <Card className="p-4">
-          <div className="text-sm font-semibold">Логистика vs реклама vs штрафы</div>
-          <div className="mt-3 h-56">
+          <div className="section-title">Логистика vs реклама vs штрафы</div>
+          <div className="chart-panel mt-3">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <XAxis dataKey="date" hide />
                 <YAxis hide />
-                <Tooltip contentStyle={CHART.tooltip} formatter={(value: unknown, name: string) => [rub(Number(value)), name]} />
+                <Tooltip contentStyle={CHART.tooltip} formatter={chartRubTooltip} />
                 <Line type="monotone" dataKey="logistics" stroke={CHART.series.logistics} strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="ads" stroke={CHART.series.ads} strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="penalties" stroke={CHART.series.returns} strokeWidth={2} dot={false} />
@@ -221,13 +219,13 @@ export function SkuDrilldownPage() {
         </Card>
 
         <Card className="p-4">
-          <div className="text-sm font-semibold">Маржа (дневная)</div>
-          <div className="mt-3 h-56">
+          <div className="section-title">Маржа (дневная)</div>
+          <div className="chart-panel mt-3">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <XAxis dataKey="date" hide />
                 <YAxis hide />
-                <Tooltip contentStyle={CHART.tooltip} formatter={(value: unknown) => [pct(String(value)), "Маржа"]} />
+                <Tooltip contentStyle={CHART.tooltip} formatter={chartPctTooltip} />
                 <Line type="monotone" dataKey="margin" stroke={CHART.series.profit} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
@@ -235,27 +233,28 @@ export function SkuDrilldownPage() {
         </Card>
 
         <Card className="p-4">
-          <div className="text-sm font-semibold">Возвраты (динамика)</div>
-          <div className="mt-3 h-56">
+          <div className="section-title">Возвраты (динамика)</div>
+          <div className="chart-panel mt-3">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <XAxis dataKey="date" hide />
                 <YAxis hide />
-                <Tooltip contentStyle={CHART.tooltip} formatter={(value: unknown) => [rub(Number(value)), "Возвраты"]} />
+                <Tooltip contentStyle={CHART.tooltip} formatter={chartRubTooltip} />
                 <Line type="monotone" dataKey="returns" stroke={CHART.series.returns} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </Card>
       </div>
+      </CollapsibleSection>
 
       <Card className="p-4">
-        <div className="text-sm font-semibold">Что ухудшилось относительно прошлого периода</div>
+        <div className="section-title">Что ухудшилось относительно прошлого периода</div>
         {compare ? (
           <div className="mt-2 text-sm text-ink-secondary">
-            Прибыль: {rub(kpis.profit)} (Δ {rub(kpis.profit - kpis.profitB)}), выручка: {rub(kpis.rev)} (Δ {rub(kpis.rev - kpis.revB)}), маржа:{" "}
-            {kpis.margin === null ? "—" : `${kpis.margin.toFixed(1)}%`}{" "}
-            {kpis.marginB === null || kpis.margin === null ? "" : `(Δ ${deltaLabel(kpis.margin, kpis.marginB)}%)`}.
+            Прибыль: {formatRub(kpis.profit)} (Δ {formatRub(kpis.profit - kpis.profitB)}), выручка: {formatRub(kpis.rev)} (Δ{" "}
+            {formatRub(kpis.rev - kpis.revB)}), маржа: {formatPct(kpis.margin)}{" "}
+            {kpis.marginB === null || kpis.margin === null ? "" : `(Δ ${deltaMetric(kpis.margin, kpis.marginB)} %)`}.
           </div>
         ) : (
           <div className="mt-2 text-sm text-ink-muted">Включите сравнение периодов в селекторе периода, чтобы увидеть, что изменилось.</div>

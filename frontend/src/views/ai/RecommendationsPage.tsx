@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useMemo, useRef, useState } from "react";
 
 import { api, formatApiError } from "../../state/http";
+import { formatPct } from "../../utils/format";
 import { t } from "../../i18n";
 import { Card } from "../../ui/card";
 import { StatusBadge } from "../../ui/status-badge";
@@ -197,7 +198,7 @@ export function RecommendationsPage() {
         <Card className="p-3 text-xs">
           <div className="text-ink-muted">{t("ai.stats_conversion")}</div>
           <div className="text-lg font-semibold">
-            {m?.action_conversion_rate != null ? `${(m.action_conversion_rate * 100).toFixed(0)}%` : "—"}
+            {m?.action_conversion_rate != null ? formatPct(m.action_conversion_rate * 100) : "—"}
           </div>
         </Card>
         <Card className="p-3 text-xs">

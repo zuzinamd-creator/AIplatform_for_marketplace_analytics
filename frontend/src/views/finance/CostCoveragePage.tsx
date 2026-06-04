@@ -4,10 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { loadPeriodSelection } from "../../state/period";
+import { formatInteger, formatPct, formatRub } from "../../utils/format";
 import { Card } from "../../ui/card";
+import { CollapsibleSection } from "../../ui/collapsible-section";
+import { KpiCard } from "../../ui/kpi-card";
 import { PeriodSelector } from "../../ui/period-selector";
 import { Input, Label } from "../../ui/field";
 import { StatusBadge } from "../../ui/status-badge";
+import { WarnCallout } from "../../ui/warn-callout";
 
 export function CostCoveragePage() {
   const workspace = loadWorkspaceProfile();
@@ -28,51 +32,42 @@ export function CostCoveragePage() {
   const topWarnings = useMemo(() => coverage.data?.warnings ?? [], [coverage.data]);
 
   return (
-    <div className="space-y-6">
+    <div className="page-shell">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <div className="text-2xl font-semibold">Себестоимость и покрытие затрат</div>
-          <div className="text-sm text-ink-secondary">
+          <h1 className="page-title">Себестоимость и покрытие затрат</h1>
+          <p className="page-subtitle">
             Понимание, можно ли доверять марже: полнота COGS, дубли, устаревшие стоимости.
-          </div>
+          </p>
         </div>
         <StatusBadge tone={stale ? "warn" : "info"}>{stale ? "данные устарели" : "актуально"}</StatusBadge>
       </div>
 
       <PeriodSelector onChange={(s) => setRange(s.range)} />
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <Card className="p-4">
-          <div className="text-xs text-ink-secondary">Полнота затрат (score)</div>
-          <div className="mt-1 text-xl font-semibold">{score ?? "—"}%</div>
-          <div className="mt-1 text-xs text-ink-muted">Эвристика на основе покрытия SKU + предупреждений.</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-xs text-ink-secondary">Покрытие SKU себестоимостью</div>
-          <div className="mt-1 text-xl font-semibold">{covPct ?? "—"}%</div>
-          <div className="mt-1 text-xs text-ink-muted">
-            SKU считаются покрытыми, если COGS &gt; 0 при наличии продаж.
-          </div>
-        </Card>
-        <Card className="p-4">
-          <Label>Фильтр по SKU</Label>
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="например: SKU-123" />
-          <div className="mt-2 text-xs text-ink-muted">Показывает SKU с продажами в выбранном периоде.</div>
-        </Card>
+      <div className="kpi-row md:grid-cols-2">
+        <KpiCard variant="hero" label="Полнота затрат (score)" value={formatPct(score)} sub="Эвристика на основе покрытия SKU и предупреждений" />
+        <KpiCard label="Покрытие SKU себестоимостью" value={formatPct(covPct)} sub="COGS > 0 при наличии продаж" />
       </div>
 
+      <Card className="p-5">
+        <Label>Фильтр по SKU</Label>
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="например: SKU-123" className="mt-2 max-w-md" />
+        <p className="mt-2 text-xs text-ink-muted">Показывает SKU с продажами в выбранном периоде.</p>
+      </Card>
+
       {topWarnings.length ? (
-        <Card className="border-amber-500/30 bg-amber-500/10 p-4">
-          <div className="text-sm font-semibold text-amber-100">Предупреждения</div>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-100">
+        <WarnCallout title="Предупреждения">
+          <ul className="list-disc space-y-1 pl-5">
             {topWarnings.map((w) => (
               <li key={w.code}>{w.message}</li>
             ))}
           </ul>
-        </Card>
+        </WarnCallout>
       ) : null}
 
-      <Card className="p-4">
+      <CollapsibleSection title="SKU с продажами" subtitle="Покрытие себестоимостью по строкам" defaultOpen>
+      <Card className="border-0 p-0 shadow-none">
         <div className="text-sm font-semibold">SKU с продажами (покрытие себестоимостью)</div>
         <div className="mt-2 text-xs text-ink-muted">
           Период: {range.start} → {range.end} · Маркетплейс: {marketplace}
@@ -93,10 +88,10 @@ export function CostCoveragePage() {
               {(coverage.data?.items ?? []).map((row) => (
                 <tr key={row.sku} className="border-t border-surface-subtle">
                   <td className="py-2 pr-4">{row.sku}</td>
-                  <td className="py-2 pr-4">{row.units_sold}</td>
-                  <td className="py-2 pr-4">{row.revenue}</td>
-                  <td className="py-2 pr-4">{row.cogs}</td>
-                  <td className="py-2 pr-4">{row.cost_coverage_pct ?? "—"}%</td>
+                  <td className="py-2 pr-4">{formatInteger(row.units_sold)}</td>
+                  <td className="py-2 pr-4">{formatRub(row.revenue)}</td>
+                  <td className="py-2 pr-4">{formatRub(row.cogs)}</td>
+                  <td className="py-2 pr-4">{formatPct(row.cost_coverage_pct)}</td>
                   <td className="py-2 pr-4">{row.last_cost_effective_from ?? "—"}</td>
                 </tr>
               ))}
@@ -118,6 +113,7 @@ export function CostCoveragePage() {
           </table>
         </div>
       </Card>
+      </CollapsibleSection>
     </div>
   );
 }

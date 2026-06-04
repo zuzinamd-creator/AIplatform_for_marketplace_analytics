@@ -4,8 +4,10 @@ import { useDropzone } from "react-dropzone";
 
 import { api, formatApiError } from "../../state/http";
 import type { CostResponse } from "../../state/types-costs";
+import { formatMetric } from "../../utils/format";
 import { Card } from "../../ui/card";
 import { Button } from "../../ui/button";
+import { CollapsibleSection } from "../../ui/collapsible-section";
 import { Input, Label, Select } from "../../ui/field";
 import { StatusBadge } from "../../ui/status-badge";
 import { toast } from "../../ui/toast";
@@ -23,6 +25,12 @@ function fmtDate(iso: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return iso;
   const [y, m, day] = d.split("-");
   return `${day}.${m}.${y}`;
+}
+
+/** Read-only cell display — editing still uses raw API strings. */
+function displayCost(v: unknown): string {
+  if (v == null || v === "") return "—";
+  return formatMetric(v);
 }
 
 function numOrEmpty(v: string): string {
@@ -165,7 +173,7 @@ export function CostsPage() {
         onClick={() => startEdit(row, field)}
         title="Нажмите для редактирования"
       >
-        {row[field] ?? "—"}
+        {displayCost(row[field])}
       </button>
     );
   };
@@ -179,7 +187,11 @@ export function CostsPage() {
         </p>
       </div>
 
-      <Card className="p-5">
+      <CollapsibleSection
+        title="Импорт файла"
+        subtitle="CSV или Excel — перетащите или выберите файл"
+        defaultOpen
+      >
         <div
           {...dz.getRootProps()}
           className="cursor-pointer rounded-xl border border-dashed border-surface-subtle bg-surface-inset p-8 text-center"
@@ -262,11 +274,11 @@ export function CostsPage() {
                         <td className="px-3 py-2 text-ink-muted">{r.row_index}</td>
                         <td className="px-3 py-2">{r.internal_sku ?? "—"}</td>
                         <td className="px-3 py-2">{r.effective_from ?? "—"}</td>
-                        <td className="px-3 py-2">{r.product_cost ?? "—"}</td>
-                        <td className="px-3 py-2">{r.packaging_cost ?? "—"}</td>
-                        <td className="px-3 py-2">{r.inbound_logistics_cost ?? "—"}</td>
-                        <td className="px-3 py-2">{r.additional_cost ?? "—"}</td>
-                        <td className="px-3 py-2">{r.total_cost ?? "—"}</td>
+                        <td className="px-3 py-2">{displayCost(r.product_cost)}</td>
+                        <td className="px-3 py-2">{displayCost(r.packaging_cost)}</td>
+                        <td className="px-3 py-2">{displayCost(r.inbound_logistics_cost)}</td>
+                        <td className="px-3 py-2">{displayCost(r.additional_cost)}</td>
+                        <td className="px-3 py-2">{displayCost(r.total_cost)}</td>
                         <td className="px-3 py-2">{r.currency ?? "RUB"}</td>
                       </tr>
                     ))}
@@ -280,7 +292,7 @@ export function CostsPage() {
         ) : picked && preview.isError ? (
           <div className="mt-4 text-xs text-semantic-danger">Не удалось проверить файл: {formatApiError(preview.error)}</div>
         ) : null}
-      </Card>
+      </CollapsibleSection>
 
       <Card className="overflow-hidden">
         <div className="flex flex-wrap items-end justify-between gap-4 border-b border-surface-subtle bg-surface-inset px-4 py-4">
@@ -342,7 +354,7 @@ export function CostsPage() {
                     <td className="px-3 py-2">{renderEditable(row, "packaging_cost")}</td>
                     <td className="px-3 py-2">{renderEditable(row, "inbound_logistics_cost")}</td>
                     <td className="px-3 py-2">{renderEditable(row, "additional_cost")}</td>
-                    <td className="px-3 py-2 font-medium">{row.cost}</td>
+                    <td className="px-3 py-2 font-medium">{displayCost(row.cost)}</td>
                     <td className="px-3 py-2 text-ink-muted">{row.currency}</td>
                   </tr>
                 ))}

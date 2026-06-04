@@ -4,25 +4,14 @@ import { Package, Snowflake, Skull, Timer } from "lucide-react";
 
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
+import { formatInteger, formatMetric, formatRub } from "../../utils/format";
 import { Card } from "../../ui/card";
+import { CollapsibleSection } from "../../ui/collapsible-section";
+import { KpiCard } from "../../ui/kpi-card";
 import { Select } from "../../ui/field";
 import { PeriodSelector } from "../../ui/period-selector";
 import { loadPeriodSelection, type PeriodSelection } from "../../state/period";
 import { StatusBadge } from "../../ui/status-badge";
-
-function rub(v: string | number | null | undefined): string {
-  if (v === null || v === undefined) return "—";
-  const n = typeof v === "number" ? v : Number(v);
-  if (!Number.isFinite(n)) return String(v);
-  return n.toLocaleString("ru-RU", { maximumFractionDigits: 0 }) + " ₽";
-}
-
-function num(v: string | null | undefined): string {
-  if (!v) return "—";
-  const n = Number(v);
-  if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString("ru-RU", { maximumFractionDigits: 1 });
-}
 
 export function InventoryEconomicsPage() {
   const workspace = loadWorkspaceProfile();
@@ -84,7 +73,7 @@ export function InventoryEconomicsPage() {
             <div className="flex flex-wrap gap-2">
               {integrity?.financial_completeness_score ? (
                 <StatusBadge tone="info">
-                  Полнота: {Number(integrity.financial_completeness_score).toLocaleString("ru-RU", { maximumFractionDigits: 0 })} / 100
+                  Полнота: {formatMetric(integrity.financial_completeness_score)} / 100
                 </StatusBadge>
               ) : null}
               <StatusBadge tone="warn">Предупреждений: {warnings.length}</StatusBadge>
@@ -98,45 +87,26 @@ export function InventoryEconomicsPage() {
         </Card>
       ) : null}
 
-      <div className="grid gap-3 md:grid-cols-3">
-        <Card className="p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-xs text-ink-secondary">Замороженный капитал (топ-50 SKU)</div>
-              <div className="mt-1 text-lg font-semibold">{rub(summary.frozen)}</div>
-              <div className="mt-1 text-xs text-ink-muted">Расчет: остаток × себестоимость (если задана).</div>
-            </div>
-            <div className="rounded-lg bg-surface-inset p-2 text-ink-secondary">
-              <Snowflake className="h-5 w-5" />
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-xs text-ink-secondary">Остатки (ед.)</div>
-              <div className="mt-1 text-lg font-semibold">{summary.stock.toLocaleString("ru-RU")}</div>
-              <div className="mt-1 text-xs text-ink-muted">Снимок: {inv.data?.snapshot_date ?? "—"}</div>
-            </div>
-            <div className="rounded-lg bg-surface-inset p-2 text-ink-secondary">
-              <Package className="h-5 w-5" />
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-xs text-ink-secondary">Медленные / мертвые</div>
-              <div className="mt-1 text-lg font-semibold">
-                {slow.data?.items.length ?? 0} / {dead.data?.items.length ?? 0}
-              </div>
-              <div className="mt-1 text-xs text-ink-muted">Пороги: 30 / 60 дней без продаж.</div>
-            </div>
-            <div className="rounded-lg bg-surface-inset p-2 text-ink-secondary">
-              <Timer className="h-5 w-5" />
-            </div>
-          </div>
-        </Card>
+      <div className="kpi-row">
+        <KpiCard
+          variant="hero"
+          icon={<Snowflake className="h-5 w-5" />}
+          label="Замороженный капитал (топ-50 SKU)"
+          value={formatRub(summary.frozen)}
+          sub="Расчёт: остаток × себестоимость (если задана)"
+        />
+        <KpiCard
+          icon={<Package className="h-5 w-5" />}
+          label="Остатки (ед.)"
+          value={formatInteger(summary.stock)}
+          sub={`Снимок: ${inv.data?.snapshot_date ?? "—"}`}
+        />
+        <KpiCard
+          icon={<Timer className="h-5 w-5" />}
+          label="Медленные / мёртвые"
+          value={`${formatInteger(slow.data?.items.length ?? 0)} / ${formatInteger(dead.data?.items.length ?? 0)}`}
+          sub="Пороги: 30 / 60 дней без продаж"
+        />
       </div>
 
       <Card className="p-4">
@@ -160,12 +130,12 @@ export function InventoryEconomicsPage() {
               {(inv.data?.items ?? []).map((r) => (
                 <tr key={r.sku} className="hover:bg-surface-inset">
                   <td className="py-2 font-medium">{r.sku}</td>
-                  <td className="py-2">{r.stock_units.toLocaleString("ru-RU")}</td>
-                  <td className="py-2">{r.sold_units.toLocaleString("ru-RU")}</td>
-                  <td className="py-2">{num(r.avg_stock_units ?? null)}</td>
-                  <td className="py-2">{num(r.turnover_ratio ?? null)}</td>
-                  <td className="py-2">{num(r.turnover_days ?? null)}</td>
-                  <td className="py-2">{rub(r.frozen_capital ?? null)}</td>
+                  <td className="py-2">{formatInteger(r.stock_units)}</td>
+                  <td className="py-2">{formatInteger(r.sold_units)}</td>
+                  <td className="py-2">{formatMetric(r.avg_stock_units ?? null)}</td>
+                  <td className="py-2">{formatMetric(r.turnover_ratio ?? null)}</td>
+                  <td className="py-2">{formatMetric(r.turnover_days ?? null)}</td>
+                  <td className="py-2">{formatRub(r.frozen_capital ?? null)}</td>
                   <td className="py-2">{r.days_since_last_sale ?? "—"}</td>
                   <td className="py-2">
                     {r.stock_risk === "stockout" ? (
@@ -190,9 +160,10 @@ export function InventoryEconomicsPage() {
         </div>
       </Card>
 
+      <CollapsibleSection title="Медленные и мёртвые остатки" subtitle="Пороги 30 и 60 дней без продаж">
       <div className="grid gap-3 lg:grid-cols-2">
         <Card className="p-4">
-          <div className="flex items-center gap-2 text-sm font-semibold">
+          <div className="flex items-center gap-2 section-title">
             <Timer className="h-4 w-4" /> Медленные товары (≥30 дней без продаж)
           </div>
           <div className="mt-3 overflow-auto">
@@ -209,8 +180,8 @@ export function InventoryEconomicsPage() {
                 {(slow.data?.items ?? []).map((r) => (
                   <tr key={r.sku}>
                     <td className="py-2 font-medium">{r.sku}</td>
-                    <td className="py-2">{r.stock_units.toLocaleString("ru-RU")}</td>
-                    <td className="py-2">{rub(r.frozen_capital ?? null)}</td>
+                    <td className="py-2">{formatInteger(r.stock_units)}</td>
+                    <td className="py-2">{formatRub(r.frozen_capital ?? null)}</td>
                     <td className="py-2">{r.days_since_last_sale}</td>
                   </tr>
                 ))}
@@ -244,8 +215,8 @@ export function InventoryEconomicsPage() {
                 {(dead.data?.items ?? []).map((r) => (
                   <tr key={r.sku}>
                     <td className="py-2 font-medium">{r.sku}</td>
-                    <td className="py-2">{r.stock_units.toLocaleString("ru-RU")}</td>
-                    <td className="py-2">{rub(r.frozen_capital ?? null)}</td>
+                    <td className="py-2">{formatInteger(r.stock_units)}</td>
+                    <td className="py-2">{formatRub(r.frozen_capital ?? null)}</td>
                     <td className="py-2">{r.days_since_last_sale}</td>
                   </tr>
                 ))}
@@ -261,8 +232,9 @@ export function InventoryEconomicsPage() {
           </div>
         </Card>
       </div>
+      </CollapsibleSection>
 
-      {inv.error ? <div className="text-sm text-red-300">Ошибка загрузки складской аналитики.</div> : null}
+      {inv.error ? <div className="text-sm text-semantic-danger">Ошибка загрузки складской аналитики.</div> : null}
     </div>
   );
 }

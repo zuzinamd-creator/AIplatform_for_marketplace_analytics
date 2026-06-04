@@ -22,7 +22,23 @@
 
 @layer components {
   .page-shell {
-    @apply space-y-8;
+    @apply space-y-10;
+  }
+
+  .section-title {
+    @apply text-sm font-semibold tracking-tight text-ink;
+  }
+
+  .kpi-row {
+    @apply grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4;
+  }
+
+  .alert-warn {
+    @apply rounded-xl border border-semantic-warn/30 bg-semantic-warn-bg p-4 text-sm text-ink-secondary;
+  }
+
+  .alert-warn-title {
+    @apply font-semibold text-semantic-warn;
   }
 
   .page-title {
