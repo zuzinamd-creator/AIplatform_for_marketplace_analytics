@@ -395,6 +395,8 @@ export const api = {
       marketplace: string;
       period_start: string;
       period_end: string;
+      compare_period_start?: string | null;
+      compare_period_end?: string | null;
     }) {
       const { data } = await http.post("/ai/intelligence/period-runs", body);
       return unwrap<IntelligenceRunResponse>(data);

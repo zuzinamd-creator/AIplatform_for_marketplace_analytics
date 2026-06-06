@@ -61,6 +61,16 @@ def test_seller_usefulness_uses_russian_not_english_template() -> None:
     assert u.data_gaps
 
 
+def test_data_gap_advisor_skips_cost_import_when_margin_present() -> None:
+    tips = build_data_gap_advice(
+        sku_count=10,
+        total_revenue=Decimal("500000"),
+        margin=Decimal("43"),
+        total_profit=Decimal("200000"),
+    )
+    assert not any("Импортируйте себестоимость" in t for t in tips)
+
+
 def test_data_gap_advisor_suggests_cost_import() -> None:
     tips = build_data_gap_advice(sku_count=5, total_revenue=Decimal("1000"), cost_coverage_pct=40)
     assert any("себестоим" in t.lower() for t in tips)

@@ -249,6 +249,8 @@ async def create_intelligence_run_for_period(
             marketplace=Marketplace(body.marketplace.lower()),
             period_start=body.period_start,
             period_end=body.period_end,
+            compare_start=body.compare_period_start,
+            compare_end=body.compare_period_end,
         )
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc

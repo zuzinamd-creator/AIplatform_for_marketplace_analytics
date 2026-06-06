@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -30,6 +30,7 @@ class AIExecutionContext:
     rebuild_running_count: int
     insight_input: AIInsightInputDTO | None
     degraded_mode: bool
+    governed_extras: dict = field(default_factory=dict)
 
 
 class AIContextAssembler:
@@ -44,6 +45,7 @@ class AIContextAssembler:
         *,
         semantics_version: str,
         insight_input: AIInsightInputDTO | None = None,
+        governed_extras: dict | None = None,
     ) -> AIExecutionContext:
         now = datetime.now(UTC)
         invalid_reason: str | None = None
@@ -96,6 +98,7 @@ class AIContextAssembler:
             rebuild_running_count=running,
             insight_input=insight_input if context_valid else None,
             degraded_mode=degraded or not settings.ai_enabled,
+            governed_extras=dict(governed_extras or {}),
         )
 
     async def _rebuild_counts(self) -> tuple[int, int]:

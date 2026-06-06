@@ -34,6 +34,7 @@ class AIIntelligenceEngine:
         request: AIRunRequestDTO,
         *,
         insight_input: AIInsightInputDTO | None = None,
+        governed_extras: dict | None = None,
     ) -> IntelligenceRunResultDTO:
         run, validated, insight_id = await self._analytics.execute(
             request, insight_input=insight_input
@@ -44,6 +45,7 @@ class AIIntelligenceEngine:
         ctx = await AIContextAssembler(self.db, self.user_id).assemble(
             semantics_version=request.semantics_version,
             insight_input=insight_input,
+            governed_extras=governed_extras,
         )
         grounded = build_grounded_context(ctx)
 
@@ -71,6 +73,22 @@ class AIIntelligenceEngine:
             insight_input=insight_input,
             multi_trace=multi_trace,
         )
+
+        deep = list(grounded.metrics_snapshot.get("deep_insights") or [])
+        if deep:
+            rec = result.recommendation
+            merged_bullets = deep + [b for b in rec.bullets if b not in deep]
+            result = result.model_copy(
+                update={
+                    "recommendation": rec.model_copy(
+                        update={
+                            "title": deep[0][:255],
+                            "summary": "\n".join(deep[:4]),
+                            "bullets": merged_bullets[:12],
+                        }
+                    )
+                }
+            )
 
         gated = classify_and_gate(result.recommendation)
         rec = gated.recommendation

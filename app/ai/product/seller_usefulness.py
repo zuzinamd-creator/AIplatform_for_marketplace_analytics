@@ -78,8 +78,10 @@ def build_seller_usefulness(
     data_gaps = build_data_gap_advice(
         sku_count=int(snap.get("sku_count") or 0),
         total_revenue=_dec(snap.get("total_revenue")),
+        total_profit=_dec(snap.get("total_profit")),
         margin=_dec(snap.get("margin")),
         cost_coverage_pct=snap.get("cost_coverage_pct"),
+        cost_data_available=bool(snap.get("cost_data_available")),
         inventory_signals=bool(snap.get("inventory_signals_available")),
         ad_spend_available=bool(snap.get("ad_spend_available")),
         anomalies=[str(a) for a in (snap.get("anomaly_messages") or [])],
@@ -113,19 +115,36 @@ def _pick_why(
     validated: ValidatedInsightDTO,
     grounded: GroundedContextDTO,
 ) -> str:
+    snap = grounded.metrics_snapshot or {}
+    deep = snap.get("deep_insights") or []
+    if deep:
+        return str(deep[0])[:400]
+
     if validated.workflow.value == "anomaly_explanation":
         return "Ошибки в данных искажают выручку и маржу — сначала исправьте источник."
     for bullet in scored.bullets:
         if bullet and len(bullet) > 20 and _looks_russian(bullet):
-            return bullet[:400]
+            if not _is_dashboard_echo(bullet, snap):
+                return bullet[:400]
     if validated.summary and _looks_russian(validated.summary):
-        return validated.summary[:400]
-    if validated.summary:
-        return validated.summary[:400]
-    rev = grounded.metrics_snapshot.get("total_revenue")
+        if not _is_dashboard_echo(validated.summary, snap):
+            return validated.summary[:400]
+    if deep:
+        return str(deep[0])[:400]
+    rev = snap.get("total_revenue")
     if rev is not None:
-        return f"За период отчёта зафиксирована выручка {rev} ₽ — проверьте топ-SKU и маржу."
-    return "Есть сигнал по KPI отчёта — откройте детали и сверьте с Dashboard."
+        return f"За период {snap.get('source_period_start', '')} — {snap.get('source_period_end', '')} выручка {rev} ₽; см. действия по SKU ниже."
+    return "Есть сигнал по KPI периода — откройте детали и сверьте с Dashboard."
+
+
+def _is_dashboard_echo(text: str, snap: dict) -> bool:
+    """Skip generic revenue/profit restatements when deep insights exist."""
+    low = text.lower()
+    if "общий доход" in low or "общая прибыль" in low:
+        rev = str(snap.get("total_revenue") or "")
+        if rev and rev[:4] in text.replace(" ", "").replace(",", ""):
+            return True
+    return False
 
 
 def _pick_action(

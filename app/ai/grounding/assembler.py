@@ -18,6 +18,8 @@ def build_grounded_context(ctx: AIExecutionContext) -> GroundedContextDTO:
         ]
         metrics["inventory_signals_available"] = False
         metrics["ad_spend_available"] = False
+        if ctx.governed_extras:
+            metrics.update(ctx.governed_extras)
 
     freshness_parts: list[str] = []
     if ctx.rebuild_running_count > 0:

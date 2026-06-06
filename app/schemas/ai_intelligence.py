@@ -30,6 +30,8 @@ class PeriodIntelligenceRunCreateRequest(BaseModel):
     marketplace: str = Field(min_length=1, max_length=32, default="wildberries")
     period_start: date
     period_end: date
+    compare_period_start: date | None = None
+    compare_period_end: date | None = None
 
 
 class RecommendationResponse(BaseModel):

@@ -29,6 +29,7 @@ from app.models.workflow import SellerWorkflowEvent
 from app.schemas.ai import PageMeta
 from app.schemas.ai_intelligence import RecommendationStatsResponse
 from app.schemas.ai_usage import AIUsageResponse
+from app.ai.deep.period_insights import build_deep_period_insights
 from app.domain.reports.period_queries import fetch_sale_period_bounds_for_reports
 from app.services.cost_coverage_service import CostCoverageService, CoveragePeriod
 from app.services.reconciliation_service import ReconciliationPeriod, ReconciliationService
@@ -42,12 +43,12 @@ class AIService:
     async def create_run(
         self, request: AIRunRequestDTO
     ) -> tuple[AIExecutionRun, ValidatedInsightDTO, UUID | None]:
-        insight_input = await self._insight_input_for_report(request.report_id)
+        insight_input, _extras = await self._insight_input_for_report(request.report_id)
         engine = AIAnalyticsEngine(self.db, self.user_id)
         return await engine.execute(request, insight_input=insight_input)
 
     async def create_run_stream(self, request: AIRunRequestDTO):
-        insight_input = await self._insight_input_for_report(request.report_id)
+        insight_input, _extras = await self._insight_input_for_report(request.report_id)
         engine = AIAnalyticsEngine(self.db, self.user_id)
         async for evt in engine.execute_stream(request, insight_input=insight_input):
             yield evt
@@ -55,9 +56,11 @@ class AIService:
     async def run_intelligence(self, request: AIRunRequestDTO):
         from app.ai.intelligence.engine import AIIntelligenceEngine
 
-        insight_input = await self._insight_input_for_report(request.report_id)
+        insight_input, extras = await self._insight_input_for_report(request.report_id)
         engine = AIIntelligenceEngine(self.db, self.user_id)
-        return await engine.run_intelligence(request, insight_input=insight_input)
+        return await engine.run_intelligence(
+            request, insight_input=insight_input, governed_extras=extras
+        )
 
     async def run_intelligence_for_period(
         self,
@@ -66,14 +69,22 @@ class AIService:
         marketplace: Marketplace,
         period_start: date,
         period_end: date,
+        compare_start: date | None = None,
+        compare_end: date | None = None,
     ):
         from app.ai.intelligence.engine import AIIntelligenceEngine
 
-        insight_input = await self._insight_input_for_period(
-            marketplace=marketplace, period_start=period_start, period_end=period_end
+        insight_input, extras = await self._insight_input_for_period(
+            marketplace=marketplace,
+            period_start=period_start,
+            period_end=period_end,
+            compare_start=compare_start,
+            compare_end=compare_end,
         )
         engine = AIIntelligenceEngine(self.db, self.user_id)
-        return await engine.run_intelligence(request, insight_input=insight_input)
+        return await engine.run_intelligence(
+            request, insight_input=insight_input, governed_extras=extras
+        )
 
     async def get_recommendation(self, recommendation_id: UUID) -> AIRecommendation | None:
         async with TenantSession.transaction(self.db, self.user_id):
@@ -480,11 +491,11 @@ class AIService:
     async def _insight_input_for_report(
         self,
         report_id: UUID | None,
-    ) -> AIInsightInputDTO | None:
+    ) -> tuple[AIInsightInputDTO | None, dict]:
         async with TenantSession.transaction(self.db, self.user_id):
             report = await self._resolve_report_for_ai(report_id)
             if report is None:
-                return None
+                return None, {}
 
             marketplace = report.marketplace
             bounds_map = await fetch_sale_period_bounds_for_reports(self.db, [report.id])
@@ -501,7 +512,7 @@ class AIService:
                 )
                 period_start, period_end = period_bounds.one()
             if period_start is None or period_end is None:
-                return AnalyticsProcessor.prepare_ai_insight(
+                empty = AnalyticsProcessor.prepare_ai_insight(
                     report_id=report.id,
                     report_date=report.created_at.date() if report.created_at else date.today(),
                     marketplace_type=marketplace.value,
@@ -512,7 +523,63 @@ class AIService:
                     top_skus_summary=[],
                     anomalies=[],
                 )
+                return empty, {}
 
+            report_uuid = report.id
+
+        return await self._build_period_insight_bundle(
+            marketplace=marketplace,
+            period_start=period_start,
+            period_end=period_end,
+            report_id=report_uuid,
+            report_date=period_end,
+        )
+
+    async def _insight_input_for_period(
+        self,
+        *,
+        marketplace: Marketplace,
+        period_start: date,
+        period_end: date,
+        compare_start: date | None = None,
+        compare_end: date | None = None,
+    ) -> tuple[AIInsightInputDTO | None, dict]:
+        async with TenantSession.transaction(self.db, self.user_id):
+            report = await self._resolve_report_for_ai(None)
+            if report is None:
+                return None, {}
+            report_uuid = report.id
+
+        return await self._build_period_insight_bundle(
+            marketplace=marketplace,
+            period_start=period_start,
+            period_end=period_end,
+            report_id=report_uuid,
+            report_date=period_end,
+            compare_start=compare_start,
+            compare_end=compare_end,
+        )
+
+    async def _build_period_insight_bundle(
+        self,
+        *,
+        marketplace: Marketplace,
+        period_start: date,
+        period_end: date,
+        report_id: UUID,
+        report_date: date,
+        compare_start: date | None = None,
+        compare_end: date | None = None,
+    ) -> tuple[AIInsightInputDTO, dict]:
+        total_revenue_d = Decimal("0")
+        total_profit_d = Decimal("0")
+        margin: Decimal | None = None
+        top_skus: list[TopSKUSummaryDTO] = []
+        sku_count = 0
+        cov_pct: Decimal | None = None
+        missing_skus: list[str] = []
+
+        async with TenantSession.transaction(self.db, self.user_id):
             totals = await self.db.execute(
                 select(
                     func.coalesce(func.sum(DailyAggregate.revenue), 0),
@@ -527,7 +594,6 @@ class AIService:
             total_revenue, total_profit = totals.one()
             total_revenue_d = Decimal(total_revenue)
             total_profit_d = Decimal(total_profit)
-            margin = None
             anomalies: list[AnomalyDTO] = []
             if total_revenue_d > 0:
                 margin = (total_profit_d / total_revenue_d) * Decimal("100")
@@ -586,165 +652,53 @@ class AIService:
             cov = await CostCoverageService(self.db, self.user_id).analyze(
                 marketplace=marketplace,
                 period=CoveragePeriod(start=period_start, end=period_end),
-                limit=1,
+                limit=50,
             )
-            trust = classify_profit_trust(cov.sku_cost_coverage_pct)
-            profit_out, margin, top_skus = apply_profit_trust_to_ai_metrics(
-                trust=trust,
-                total_profit=total_profit_d if total_profit_d != 0 else None,
-                margin_pct=margin,
-                top_skus=top_skus,
-            )
-            if trust != "full":
-                anomalies.append(
-                    AnomalyDTO(
-                        type="data_quality",
-                        severity="medium",
-                        confidence=Decimal("0.95"),
-                        message=(
-                            "Себестоимость не покрывает продажи полностью; "
-                            "прибыль и маржа в ответе ИИ не интерпретировать как факт."
-                        ),
-                    )
-                )
+            cov_pct = cov.sku_cost_coverage_pct
+            missing_skus = list(cov.missing_skus or [])
 
-            return AnalyticsProcessor.prepare_ai_insight(
-                report_id=report.id,
-                report_date=period_end,
-                marketplace_type=marketplace.value,
-                sku_count=int(sku_count or 0),
-                total_revenue=total_revenue_d if total_revenue_d > 0 else None,
-                total_profit=profit_out if profit_out is not None and profit_out != 0 else None,
-                margin=margin,
-                top_skus_summary=top_skus,
-                anomalies=anomalies,
-            )
-
-    async def _insight_input_for_period(
-        self,
-        *,
-        marketplace: Marketplace,
-        period_start: date,
-        period_end: date,
-    ) -> AIInsightInputDTO | None:
-        report: Report | None = None
-        total_revenue_d = Decimal("0")
-        total_profit_d = Decimal("0")
-        margin: Decimal | None = None
-        top_skus: list[TopSKUSummaryDTO] = []
-        sku_count = 0
-
-        async with TenantSession.transaction(self.db, self.user_id):
-            report = await self._resolve_report_for_ai(None)
-            if report is None:
-                return None
-
-            totals = await self.db.execute(
-                select(
-                    func.coalesce(func.sum(DailyAggregate.revenue), 0),
-                    func.coalesce(func.sum(DailyAggregate.net_profit), 0),
-                ).where(
-                    DailyAggregate.user_id == self.user_id,
-                    DailyAggregate.marketplace == marketplace,
-                    DailyAggregate.aggregate_date >= period_start,
-                    DailyAggregate.aggregate_date <= period_end,
-                )
-            )
-            total_revenue, total_profit = totals.one()
-            total_revenue_d = Decimal(total_revenue)
-            total_profit_d = Decimal(total_profit)
-            margin = (total_profit_d / total_revenue_d) * Decimal("100") if total_revenue_d > 0 else None
-
-            top_rows = await self.db.execute(
-                select(
-                    SkuDailyMetric.sku,
-                    func.sum(SkuDailyMetric.revenue).label("revenue"),
-                    func.sum(SkuDailyMetric.net_profit).label("net_profit"),
-                    func.sum(SkuDailyMetric.units_sold).label("units_sold"),
-                )
-                .where(
-                    SkuDailyMetric.user_id == self.user_id,
-                    SkuDailyMetric.marketplace == marketplace,
-                    SkuDailyMetric.metric_date >= period_start,
-                    SkuDailyMetric.metric_date <= period_end,
-                )
-                .group_by(SkuDailyMetric.sku)
-                .order_by(func.sum(SkuDailyMetric.revenue).desc())
-                .limit(5)
-            )
-            top_skus = [
-                TopSKUSummaryDTO(
-                    internal_sku=row.sku,
-                    revenue=Decimal(row.revenue),
-                    profit=Decimal(row.net_profit),
-                    units_sold=int(row.units_sold or 0),
-                )
-                for row in top_rows.all()
-            ]
-
-            sku_count = (
-                await self.db.execute(
-                    select(func.count(func.distinct(SkuDailyMetric.sku))).where(
-                        SkuDailyMetric.user_id == self.user_id,
-                        SkuDailyMetric.marketplace == marketplace,
-                        SkuDailyMetric.metric_date >= period_start,
-                        SkuDailyMetric.metric_date <= period_end,
-                    )
-                )
-            ).scalar_one()
-
-        cov = await CostCoverageService(self.db, self.user_id).analyze(
-            marketplace=marketplace,
-            period=CoveragePeriod(start=period_start, end=period_end),
-            limit=1,
-        )
-        trust = classify_profit_trust(cov.sku_cost_coverage_pct)
+        trust = classify_profit_trust(cov_pct)
         profit_out, margin, top_skus = apply_profit_trust_to_ai_metrics(
             trust=trust,
-            total_profit=total_profit_d,
+            total_profit=total_profit_d if total_profit_d != 0 else None,
             margin_pct=margin,
             top_skus=top_skus,
         )
-
-        # Add deterministic trust / confidence signals as anomalies (visible to prompts via metrics_snapshot.anomalies).
-        anomalies: list[AnomalyDTO] = []
-        try:
-            cov = await CostCoverageService(self.db, self.user_id).analyze(
-                marketplace=marketplace,
-                period=CoveragePeriod(start=period_start, end=period_end),
-                limit=1,
-            )
-            if cov.cost_completeness_score is not None and cov.cost_completeness_score < Decimal("70"):
-                anomalies.append(
-                    AnomalyDTO(
-                        type="data_quality",
-                        severity="medium",
-                        confidence=Decimal("0.9"),
-                        message="Низкая уверенность в марже: себестоимость покрыта частично или устарела.",
-                    )
+        if cov_pct is not None and cov_pct < Decimal("80"):
+            anomalies.append(
+                AnomalyDTO(
+                    type="data_quality",
+                    severity="medium",
+                    confidence=Decimal("0.95"),
+                    message=(
+                        f"Себестоимость покрывает {cov_pct:.0f}% SKU с продажами — "
+                        "прибыль по непокрытым артикулам может быть неточной."
+                    ),
                 )
-        except Exception:
-            pass
-        try:
-            rec = await ReconciliationService(self.db, self.user_id).reconcile(
-                marketplace=marketplace,
-                period=ReconciliationPeriod(start=period_start, end=period_end),
             )
-            if any(w.code == "payout_mismatch" for w in rec.warnings):
-                anomalies.append(
-                    AnomalyDTO(
-                        type="data_quality",
-                        severity="medium",
-                        confidence=Decimal("0.8"),
-                        message="Есть расхождение выплат: часть компонентов может отсутствовать или быть неполной.",
-                    )
-                )
-        except Exception:
-            pass
 
-        return AnalyticsProcessor.prepare_ai_insight(
-            report_id=report.id,
-            report_date=period_end,
+        deep = await build_deep_period_insights(
+            self.db,
+            self.user_id,
+            marketplace=marketplace,
+            period_start=period_start,
+            period_end=period_end,
+            compare_start=compare_start,
+            compare_end=compare_end,
+            cost_coverage_pct=cov_pct,
+            missing_cost_skus=missing_skus,
+        )
+        extras = {
+            **deep.extras,
+            "deep_insights": list(deep.bullets),
+            "cost_coverage_pct": str(cov_pct) if cov_pct is not None else None,
+        }
+        if cov_pct is not None and cov_pct >= Decimal("100"):
+            extras["cost_data_available"] = True
+
+        insight = AnalyticsProcessor.prepare_ai_insight(
+            report_id=report_id,
+            report_date=report_date,
             marketplace_type=marketplace.value,
             sku_count=int(sku_count or 0),
             total_revenue=total_revenue_d if total_revenue_d > 0 else None,
@@ -753,6 +707,7 @@ class AIService:
             top_skus_summary=top_skus,
             anomalies=anomalies,
         )
+        return insight, extras
 
     async def _resolve_report_for_ai(self, report_id: UUID | None) -> Report | None:
         if report_id is not None:

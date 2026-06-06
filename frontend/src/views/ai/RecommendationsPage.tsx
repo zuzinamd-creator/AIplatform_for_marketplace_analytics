@@ -11,6 +11,9 @@ import { Button } from "../../ui/button";
 import { AiTrustNotice } from "../../ui/trust-banners";
 import { InsightPreview, parseInsightJson } from "../../ui/insight-preview";
 import { toast } from "../../ui/toast";
+import { PeriodSelector } from "../../ui/period-selector";
+import { loadPeriodSelection, previousPeriod, savePeriodSelection, type PeriodSelection } from "../../state/period";
+import { loadWorkspaceProfile } from "../../state/onboarding";
 
 type InboxFilter = "inbox" | "saved" | "snoozed" | "completed" | "dismissed" | "all";
 
@@ -28,23 +31,30 @@ export function RecommendationsPage() {
   const [streamStatus, setStreamStatus] = useState<"idle" | "running" | "done" | "error">("idle");
   const [lastRun, setLastRun] = useState<Record<string, unknown> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-
-  const reports = useQuery({
-    queryKey: ["reports", "list", 0, 5],
-    queryFn: () => api.reports.list(0, 5),
-  });
+  const workspace = loadWorkspaceProfile();
+  const marketplace = workspace.marketplace === "unknown" ? "wildberries" : workspace.marketplace;
+  const [periodSel, setPeriodSel] = useState<PeriodSelection>(() => loadPeriodSelection());
+  const compareRange = useMemo(() => {
+    if (!periodSel.compareEnabled) return null;
+    if (periodSel.comparePreset === "custom" && periodSel.compareRange) return periodSel.compareRange;
+    return previousPeriod(periodSel.range);
+  }, [periodSel]);
 
   const runAnalysis = useMutation({
     mutationFn: () =>
-      api.ai.runIntelligence({
-        workflow: "inventory_insight",
-        prompt_id: "inventory.insight.v1",
+      api.ai.runIntelligenceForPeriod({
+        workflow: "revenue_insight",
+        prompt_id: "analytics.summary.v1",
         semantics_version: "1.0",
-        report_id: (reports.data?.[0] as { id?: string } | undefined)?.id ?? null,
+        marketplace,
+        period_start: periodSel.range.start,
+        period_end: periodSel.range.end,
+        compare_period_start: compareRange?.start ?? null,
+        compare_period_end: compareRange?.end ?? null,
       }),
     onSuccess: async (res) => {
       setLastRun((res.recommendation as Record<string, unknown>) ?? { summary: res.summary });
-      toast("Анализ готов", "Рекомендация добавлена во входящие.");
+      toast("Анализ готов", `Период ${periodSel.range.start} — ${periodSel.range.end}`);
       await qc.invalidateQueries({ queryKey: ["ai", "recommendations"] });
       await qc.invalidateQueries({ queryKey: ["ai", "recommendationStats"] });
       await qc.invalidateQueries({ queryKey: ["ai", "usefulnessMetrics"] });
@@ -228,19 +238,28 @@ export function RecommendationsPage() {
         ))}
       </div>
 
+      <PeriodSelector
+        onChange={(sel) => {
+          setPeriodSel(sel);
+          savePeriodSelection(sel);
+        }}
+      />
+
       <Card className="p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-sm font-semibold">Запуск анализа</div>
             <div className="mt-1 text-xs text-ink-muted">
-              Создаёт рекомендацию во входящих (не сырой JSON). Используйте после загрузки отчётов и себестоимости.
+              Глубокий разбор SKU, логистики и маржи за выбранный период
+              {compareRange ? ` (сравнение с ${compareRange.start} — ${compareRange.end})` : ""}.
+              Не дублирует Dashboard — ищет убыточные SKU и аномалии затрат.
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
               variant="secondary"
               size="sm"
-              disabled={runAnalysis.isPending || !(reports.data?.length ?? 0)}
+              disabled={runAnalysis.isPending}
               onClick={() => runAnalysis.mutate()}
             >
               {runAnalysis.isPending ? "Анализ…" : "Запустить анализ"}
@@ -331,6 +350,12 @@ function RecommendationRow(props: { r: any; onWorkflow: (action: string) => void
   const impactEst = plan.impact_estimate as Record<string, unknown> | undefined;
   const urgency = String(u.urgency ?? impactEst?.urgency ?? "");
   const dataGaps = (u.data_gaps ?? plan.data_gaps) as string[] | undefined;
+  const periodLabel = (() => {
+    const start = u.source_period_start ?? plan.source_period_start;
+    const end = u.source_period_end ?? plan.source_period_end;
+    if (start && end) return `${start} — ${end}`;
+    return "";
+  })();
   const subtitle =
     String(u.recommended_action ?? plan.recommended_action ?? u.why_this_matters ?? r.summary ?? "");
   const conf =
@@ -346,6 +371,9 @@ function RecommendationRow(props: { r: any; onWorkflow: (action: string) => void
           <div className="truncate text-sm font-medium text-ink">
             {String(r.title ?? r.summary ?? t("ai.rec_fallback_title"))}
           </div>
+          {periodLabel ? (
+            <div className="mt-0.5 text-[11px] text-ink-muted">Период: {periodLabel}</div>
+          ) : null}
           <div className="mt-1 line-clamp-2 text-xs text-ink-muted">{subtitle}</div>
           {dataGaps && dataGaps.length > 0 ? (
             <div className="mt-1 line-clamp-1 text-xs text-amber-700">
