@@ -58,6 +58,45 @@
 - `ETL_AGGREGATE_LOCK_TIMEOUT_MS` — lock timeout фазы 3 (default 5000)
 - `JOB_MAX_ATTEMPTS`, `JOB_VISIBILITY_TIMEOUT_SECONDS`
 
+### WB upload: распознавание формата (2026-06)
+
+Потоковый парсер (`app/parsers/wb/header_detection.py`, `streaming.py`) автоматически:
+
+- сканирует **все листы** книги (не только active sheet);
+- находит строку заголовков по сигнатурам колонок WB (RU/EN);
+- пропускает титульные/пустые строки перед заголовком;
+- согласован с pandas-валидацией при upload (`load_wb_dataframe`).
+
+Типовые причины ложной ошибки «Report file contains no data rows» (исправлено):
+
+| Причина | Было | Стало |
+|---------|------|-------|
+| Данные на неактивном листе | 0 строк | выбирается лист с WB-заголовком |
+| Титульные строки перед заголовком | неверный header | header detection |
+| «Дата заказа» вместо «Дата продажи» | неверный период | scoring в `resolve_column_map` |
+
+Тесты: `tests/unit/test_wb_header_detection.py`.
+
+### Удаление отчётов
+
+`DELETE /api/v1/reports/{report_id}` — tenant-safe удаление:
+
+- каскад FK: `raw_reports`, `normalized_report_rows`, `financial_ledger_entries`, `inventory_ledger_entries`, `etl_jobs`, …;
+- пересчёт `daily_aggregates`, `sku_daily_metrics`, `sku_unit_economics_daily` за затронутые даты;
+- rebuild inventory snapshots;
+- удаление файла из object storage;
+- `cost_history.source_report_id` → NULL (не удаляет себестоимость).
+
+Сервис: `app/services/report_deletion_service.py`.
+
+### KPI и «Покрытие себестоимостью»
+
+- **Чистая прибыль** на dashboard = `daily_aggregates.net_profit` (ledger − COGS). Без загруженной себестоимости маржа ~90% отражает только комиссию WB, не реальную экономику SKU.
+- **Покрытие себестoимостью** (`GET /analytics/cost-coverage`) = `SKU с COGS / SKU с продажами × 100%`. Это метрика полноты данных, не «покрытие затрат» в смысле P&L.
+- Dashboard показывает предупреждение при `sku_cost_coverage_pct < 100%`.
+
+Проверка tenant isolation: `scripts/rls_leak_test.py` (RLS + FORCE на 35 таблицах, роль `marketplace_app`).
+
 ## Что умеет система
 
 - Детерминированная финансовая аналитика по периодам (выручка/прибыль/маржа/возвраты/выплаты).

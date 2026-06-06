@@ -24,13 +24,12 @@ CANONICAL_FIELDS = (
 
 FIELD_ALIASES: dict[str, tuple[str, ...]] = {
     "operation_date": (
+        "дата продажи",
+        "дата операции",
         "operation_date",
         "date",
         "report_date",
         "period",
-        "дата",
-        "дата операции",
-        "дата продажи",
     ),
     "sku": (
         "sku",

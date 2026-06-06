@@ -75,6 +75,10 @@ export function DashboardPage() {
   const stale = freshness?.stale_data_warning ?? false;
   const integrityWarnings = data?.revenue_summary.integrity?.warnings ?? [];
   const completeness = data?.revenue_summary.integrity?.financial_completeness_score ?? null;
+  const costCoveragePct = data?.cost_coverage?.sku_cost_coverage_pct ?? null;
+  const uncoveredSkus = (data?.cost_coverage?.items ?? []).filter(
+    (row) => row.units_sold > 0 && Number(row.cogs ?? "0") === 0,
+  ).length;
   const aRevenue = Number(data?.revenue_summary.kpis.total_revenue ?? "0");
   const bRevenue = Number(data?.revenue_summary_compare?.kpis.total_revenue ?? "0");
   const deltaRevenue = compare ? aRevenue - bRevenue : null;
@@ -149,11 +153,15 @@ export function DashboardPage() {
           <Card className="p-4">
             <div className="text-xs font-medium text-ink-muted">Доверие к марже</div>
             <div className="mt-2 text-sm text-ink-secondary">
-              {completeness ? `Полнота аналитики: ${formatPct(completeness)}` : "Полнота неизвестна"}
+              {costCoveragePct !== null
+                ? `Покрытие себестоимостью: ${formatPct(costCoveragePct)}`
+                : completeness
+                  ? `Полнота аналитики: ${formatPct(completeness)}`
+                  : "Полнота неизвестна"}
               {(data?.ai_ops as Record<string, unknown>)?.degraded_intelligence_mode ? " · ИИ осторожен" : ""}
             </div>
             <Link to="/app/finance/costs" className="link-muted mt-3 inline-block text-xs">
-              Покрытие затрат →
+              Покрытие себестоимостью →
             </Link>
           </Card>
         </div>
@@ -168,7 +176,7 @@ export function DashboardPage() {
             value={isLoading ? "…" : formatRub(data?.revenue_summary.kpis.total_revenue)}
             sub={
               <span>
-                Валовая прибыль: {formatRub(data?.revenue_summary.kpis.total_profit)} · Маржинальность:{" "}
+                Чистая прибыль: {formatRub(data?.revenue_summary.kpis.total_profit)} · Маржинальность:{" "}
                 {formatPct(data?.revenue_summary.kpis.margin_pct)} {stale ? "· данные устарели" : ""}
                 {compare && deltaRevenue !== null ? (
                   <>
@@ -241,12 +249,18 @@ export function DashboardPage() {
             Данные проанализированы за период: {start} → {end} · Последнее обновление: {freshness?.data_as_of ?? "—"}
             {completeness ? <> · Полнота аналитики: {formatPct(completeness)}</> : null}
           </div>
-          {integrityWarnings.length ? (
+          {integrityWarnings.length || (costCoveragePct !== null && Number(costCoveragePct) < 100) ? (
             <WarnCallout title="Предупреждения целостности" className="mt-4">
               <ul className="list-disc space-y-1 pl-5 text-xs">
                 {integrityWarnings.slice(0, 4).map((w) => (
                   <li key={w.code}>{w.message}</li>
                 ))}
+                {costCoveragePct !== null && Number(costCoveragePct) < 100 ? (
+                  <li>
+                    Покрытие себестоимостью {formatPct(costCoveragePct)} — {uncoveredSkus} SKU без COGS.
+                    Маржа без себестоимости отражает только комиссии маркетплейса.
+                  </li>
+                ) : null}
               </ul>
             </WarnCallout>
           ) : null}
@@ -329,7 +343,7 @@ export function DashboardPage() {
             <div className="flex justify-between gap-3"><span>Хранение, руб.</span><span>{formatRub(data?.finance_summary.kpis.storage_fee)}</span></div>
             <div className="flex justify-between gap-3"><span>К перечислению, руб.</span><span>{formatRub(data?.finance_summary.kpis.payout)}</span></div>
             <div className="mt-3 flex justify-between gap-3 border-t border-surface-subtle pt-3 font-semibold text-ink">
-              <span>Валовая прибыль, руб.</span><span>{formatRub(data?.finance_summary.kpis.gross_profit)}</span>
+              <span>Чистая прибыль, руб.</span><span>{formatRub(data?.finance_summary.kpis.gross_profit)}</span>
             </div>
             <div className="flex justify-between gap-3">
               <span>Маржинальность, %</span><span>{formatPct(data?.finance_summary.kpis.margin_pct)}</span>

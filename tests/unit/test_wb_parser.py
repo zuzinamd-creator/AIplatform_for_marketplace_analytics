@@ -16,6 +16,18 @@ def test_resolve_column_map_tolerant_ru_headers() -> None:
     assert resolved["payout"] == "К перечислению"
 
 
+def test_resolve_column_map_prefers_sale_date_over_order_date() -> None:
+    columns = [
+        "Дата заказа покупателем",
+        "Дата продажи",
+        "Артикул поставщика",
+        "К перечислению",
+        "Тип операции",
+    ]
+    resolved = resolve_column_map(columns)
+    assert resolved["operation_date"] == "Дата продажи"
+
+
 def test_realization_v1_parser_normalizes_row() -> None:
     parser = RealizationV1Parser()
     df = pd.DataFrame(

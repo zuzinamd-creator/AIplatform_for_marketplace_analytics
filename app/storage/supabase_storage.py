@@ -118,3 +118,13 @@ class SupabaseReportStorage:
             if len(buffer) > max_bytes:
                 raise ValueError(f"File exceeds max allowed size ({max_bytes} bytes)")
         return bytes(buffer)
+
+    def delete(self, storage_uri: str) -> None:
+        client = get_supabase_client()
+        if client is None:
+            return
+        bucket, path = storage_uri.split("/", 1)
+        try:
+            client.storage.from_(bucket).remove([path])
+        except Exception:
+            return

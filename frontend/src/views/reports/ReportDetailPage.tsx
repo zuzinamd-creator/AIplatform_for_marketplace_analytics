@@ -1,9 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { api } from "../../state/http";
+import { Button } from "../../ui/button";
 import { Card } from "../../ui/card";
 import { StatusBadge } from "../../ui/status-badge";
+import { toast } from "../../ui/toast";
 
 function toneForStatus(status?: string) {
   const s = (status ?? "").toLowerCase();
@@ -28,13 +30,28 @@ function fmtPeriod(start?: string | null, end?: string | null): string {
 
 export function ReportDetailPage() {
   const { reportId } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const q = useQuery({
     queryKey: ["reports", "get", reportId],
     queryFn: () => api.reports.get(reportId!),
     enabled: Boolean(reportId),
   });
+  const remove = useMutation({
+    mutationFn: () => api.reports.delete(reportId!),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["reports"] });
+      await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Отчёт удалён");
+      navigate("/app/reports");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Не удалось удалить отчёт");
+    },
+  });
 
   const r = q.data;
+  const canDelete = r && !String(r.status).toLowerCase().includes("process");
 
   return (
     <div className="page-shell">
@@ -43,9 +60,24 @@ export function ReportDetailPage() {
           <h1 className="page-title">Детали отчёта</h1>
           <p className="page-subtitle">Статус обработки берётся из очереди ETL (`etl_jobs`).</p>
         </div>
-        <Link className="link-muted" to="/app/reports">
-          ← К списку отчётов
-        </Link>
+        <div className="flex items-center gap-2">
+          {canDelete ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={remove.isPending}
+              onClick={() => {
+                if (!window.confirm("Удалить отчёт и все связанные проводки? Это действие необратимо.")) return;
+                remove.mutate();
+              }}
+            >
+              Удалить отчёт
+            </Button>
+          ) : null}
+          <Link className="link-muted" to="/app/reports">
+            ← К списку отчётов
+          </Link>
+        </div>
       </div>
 
       {q.isLoading ? (

@@ -15,13 +15,14 @@ from openpyxl import load_workbook
 from app.parsers.wb.base import (
     NormalizedWbRow,
     WbReportParserStrategy,
-    normalize_header,
     parse_decimal,
     resolve_column_map,
 )
-from app.parsers.wb.mapping import PARSER_VERSION_V1_SIGNATURE, PARSER_VERSION_V2_SIGNATURE
+from app.parsers.wb.header_detection import locate_wb_table, row_has_data
+from app.parsers.wb.mapping import PARSER_VERSION_V2_SIGNATURE
 from app.parsers.wb.strategies.realization_v1 import RealizationV1Parser
 from app.parsers.wb.strategies.realization_v2 import RealizationV2Parser
+from app.parsers.wb.base import normalize_header
 
 
 def _select_parser_from_headers(headers: list[str]) -> WbReportParserStrategy:
@@ -104,10 +105,6 @@ def _row_from_values(
     )
 
 
-def _row_has_data(values: tuple[object, ...]) -> bool:
-    return any(not _is_empty(value) for value in values)
-
-
 @contextmanager
 def _open_xlsx_workbook(path: Path):
     workbook = load_workbook(path, read_only=True, data_only=True)
@@ -115,6 +112,36 @@ def _open_xlsx_workbook(path: Path):
         yield workbook
     finally:
         workbook.close()
+
+
+def _yield_normalized_chunks(
+    *,
+    headers: list[str],
+    row_iter: Iterator[tuple[object, ...]],
+    chunk_size: int,
+) -> Iterator[tuple[WbReportParserStrategy, list[NormalizedWbRow]]]:
+    parser = _select_parser_from_headers(headers)
+    column_map = resolve_column_map(headers)
+    chunk: list[NormalizedWbRow] = []
+    index = 0
+    for values in row_iter:
+        if not row_has_data(values):
+            continue
+        chunk.append(
+            _row_from_values(
+                parser,
+                index=index,
+                headers=headers,
+                values=values,
+                column_map=column_map,
+            )
+        )
+        index += 1
+        if len(chunk) >= chunk_size:
+            yield parser, chunk
+            chunk = []
+    if chunk:
+        yield parser, chunk
 
 
 def iter_wb_normalized_rows(
@@ -135,66 +162,32 @@ def iter_wb_normalized_rows(
     if suffix not in {".xlsx"}:
         raise ValueError(f"Streaming parse is not supported for {suffix!r}; use .xlsx or .csv")
 
+    located = locate_wb_table(path, filename=filename)
     with _open_xlsx_workbook(path) as workbook:
-        sheet = workbook.active
-        row_iter = sheet.iter_rows(values_only=True)
-        try:
-            header_row = next(row_iter)
-        except StopIteration:
-            return
-        headers = ["" if cell is None else str(cell) for cell in header_row]
-        parser = _select_parser_from_headers(headers)
-        column_map = resolve_column_map(headers)
-        chunk: list[NormalizedWbRow] = []
-        index = 0
-        for values in row_iter:
-            if not _row_has_data(values):
-                continue
-            chunk.append(
-                _row_from_values(
-                    parser,
-                    index=index,
-                    headers=headers,
-                    values=values,
-                    column_map=column_map,
-                )
-            )
-            index += 1
-            if len(chunk) >= chunk_size:
-                yield parser, chunk
-                chunk = []
-        if chunk:
-            yield parser, chunk
+        sheet = workbook[located.sheet_name or workbook.active.title]
+        row_iter = (
+            row
+            for row_index, row in enumerate(sheet.iter_rows(values_only=True))
+            if row_index > located.header_row_index
+        )
+        yield from _yield_normalized_chunks(
+            headers=located.headers,
+            row_iter=row_iter,
+            chunk_size=chunk_size,
+        )
 
 
 def _iter_csv_chunks(path: Path, *, chunk_size: int) -> Iterator[tuple[WbReportParserStrategy, list[NormalizedWbRow]]]:
+    located = locate_wb_table(path, filename=path.name)
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.reader(handle)
-        try:
-            header_row = next(reader)
-        except StopIteration:
-            return
-        headers = [str(cell) for cell in header_row]
-        parser = _select_parser_from_headers(headers)
-        column_map = resolve_column_map(headers)
-        chunk: list[NormalizedWbRow] = []
-        index = 0
-        for row in reader:
-            values = tuple(row)
-            if not _row_has_data(values):
-                continue
-            chunk.append(
-                _row_from_values(
-                    parser,
-                    index=index,
-                    headers=headers,
-                    values=values,
-                    column_map=column_map,
-                )
-            )
-            index += 1
-            if len(chunk) >= chunk_size:
-                yield parser, chunk
-                chunk = []
-        if chunk:
-            yield parser, chunk
+        row_iter = (
+            tuple(row)
+            for row_index, row in enumerate(reader)
+            if row_index > located.header_row_index
+        )
+        yield from _yield_normalized_chunks(
+            headers=located.headers,
+            row_iter=row_iter,
+            chunk_size=chunk_size,
+        )

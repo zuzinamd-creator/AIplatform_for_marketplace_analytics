@@ -23,16 +23,21 @@ def validate_report_file(
     lower = filename.lower()
     df = load_file_to_dataframe(filename, content)
 
-    if marketplace == Marketplace.WILDBERRIES and lower.endswith((".xlsx", ".xls")):
+    if marketplace == Marketplace.WILDBERRIES and lower.endswith((".xlsx", ".xls", ".csv")):
         from app.parsers.wb import parse_wb_report
 
         try:
-            parse_wb_report(df)
+            _, rows = parse_wb_report(df)
         except Exception as exc:
             raise ValueError(
                 "[wb_excel_unrecognized] Формат отчёта Wildberries не распознан. "
                 "Загрузите еженедельный детализированный отчёт реализации (WB .xlsx)."
             ) from exc
+        if not rows:
+            raise ValueError(
+                "[wb_no_data_rows] Report file contains no data rows. "
+                "Проверьте, что выбран детализированный отчёт реализации с данными."
+            )
         return
 
     try:

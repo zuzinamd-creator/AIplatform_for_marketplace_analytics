@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from app.schemas.ai_intelligence import AIOperationalStatusResponse, TodaysFocusResponse
 from app.schemas.analytics import (
     AnalyticsCoverageResponse,
+    CostCoverageResponse,
     FinancialKpiSummaryResponse,
     FinancialTrendsResponse,
     RevenueKpiSummaryResponse,
@@ -31,4 +32,5 @@ class DashboardSummaryResponse(BaseModel):
     finance_trend_daily: FinancialTrendsResponse
     top_skus: TopSkusResponse
     coverage: AnalyticsCoverageResponse
+    cost_coverage: CostCoverageResponse | None = None
     generated_at: str = Field(..., description="ISO-8601 UTC timestamp")

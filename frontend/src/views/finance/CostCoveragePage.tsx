@@ -35,9 +35,9 @@ export function CostCoveragePage() {
     <div className="page-shell">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="page-title">Себестоимость и покрытие затрат</h1>
+          <h1 className="page-title">Покрытие себестоимостью (COGS)</h1>
           <p className="page-subtitle">
-            Понимание, можно ли доверять марже: полнота COGS, дубли, устаревшие стоимости.
+            Доля SKU с загруженной себестоимостью среди продаваемых позиций. Без COGS маржа на dashboard завышена.
           </p>
         </div>
         <StatusBadge tone={stale ? "warn" : "info"}>{stale ? "данные устарели" : "актуально"}</StatusBadge>

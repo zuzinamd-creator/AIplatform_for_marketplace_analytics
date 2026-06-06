@@ -300,3 +300,56 @@ class WbPersistAggregatesMixin:
         )
         for batch in iter_batches(values, batch_size=INSERT_BATCH_SIZE):
             await self.db.execute(upsert, batch)
+
+    async def rebuild_projections_for_dates(
+        self,
+        affected_dates: set[date],
+        *,
+        default_date: date | None = None,
+    ) -> None:
+        """Rebuild or clear day/SKU projections after ledger mutations (e.g. report delete)."""
+        if not affected_dates:
+            return
+
+        costs = await self.load_cost_snapshots(self.db, self.user_id)
+        await self._purge_sku_aggregates_for_dates(
+            affected_dates,
+            marketplace=Marketplace.WILDBERRIES.value,
+        )
+        drafts = await self._load_ledger_drafts_for_dates(affected_dates)
+        if not drafts:
+            await self.db.execute(
+                delete(DailyAggregate).where(
+                    DailyAggregate.user_id == self.user_id,
+                    DailyAggregate.aggregate_date.in_(affected_dates),
+                    DailyAggregate.marketplace == Marketplace.WILDBERRIES,
+                )
+            )
+            return
+
+        fallback = default_date or min(affected_dates)
+        daily, sku_rows = AggregationEngine.build(
+            drafts,
+            marketplace=Marketplace.WILDBERRIES,
+            costs_by_sku=costs,
+            default_date=fallback,
+        )
+        unit_econ_rows = SkuUnitEconomicsBuilder.build(
+            drafts,
+            marketplace=Marketplace.WILDBERRIES,
+            costs_by_sku=costs,
+            affected_dates=affected_dates,
+        )
+        dates_with_totals = {row.aggregate_date for row in daily}
+        orphan_dates = affected_dates - dates_with_totals
+        if orphan_dates:
+            await self.db.execute(
+                delete(DailyAggregate).where(
+                    DailyAggregate.user_id == self.user_id,
+                    DailyAggregate.aggregate_date.in_(orphan_dates),
+                    DailyAggregate.marketplace == Marketplace.WILDBERRIES,
+                )
+            )
+        await self._batch_upsert_daily_aggregates(daily, affected_dates)
+        await self._batch_upsert_sku_daily_metrics(sku_rows, affected_dates)
+        await self._batch_upsert_sku_unit_economics(unit_econ_rows)

@@ -228,6 +228,9 @@ export const api = {
       const { data } = await http.get(`/reports/${reportId}`);
       return unwrap<ReportResponse>(data);
     },
+    async delete(reportId: string) {
+      await http.delete(`/reports/${reportId}`);
+    },
     async upload(
       form: FormData,
       onProgress?: (pct: number, loaded: number, total?: number) => void,

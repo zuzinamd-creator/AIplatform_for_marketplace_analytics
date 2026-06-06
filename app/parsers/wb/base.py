@@ -26,21 +26,42 @@ def normalize_header(value: object) -> str:
     return str(value).strip().lower().replace("\xa0", " ")
 
 
+def _column_match_score(field: str, column: str) -> int:
+    column_norm = normalize_header(column)
+    if not column_norm:
+        return 0
+    best = 0
+    for alias in FIELD_ALIASES.get(field, ()):
+        alias_norm = normalize_header(alias)
+        if column_norm == alias_norm:
+            best = max(best, 200 + len(alias_norm))
+            continue
+        if alias_norm in column_norm:
+            score = 100 + len(alias_norm)
+            if field == "operation_date":
+                if "заказ" in column_norm and "продаж" not in column_norm:
+                    score -= 50
+                if "фиксац" in column_norm:
+                    score -= 80
+                if "продаж" in column_norm:
+                    score += 40
+                if "операц" in column_norm:
+                    score += 30
+            best = max(best, score)
+    return best
+
+
 def resolve_column_map(columns: list[str]) -> dict[str, str | None]:
-    normalized = {normalize_header(column): column for column in columns}
     resolved: dict[str, str | None] = {}
     for field in CANONICAL_FIELDS:
-        aliases = FIELD_ALIASES.get(field, ())
-        match = None
-        for alias in aliases:
-            alias_norm = normalize_header(alias)
-            for header_norm, original in normalized.items():
-                if alias_norm == header_norm or alias_norm in header_norm:
-                    match = original
-                    break
-            if match:
-                break
-        resolved[field] = match
+        best_score = 0
+        best_column: str | None = None
+        for column in columns:
+            score = _column_match_score(field, column)
+            if score > best_score:
+                best_score = score
+                best_column = column
+        resolved[field] = best_column if best_score > 0 else None
     return resolved
 
 

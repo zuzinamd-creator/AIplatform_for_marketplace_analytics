@@ -39,3 +39,8 @@ def read_report_file(storage_uri: str, *, filename: str | None = None) -> bytes:
         if filename and Path(filename).suffix.lower() == ".xls":
             raise LegacyReportTooLargeError(LEGACY_XLS_TOO_LARGE_MESSAGE) from exc
         raise
+
+
+def delete_report_file(storage_uri: str) -> None:
+    """Best-effort delete of stored report bytes."""
+    get_report_storage().delete(storage_uri)

@@ -32,6 +32,7 @@ from app.schemas.ops import PaginatedQueueResponse, QueueJobOpsResponse
 from app.schemas.ops_runtime import RuntimeSummaryResponse
 from app.services.ai_service import AIService
 from app.services.analytics_service import AnalyticsService, Period
+from app.services.cost_coverage_service import CostCoverageService, CoveragePeriod
 from app.services.ops_service import OpsService
 
 T = TypeVar("T")
@@ -84,6 +85,13 @@ class DashboardService:
                 )
             ),
             self._run(lambda db: AnalyticsService(db, user).coverage()),
+            self._run(
+                lambda db: CostCoverageService(db, user_id).analyze(
+                    marketplace=marketplace,
+                    period=CoveragePeriod(start=start, end=end),
+                    limit=20,
+                )
+            ),
         ]
         if compare_start is not None and compare_end is not None:
             compare_period = Period(start=compare_start, end=compare_end)
@@ -108,7 +116,8 @@ class DashboardService:
         finance_trend = results[8]
         top_skus = results[9]
         coverage = results[10]
-        revenue_compare = results[11] if len(results) > 11 else None
+        cost_coverage = results[11]
+        revenue_compare = results[12] if len(results) > 12 else None
 
         return DashboardSummaryResponse(
             queue=PaginatedQueueResponse(
@@ -165,5 +174,6 @@ class DashboardService:
             finance_trend_daily=FinancialTrendsResponse.model_validate(finance_trend),
             top_skus=TopSkusResponse.model_validate(top_skus),
             coverage=AnalyticsCoverageResponse.model_validate(coverage),
+            cost_coverage=CostCoverageResponse.model_validate(cost_coverage),
             generated_at=datetime.now(UTC).isoformat(),
         )

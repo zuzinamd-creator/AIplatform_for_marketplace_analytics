@@ -12,7 +12,9 @@ def load_file_to_dataframe(filename: str, content: bytes) -> pd.DataFrame:
     if lower.endswith(".csv"):
         return pd.read_csv(buffer)
     if lower.endswith((".xlsx", ".xls")):
-        return pd.read_excel(buffer)
+        from app.parsers.wb.header_detection import load_wb_dataframe
+
+        return load_wb_dataframe(filename, content)
     raise ValueError(f"Unsupported file format: {filename}")
 
 

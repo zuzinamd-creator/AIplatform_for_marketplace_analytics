@@ -56,3 +56,13 @@ class LocalReportStorage:
             if len(buffer) > max_bytes:
                 raise ValueError(f"File exceeds max allowed size ({max_bytes} bytes)")
         return bytes(buffer)
+
+    def delete(self, storage_uri: str) -> None:
+        path = Path(storage_uri)
+        if path.is_file():
+            path.unlink(missing_ok=True)
+        elif path.is_dir():
+            for child in sorted(path.rglob("*"), reverse=True):
+                if child.is_file():
+                    child.unlink(missing_ok=True)
+            path.rmdir()

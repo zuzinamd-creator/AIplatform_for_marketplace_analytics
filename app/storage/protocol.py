@@ -32,3 +32,7 @@ class ReportStorage(Protocol):
     def read_all(self, storage_uri: str, *, max_bytes: int) -> bytes:
         """Bounded read for ETL pipeline compatibility."""
         ...
+
+    def delete(self, storage_uri: str) -> None:
+        """Remove stored report object if present (best-effort)."""
+        ...

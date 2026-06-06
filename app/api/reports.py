@@ -10,6 +10,7 @@ from app.models.report import Marketplace, ReportType
 from app.models.user import User
 from app.schemas.report import ReportResponse, ReportUploadResponse
 from app.schemas.report_mappers import report_to_response
+from app.services.report_deletion_service import ReportDeletionService
 from app.services.report_service import ReportService
 from app.services.report_upload_service import persist_report_file, validate_report_file
 
@@ -108,3 +109,13 @@ async def get_report(
 ) -> ReportResponse:
     report, job, ps, pe = await ReportService(db, current_user).get_report(report_id)
     return report_to_response(report, job, period_start=ps, period_end=pe)
+
+
+@router.delete("/{report_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_report(
+    report_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    await ReportDeletionService(db, current_user).delete_report(report_id)
+    ReportService(db, current_user).invalidate_list_cache()
