@@ -42,11 +42,11 @@ export function ReportDetailPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["reports"] });
       await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Отчёт удалён");
+      toast("Отчёт удалён");
       navigate("/app/reports");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Не удалось удалить отчёт");
+      toast("Не удалось удалить отчёт", error.message || undefined);
     },
   });
 

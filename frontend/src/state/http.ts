@@ -473,6 +473,7 @@ export const api = {
         finance_trend_daily: FinancialTrendsResponse;
         top_skus: TopSkusResponse;
         coverage: AnalyticsCoverageResponse;
+        cost_coverage: CostCoverageResponse | null;
         generated_at: string;
       }>(data);
     },
