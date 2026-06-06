@@ -21,6 +21,7 @@ from app.schemas.ai_intelligence import (
 )
 from app.schemas.analytics import (
     AnalyticsCoverageResponse,
+    CostCoverageResponse,
     FinancialKpiSummaryResponse,
     FinancialTrendsResponse,
     RevenueKpiSummaryResponse,
