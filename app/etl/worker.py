@@ -265,6 +265,21 @@ async def process_next_job() -> bool:
                 await _mark_job_failed_or_retry(job, str(exc), exc=exc)
                 return True
 
+            try:
+                async with SessionLocal() as db:
+                    from app.etl.post_report_ai import maybe_generate_recommendation_after_report
+
+                    await maybe_generate_recommendation_after_report(
+                        db,
+                        user_id=job.user_id,
+                        report_id=job.report_id,
+                    )
+            except Exception:
+                logger.exception(
+                    "post_report_ai_hook_failed",
+                    extra={"job_id": str(job.job_id), "report_id": str(job.report_id)},
+                )
+
         logger.info("job_completed")
         return True
     finally:

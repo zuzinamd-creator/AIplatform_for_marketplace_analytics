@@ -138,6 +138,7 @@ class Settings(BaseSettings):
     ai_rate_limit_per_minute: int = 30
     ai_memory_max_turns: int = 10
     ai_disabled_agents: str = ""
+    ai_auto_recommend_after_report: bool = True
 
     @property
     def async_database_url(self) -> str:

@@ -26,6 +26,47 @@
 | **Contribution margin** | (revenue − returns + compensation) − fees − COGS | Unit economics (`sku_unit_economics_daily`) |
 | **Average check** | revenue / units_sold | units_sold = Σ quantity на «Продажа» |
 
+### Revenue — каноническое определение и зависимости
+
+**Revenue (выручка)** = Σ `financial_ledger_entries.amount` где `operation_type = SALE`, только строки WB с «Обоснование для оплаты» = **«Продажа»** (`allows_retail_amount` в `wb_row_semantics.py`).
+
+| Вопрос | Ответ |
+|--------|--------|
+| Возвраты входят в Revenue? | **Нет.** Возвраты — отдельные проводки `RETURN` (отрицательные суммы). |
+| Почему раньше WB ≠ ledger? | До Phase 5 return-строки ошибочно создавали SALE (+3 698 ₽) → ledger 508 943 ₽ vs канон 505 245 ₽. **Исправлено.** |
+| Что показывать пользователю? | **505 245 ₽** (SALE only) на Dashboard / Trends / AI. Returns — отдельной строкой. |
+| gross_revenue в reconciliation | Сумма retail на SALE-строках отчёта; не смешивать с payout. |
+
+**Цепочка зависимостей KPI:**
+
+```text
+Revenue (Σ SALE)
+  → Profit (= Σ ledger excl. PAYOUT − COGS)
+    → Margin % (= profit / revenue)
+      → ROI (= profit / COGS)
+        → ABC / SKU ranking (по revenue или contribution margin)
+          → AI insight input (total_revenue, margin, top SKUs, anomalies)
+```
+
+| KPI downstream | Источник Revenue |
+|----------------|------------------|
+| Dashboard `revenue_summary` | `daily_aggregates.revenue` |
+| Trends | `daily_aggregates.revenue` по дням |
+| SKU economics | `sku_unit_economics_daily.revenue` |
+| Reconciliation `gross_revenue` | Snapshot per report |
+| AI `MetricsDTO.total_revenue` | Sum `DailyAggregate` за период отчёта |
+
+### Период аналитики (MVP)
+
+**Официальное правило:** период Dashboard/Trends/AI и колонка «Период» в UI определяются по **«Дата продажи»** на строках «Продажа», а не по дате заказа, загрузки или ETL.
+
+| Дата | Использование |
+|------|----------------|
+| **Дата продажи** (`sale_date` / колонка «Дата продажи») | Период отчёта в UI, ledger, aggregates, AI |
+| **Дата заказа покупателем** | Не используется для периода и KPI MVP |
+| **operation_date** (ledger) | Дата операции в проводках; может отличаться от даты продажи |
+| **Дата загрузки / ETL** | Очередь и статус обработки; не фильтрует KPI |
+
 ### Правило себестоимости
 
 Каждая запись `cost_history` имеет `effective_from`. Для продажи от даты **D** выбирается запись с **max(effective_from) ≤ D**. Новая себестоимость действует до следующей записи по SKU. **Исторические агрегаты не пересчитываются автоматически** — только через rebuild/incremental projection.
@@ -49,17 +90,6 @@
 
 После изменения ledger-логики выполните: `python scripts/rebuild_financial_projections.py`.
 
-### Период аналитики (MVP)
-
-**Официальное правило:** период Dashboard/Trends/AI определяется по **дате продажи** (`operation_date` на строках «Продажа» в отчёте WB), а не по дате загрузки файла или завершения ETL.
-
-| Дата | Использование |
-|------|----------------|
-| **Дата продажи** (`operation_date`) | Ledger, daily aggregates, Dashboard, Trends, SKU economics, AI |
-| **Дата заказа** | Не используется для финансовой аналитики MVP |
-| **Период отчёта WB** (заголовок файла) | Только UI-подсказка; границы отчёта в UI = min/max дат продаж |
-| **Дата загрузки / ETL** | Очередь и статус обработки; не фильтрует KPI |
-
 ### Pipeline загрузки отчёта продаж
 
 ```mermaid
@@ -73,6 +103,7 @@ flowchart LR
   G --> H[Ledger append]
   H --> I[Aggregates rebuild]
   I --> J[Dashboard API]
+  I --> K[AI recommendation hook]
 ```
 
 **Гарантии MVP:**
@@ -282,6 +313,69 @@ cd /root/AIplatform_for_marketplace_analytics && bash scripts/deploy-frontend.sh
 
 - UI: `/app/dashboard` → “ИИ-анализ периода”
 - UI: `/app/ai/recommendations` / детали рекомендации (trust + limitations + история действий)
+
+### AI Recommendation Engine
+
+Детерминированный слой (domain analysts) + LLM-нарратив + quality/fatigue post-processing. Источник KPI: `daily_aggregates`, `sku_unit_economics_daily`, governed anomalies, `cost_history` (trust gating).
+
+#### Реестр правил (deterministic findings)
+
+| ID | Аналитик | Условие | KPI | Severity | Рекомендуемые действия |
+|----|----------|---------|-----|----------|------------------------|
+| `sales_revenue_present` | Sales | `total_revenue > 0` | revenue, sku_count | medium | Review top-SKU; compare period-over-period |
+| `sales_low_margin` | Sales | `margin < 0.15` (15%) | margin, cost coverage | high | Confirm cost import completeness |
+| `sales_top_sku` | Sales | `top_skus` non-empty | top SKU revenue | low | Prioritize listing/stock for leader |
+| `funnel_concentration` | Funnel | top SKU > 60% revenue | top_sku_concentration | medium | Diversify promoted SKUs |
+| `funnel_breadth_ok` | Funnel | `sku_count >= 5` and concentration ≤ 60% | sku_count | low | Monitor conversion by tier |
+| `anomaly_{n}_{type}` | Anomaly | anomaly in package | anomaly list | high/critical | Resolve data-quality before trusting KPIs |
+| `anomaly_none` | Anomaly | no anomalies | — | low | (informational) |
+| `inventory_limited_signals` | Inventory | no inventory KPIs | sku_count | low | Enable inventory snapshots in ETL |
+| `ads_no_governed_spend` | Ads | no ad-spend KPIs | — | low | Import ad campaign reports |
+| `mp_context` | Marketplace | marketplace_type set | marketplace | low | Upload other marketplace reports |
+
+#### Scoring и приоритет
+
+| Слой | Файл | Логика |
+|------|------|--------|
+| Decision engine | `app/ai/decision/engine.py` | `priority = confidence×60`; +25 for risk/anomaly workflows; −10 rebuild pending; −15 stale |
+| Executive aggregator | `app/ai/executive/` | Merges domain findings; boosts priority by `business_impact_score` |
+| Quality engine | `app/ai/quality/recommendation_quality.py` | Adjusts confidence/priority for stale, no evidence, generic wording, fatigue |
+| Fatigue | `app/ai/product/fatigue.py` | Suppresses duplicate fingerprints; cooldown decay |
+
+#### Explainability (каждая рекомендация)
+
+Persisted fields in `action_plan` / explainability API:
+
+1. **Причина** — `why_this_matters` (seller_usefulness)
+2. **KPI-основание** — `grounded.evidence` + domain finding statements
+3. **Влияние на прибыль** — `impact_estimate`, `expected_business_impact`, `revenue_opportunity_score`
+4. **Приоритет** — `priority_score` (0–100), urgency band
+
+API: `GET /api/v1/ai/recommendations/{id}/explainability`
+
+#### Автозапуск после ETL
+
+После успешной обработки finance-отчёта worker вызывает `maybe_generate_recommendation_after_report` (`revenue_insight` workflow).
+
+| Env | Default | Описание |
+|-----|---------|----------|
+| `AI_ENABLED` | true | Master switch |
+| `AI_AUTO_RECOMMEND_AFTER_REPORT` | true | Hook после ETL |
+
+#### Ограничения MVP (нет dedicated rules)
+
+- Высокая логистика / комиссия — только через LLM narrative или injected anomaly
+- Резкое падение продаж — через anomaly pipeline, не отдельное правило
+- Profit/margin скрыты при cost coverage < 100% (trust gating) → `sales_low_margin` может не сработать
+
+#### Условия отключения рекомендаций
+
+- `AI_ENABLED=false`
+- `AI_AUTO_RECOMMEND_AFTER_REPORT=false`
+- Report type ≠ FINANCE
+- Intelligence run не вызван (legacy: только pending `ai_insights` slot)
+- Fatigue duplicate suppression (`fatigue_suppress` flag)
+- Degraded/rebuild context → confidence снижается, urgency capped
 
 ## Типовые workflow продавца
 
