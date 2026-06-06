@@ -230,6 +230,8 @@ async def process_next_job() -> bool:
                                 )
                         return True
 
+                    await db.commit()
+
                     report_service = ReportService(db, user)
                     pipeline = ETLPipeline(db, job.user_id)
                     with track_duration(logger, "etl_persist_result", job_id=str(job.job_id)):
@@ -241,7 +243,11 @@ async def process_next_job() -> bool:
                             in_transaction=False,
                         )
                     async with TenantSession.transaction(db, job.user_id):
-                        await report_service.ack_job(job.job_id, in_transaction=True)
+                        await report_service.ack_job(
+                            job.job_id,
+                            report_id=job.report_id,
+                            in_transaction=True,
+                        )
             except EtlRetryableError as exc:
                 await _mark_job_failed_or_retry(job, str(exc), exc=exc)
                 return True

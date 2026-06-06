@@ -1,5 +1,7 @@
 from datetime import date
 
+from sqlalchemy import inspect
+
 from app.models.job import EtlJob
 from app.models.report import Report
 from app.schemas.report import ReportResponse
@@ -34,7 +36,11 @@ def report_to_response(
     period_end: date | None = None,
 ) -> ReportResponse:
     """Stable API mapping; processing state projected from latest etl_job."""
-    raw_start, raw_end = _period_from_raw_data(report.raw_data)
+    state = inspect(report)
+    if "raw_data" in state.unloaded:
+        raw_start, raw_end = None, None
+    else:
+        raw_start, raw_end = _period_from_raw_data(report.raw_data)
     return ReportResponse(
         id=report.id,
         user_id=report.user_id,

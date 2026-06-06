@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { api, formatApiError } from "../../state/http";
-import { useAuth, bootstrapTokenFromStorage } from "../../state/auth";
+import { useAuth, bootstrapTokenFromStorage, SESSION_EXPIRED_KEY } from "../../state/auth";
 import { t } from "../../i18n";
 import { Button } from "../../ui/button";
 import { Card } from "../../ui/card";
@@ -20,6 +20,12 @@ export function LoginPage() {
 
   useEffect(() => {
     bootstrapTokenFromStorage();
+    if (sessionStorage.getItem(SESSION_EXPIRED_KEY)) {
+      sessionStorage.removeItem(SESSION_EXPIRED_KEY);
+      const message = t("auth.session_expired");
+      setError(message);
+      toast(t("auth.session_expired_title"), message);
+    }
   }, []);
 
   const onSubmit = async (e: React.FormEvent) => {

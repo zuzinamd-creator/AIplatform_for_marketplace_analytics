@@ -19,6 +19,17 @@ def _default_test_database_url() -> str:
 
 TEST_DATABASE_URL = _default_test_database_url()
 
+# Production identities that must never be targeted by automated tests/scripts.
+PROTECTED_PRODUCTION_EMAILS = frozenset({"margarita.zuzina@mail.ru"})
+PROTECTED_PRODUCTION_USER_IDS = frozenset({"caefecb3-5789-4878-a9d4-929be573fbcc"})
+
+
+def assert_not_production_identity(*, email: str | None = None, user_id: str | None = None) -> None:
+    if email and email.lower() in PROTECTED_PRODUCTION_EMAILS:
+        raise RuntimeError(f"Refusing to run against production account: {email}")
+    if user_id and user_id in PROTECTED_PRODUCTION_USER_IDS:
+        raise RuntimeError(f"Refusing to run against production user_id: {user_id}")
+
 
 @pytest.fixture
 def integration_enabled() -> bool:

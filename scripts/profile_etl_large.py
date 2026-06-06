@@ -23,6 +23,8 @@ from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from app.core.environment import detect_environment
+
 from sqlalchemy import delete, event, text
 from sqlalchemy.engine import Engine
 
@@ -159,6 +161,13 @@ async def profile_persist_stages(
 
 
 async def main() -> None:
+    env = detect_environment()
+    if env.mode == "MAIN" and os.environ.get("PROFILE_ALLOW_MAIN") != "1":
+        raise SystemExit(
+            "Refusing to run ETL profile on MAIN database. "
+            "Set PROFILE_ALLOW_MAIN=1 only on a disposable clone, never on production tenant data."
+        )
+
     profiler = SqlProfiler()
     profiler.install()
 

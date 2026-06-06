@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
 
     database_url: str
+    # Migrations run as table owner (postgres); runtime uses marketplace_app.
+    alembic_database_url: str = ""
     # Optional: password outside URL (avoids @ : / breaking urlparse)
     database_password: str = ""
     # Optional extra CA (e.g. corporate SSL inspection root); verification stays enabled
@@ -25,6 +27,7 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
+    password_reset_token_expire_minutes: int = 60
 
     smtp_host: str = ""
     smtp_port: int = 587

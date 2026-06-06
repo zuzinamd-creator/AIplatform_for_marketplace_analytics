@@ -83,6 +83,7 @@ async def upload_report(
         file_size_bytes=spooled.size_bytes,
     )
 
+    ReportService(db, current_user).invalidate_list_cache()
     return ReportUploadResponse(
         report=report_to_response(report, job),
         message="Report uploaded, validated, and successfully queued for ETL processing",
@@ -96,11 +97,7 @@ async def list_reports(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list[ReportResponse]:
-    rows = await ReportService(db, current_user).list_reports(skip=skip, limit=min(limit, 500))
-    return [
-        report_to_response(report, job, period_start=ps, period_end=pe)
-        for report, job, ps, pe in rows
-    ]
+    return await ReportService(db, current_user).list_reports(skip=skip, limit=min(limit, 500))
 
 
 @router.get("/{report_id}", response_model=ReportResponse)

@@ -37,6 +37,7 @@ from app.models.semantics.governance import (
     SnapshotRebuildRequirement,
 )
 from app.models.sku_mapping import SKUMapping
+from app.models.auth_audit import AuthAuditEvent, AuthAuditEventType
 from app.models.user import User
 from app.models.workflow import SellerWorkflowEvent
 
@@ -77,4 +78,6 @@ __all__ = [
     "RuntimeSchedulePolicy",
     "AutonomousActionStatus",
     "SellerWorkflowEvent",
+    "AuthAuditEvent",
+    "AuthAuditEventType",
 ]

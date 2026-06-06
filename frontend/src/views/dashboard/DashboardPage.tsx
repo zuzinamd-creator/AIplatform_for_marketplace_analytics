@@ -36,26 +36,19 @@ export function DashboardPage() {
     if (periodSel.comparePreset === "custom" && periodSel.compareRange) return periodSel.compareRange;
     return previousPeriod(periodSel.range);
   }, [periodSel]);
-  const queue = useQuery({
-    queryKey: ["ops", "queue", 0, 10],
-    queryFn: () => api.ops.queue(0, 10),
+
+  const summary = useQuery({
+    queryKey: ["dashboard", "summary", marketplace, start, end, compare?.start, compare?.end],
+    queryFn: () =>
+      api.dashboard.summary({
+        marketplace,
+        start,
+        end,
+        compare_start: compare?.start,
+        compare_end: compare?.end,
+      }),
   });
-  const runtime = useQuery({
-    queryKey: ["ops", "runtimeSummary"],
-    queryFn: () => api.ops.runtimeSummary(),
-  });
-  const aiOps = useQuery({
-    queryKey: ["ai", "ops"],
-    queryFn: () => api.ai.operationalStatus(),
-  });
-  const todaysFocus = useQuery({
-    queryKey: ["ai", "todaysFocus"],
-    queryFn: () => api.ai.todaysFocus(),
-  });
-  const recommendations = useQuery({
-    queryKey: ["ai", "recommendations", 0, 5],
-    queryFn: () => api.ai.recommendations(0, 5),
-  });
+
   const runAiPeriod = useQuery({
     enabled: false,
     queryKey: ["ai", "periodRun", marketplace, start, end],
@@ -70,47 +63,20 @@ export function DashboardPage() {
       });
     },
   });
-  const kpiSummary = useQuery({
-    queryKey: ["analytics", "revenueSummary", marketplace, start, end],
-    queryFn: () => api.analytics.revenueSummary({ marketplace, start, end }),
-  });
-  const kpiSummaryCompare = useQuery({
-    enabled: !!compare,
-    queryKey: ["analytics", "revenueSummary", "compare", marketplace, compare?.start, compare?.end],
-    queryFn: () =>
-      api.analytics.revenueSummary({ marketplace, start: compare!.start, end: compare!.end }),
-  });
-  const kpiTrend = useQuery({
-    queryKey: ["analytics", "revenueTrendDaily", marketplace, start, end],
-    queryFn: () => api.analytics.revenueTrendDaily({ marketplace, start, end }),
-  });
-  const financeSummary = useQuery({
-    queryKey: ["analytics", "financeSummary", marketplace, start, end],
-    queryFn: () => api.analytics.financialSummary({ marketplace, start, end }),
-  });
-  const financeTrend = useQuery({
-    queryKey: ["analytics", "financeTrendDaily", marketplace, start, end],
-    queryFn: () => api.analytics.financialTrendDaily({ marketplace, start, end }),
-  });
-  const topSkus = useQuery({
-    queryKey: ["analytics", "topSkus", marketplace, start, end],
-    queryFn: () => api.analytics.topSkus({ marketplace, start, end, limit: 5, sort: "revenue" }),
-  });
-  const coverage = useQuery({
-    queryKey: ["analytics", "coverage"],
-    queryFn: () => api.analytics.coverage(),
-  });
 
-  const statusCounts = queue.data?.status_counts ?? {};
+  const data = summary.data;
+  const isLoading = summary.isLoading;
+
+  const statusCounts = data?.queue.status_counts ?? {};
   const queued = Object.values(statusCounts).reduce((a, b) => a + b, 0);
-  const recCount = (recommendations.data as { items?: unknown[] })?.items?.length ?? 0;
-  const rebuild = ((runtime.data as Record<string, unknown>)?.rebuild ?? {}) as Record<string, number>;
-  const freshness = kpiSummary.data?.freshness;
+  const recCount = data?.recommendations.items?.length ?? 0;
+  const rebuild = (data?.runtime.rebuild ?? {}) as Record<string, number>;
+  const freshness = data?.revenue_summary.freshness;
   const stale = freshness?.stale_data_warning ?? false;
-  const integrityWarnings = kpiSummary.data?.integrity?.warnings ?? [];
-  const completeness = kpiSummary.data?.integrity?.financial_completeness_score ?? null;
-  const aRevenue = Number(kpiSummary.data?.kpis.total_revenue ?? "0");
-  const bRevenue = Number(kpiSummaryCompare.data?.kpis.total_revenue ?? "0");
+  const integrityWarnings = data?.revenue_summary.integrity?.warnings ?? [];
+  const completeness = data?.revenue_summary.integrity?.financial_completeness_score ?? null;
+  const aRevenue = Number(data?.revenue_summary.kpis.total_revenue ?? "0");
+  const bRevenue = Number(data?.revenue_summary_compare?.kpis.total_revenue ?? "0");
   const deltaRevenue = compare ? aRevenue - bRevenue : null;
   const pct = (delta: number, base: number) => (base !== 0 ? (delta / base) * 100 : null);
 
@@ -168,7 +134,7 @@ export function DashboardPage() {
           <Card className="p-4">
             <div className="text-xs font-medium text-ink-muted">Критические проблемы</div>
             <div className="mt-2 text-sm text-ink-secondary">
-              {(todaysFocus.data?.dangerous ?? []).slice(0, 3).join(" · ") || "Нет критичных флагов."}
+              {(data?.todays_focus.dangerous ?? []).slice(0, 3).join(" · ") || "Нет критичных флагов."}
             </div>
           </Card>
           <Card className="p-4">
@@ -184,7 +150,7 @@ export function DashboardPage() {
             <div className="text-xs font-medium text-ink-muted">Доверие к марже</div>
             <div className="mt-2 text-sm text-ink-secondary">
               {completeness ? `Полнота аналитики: ${formatPct(completeness)}` : "Полнота неизвестна"}
-              {(aiOps.data as any)?.degraded_intelligence_mode ? " · ИИ осторожен" : ""}
+              {(data?.ai_ops as Record<string, unknown>)?.degraded_intelligence_mode ? " · ИИ осторожен" : ""}
             </div>
             <Link to="/app/finance/costs" className="link-muted mt-3 inline-block text-xs">
               Покрытие затрат →
@@ -199,11 +165,11 @@ export function DashboardPage() {
             variant="hero"
             icon={<Database className="h-5 w-5" />}
             label="Продажи (выбранный период)"
-            value={kpiSummary.isLoading ? "…" : formatRub(kpiSummary.data?.kpis.total_revenue)}
+            value={isLoading ? "…" : formatRub(data?.revenue_summary.kpis.total_revenue)}
             sub={
               <span>
-                Валовая прибыль: {formatRub(kpiSummary.data?.kpis.total_profit)} · Маржинальность:{" "}
-                {formatPct(kpiSummary.data?.kpis.margin_pct)} {stale ? "· данные устарели" : ""}
+                Валовая прибыль: {formatRub(data?.revenue_summary.kpis.total_profit)} · Маржинальность:{" "}
+                {formatPct(data?.revenue_summary.kpis.margin_pct)} {stale ? "· данные устарели" : ""}
                 {compare && deltaRevenue !== null ? (
                   <>
                     {" "}
@@ -221,16 +187,16 @@ export function DashboardPage() {
           <KpiCard
             icon={<Server className="h-4 w-4" />}
             label="Обработка данных"
-            value={queue.isLoading ? "…" : formatMetric(queued)}
+            value={isLoading ? "…" : formatMetric(queued)}
             sub={<span>Задач в очереди/обработке</span>}
           />
           <KpiCard
             icon={<Bot className="h-4 w-4" />}
             label="Рекомендации ИИ"
-            value={recommendations.isLoading ? "…" : recCount}
+            value={isLoading ? "…" : recCount}
             sub={
               <span>
-                {(aiOps.data as Record<string, unknown>)?.degraded_intelligence_mode
+                {(data?.ai_ops as Record<string, unknown>)?.degraded_intelligence_mode
                   ? "Осторожный режим"
                   : "Обычный режим"}
               </span>
@@ -239,7 +205,7 @@ export function DashboardPage() {
           <KpiCard
             icon={<AlertTriangle className="h-4 w-4" />}
             label="Обновление аналитики"
-            value={runtime.isLoading ? "…" : (rebuild.running ?? 0) + (rebuild.pending_dispatch ?? 0)}
+            value={isLoading ? "…" : (rebuild.running ?? 0) + (rebuild.pending_dispatch ?? 0)}
             sub={<span>Пересборки активны или в очереди</span>}
           />
         </div>
@@ -257,7 +223,7 @@ export function DashboardPage() {
           <div className="chart-panel mt-5">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={(kpiTrend.data?.points ?? []).map((p) => ({
+                data={(data?.revenue_trend_daily.points ?? []).map((p) => ({
                   date: p.date.slice(5),
                   revenue: Number(p.revenue),
                   profit: Number(p.net_profit),
@@ -292,10 +258,10 @@ export function DashboardPage() {
             Период: {start} → {end} · {marketplace}
           </div>
           <div className="mt-5 space-y-3">
-            {(topSkus.data?.items ?? []).length === 0 ? (
+            {(data?.top_skus.items ?? []).length === 0 ? (
               <div className="text-sm text-ink-muted">Пока нет метрик по SKU.</div>
             ) : (
-              (topSkus.data?.items ?? []).map((row) => (
+              (data?.top_skus.items ?? []).map((row) => (
                 <div key={row.sku} className="flex items-center justify-between gap-3 border-b border-surface-subtle/60 pb-2 last:border-0 last:pb-0">
                   <div className="truncate text-sm font-medium text-ink-secondary">{row.sku}</div>
                   <div className="text-right text-xs text-ink-muted">
@@ -310,13 +276,13 @@ export function DashboardPage() {
           </div>
           <div className="mt-5 space-y-2 text-xs text-ink-muted">
             <div>
-              Диапазон данных: {coverage.data?.available_min_date ?? "—"} → {coverage.data?.available_max_date ?? "—"}
+              Диапазон данных: {data?.coverage.available_min_date ?? "—"} → {data?.coverage.available_max_date ?? "—"}
             </div>
-            {(coverage.data?.missing_periods ?? []).length ? (
-              <div>Есть пропуски в периодах: {coverage.data?.missing_periods.length}</div>
+            {(data?.coverage.missing_periods ?? []).length ? (
+              <div>Есть пропуски в периодах: {data?.coverage.missing_periods.length}</div>
             ) : null}
-            {(coverage.data?.recommendations ?? []).length ? (
-              <div>Рекомендации: {coverage.data?.recommendations.length}</div>
+            {(data?.coverage.recommendations ?? []).length ? (
+              <div>Рекомендации: {data?.coverage.recommendations.length}</div>
             ) : null}
           </div>
         </Card>
@@ -328,7 +294,7 @@ export function DashboardPage() {
           <div className="chart-panel mt-5">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={(financeTrend.data?.points ?? []).map((p) => ({
+                data={(data?.finance_trend_daily.points ?? []).map((p) => ({
                   date: p.date.slice(5),
                   logistics: Number(p.logistics),
                   ads: Number(p.advertisement),
@@ -355,21 +321,21 @@ export function DashboardPage() {
           <div className="text-sm font-semibold text-ink">Финансовая сводка</div>
           <div className="mt-2 text-xs text-ink-muted">Период: {start} → {end}</div>
           <div className="mt-5 space-y-2.5 text-sm text-ink-secondary">
-            <div className="flex justify-between gap-3"><span>Продажа, руб.</span><span>{formatRub(financeSummary.data?.kpis.sales_revenue)}</span></div>
-            <div className="flex justify-between gap-3"><span>Возвраты, руб.</span><span>{formatRub(financeSummary.data?.kpis.returns_amount)}</span></div>
-            <div className="flex justify-between gap-3"><span>Стоимость логистики, руб.</span><span>{formatRub(financeSummary.data?.kpis.logistics)}</span></div>
-            <div className="flex justify-between gap-3"><span>Затраты на продвижение, руб.</span><span>{formatRub(financeSummary.data?.kpis.advertisement)}</span></div>
-            <div className="flex justify-between gap-3"><span>Штрафы, руб.</span><span>{formatRub(financeSummary.data?.kpis.penalties)}</span></div>
-            <div className="flex justify-between gap-3"><span>Хранение, руб.</span><span>{formatRub(financeSummary.data?.kpis.storage_fee)}</span></div>
-            <div className="flex justify-between gap-3"><span>К перечислению, руб.</span><span>{formatRub(financeSummary.data?.kpis.payout)}</span></div>
+            <div className="flex justify-between gap-3"><span>Продажа, руб.</span><span>{formatRub(data?.finance_summary.kpis.sales_revenue)}</span></div>
+            <div className="flex justify-between gap-3"><span>Возвраты, руб.</span><span>{formatRub(data?.finance_summary.kpis.returns_amount)}</span></div>
+            <div className="flex justify-between gap-3"><span>Стоимость логистики, руб.</span><span>{formatRub(data?.finance_summary.kpis.logistics)}</span></div>
+            <div className="flex justify-between gap-3"><span>Затраты на продвижение, руб.</span><span>{formatRub(data?.finance_summary.kpis.advertisement)}</span></div>
+            <div className="flex justify-between gap-3"><span>Штрафы, руб.</span><span>{formatRub(data?.finance_summary.kpis.penalties)}</span></div>
+            <div className="flex justify-between gap-3"><span>Хранение, руб.</span><span>{formatRub(data?.finance_summary.kpis.storage_fee)}</span></div>
+            <div className="flex justify-between gap-3"><span>К перечислению, руб.</span><span>{formatRub(data?.finance_summary.kpis.payout)}</span></div>
             <div className="mt-3 flex justify-between gap-3 border-t border-surface-subtle pt-3 font-semibold text-ink">
-              <span>Валовая прибыль, руб.</span><span>{formatRub(financeSummary.data?.kpis.gross_profit)}</span>
+              <span>Валовая прибыль, руб.</span><span>{formatRub(data?.finance_summary.kpis.gross_profit)}</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span>Маржинальность, %</span><span>{formatPct(financeSummary.data?.kpis.margin_pct)}</span>
+              <span>Маржинальность, %</span><span>{formatPct(data?.finance_summary.kpis.margin_pct)}</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span>Процент возвратов</span><span>{formatPct(financeSummary.data?.kpis.return_rate_pct)}</span>
+              <span>Процент возвратов</span><span>{formatPct(data?.finance_summary.kpis.return_rate_pct)}</span>
             </div>
           </div>
           <div className="mt-4 text-xs text-ink-muted">

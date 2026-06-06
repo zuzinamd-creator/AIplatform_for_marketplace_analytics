@@ -6,19 +6,24 @@ from app.models.job import EtlJob, JobStatus
 from app.models.report import Report, ReportStatus
 
 
+_JOB_TO_REPORT_STATUS: dict[JobStatus, ReportStatus] = {
+    JobStatus.PENDING: ReportStatus.PENDING,
+    JobStatus.PROCESSING: ReportStatus.PROCESSING,
+    JobStatus.COMPLETED: ReportStatus.PROCESSED,
+    JobStatus.FAILED: ReportStatus.FAILED,
+    JobStatus.DEAD_LETTER: ReportStatus.FAILED,
+}
+
+
+def report_status_from_job_status(job_status: JobStatus) -> ReportStatus:
+    return _JOB_TO_REPORT_STATUS.get(job_status, ReportStatus.PENDING)
+
+
 def derive_report_status(job: EtlJob | None) -> ReportStatus:
     """Map latest job state to stable API ReportStatus."""
     if job is None:
         return ReportStatus.PENDING
-
-    mapping: dict[JobStatus, ReportStatus] = {
-        JobStatus.PENDING: ReportStatus.PENDING,
-        JobStatus.PROCESSING: ReportStatus.PROCESSING,
-        JobStatus.COMPLETED: ReportStatus.PROCESSED,
-        JobStatus.FAILED: ReportStatus.FAILED,
-        JobStatus.DEAD_LETTER: ReportStatus.FAILED,
-    }
-    return mapping.get(job.status, ReportStatus.PENDING)
+    return report_status_from_job_status(job.status)
 
 
 def derive_error_message(report: Report, job: EtlJob | None) -> str | None:

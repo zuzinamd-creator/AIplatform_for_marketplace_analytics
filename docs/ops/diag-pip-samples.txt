@@ -1,0 +1,219 @@
+PIP_PID=6211
+=== sample 1 19:48:37 load=0.33 ===
+Mem:            1967        1199         281           0         663         768
+Swap:           2047         521        1526
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6196 rss=6MB 25.0% bash
+cpu pid=6214 rss=9MB 20.0% python3
+cpu pid=1512 rss=246MB 5.3% node
+cpu pid=581 rss=70MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+=== sample 2 19:48:39 load=0.33 ===
+Mem:            1967        1232         240           0         672         735
+Swap:           2047         521        1526
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6224 rss=43MB 86.4% python3
+cpu pid=1512 rss=249MB 5.3% node
+cpu pid=6223 rss=17MB 4.0% python3
+cpu pid=6214 rss=14MB 2.8% python3
+cpu pid=581 rss=70MB 1.8% python
+=== sample 3 19:48:41 load=0.33 ===
+Mem:            1967        1255         200           0         689         712
+Swap:           2047         521        1526
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6224 rss=59MB 89.9% python3
+cpu pid=1512 rss=249MB 5.3% node
+cpu pid=6223 rss=17MB 2.0% python3
+cpu pid=581 rss=70MB 1.8% python
+cpu pid=6214 rss=14MB 1.4% python3
+=== sample 4 19:48:43 load=0.38 ===
+Mem:            1967        1256         200           0         688         711
+Swap:           2047         521        1526
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=50MB 31.4% pip
+cpu pid=1512 rss=249MB 5.3% node
+cpu pid=581 rss=70MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=90MB 0.8% python
+=== sample 5 19:48:45 load=0.38 ===
+Mem:            1967        1256         200           0         688         711
+Swap:           2047         521        1526
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=71MB 36.9% pip
+cpu pid=1512 rss=250MB 5.3% node
+cpu pid=581 rss=70MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=90MB 0.8% python
+=== sample 6 19:48:47 load=0.35 ===
+Mem:            1967        1255         200           0         688         712
+Swap:           2047         521        1526
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=78MB 42.1% pip
+cpu pid=1512 rss=250MB 5.3% node
+cpu pid=581 rss=70MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=90MB 0.8% python
+=== sample 7 19:48:50 load=0.35 ===
+Mem:            1967        1255         200           0         689         712
+Swap:           2047         521        1526
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=85MB 37.9% pip
+cpu pid=1512 rss=250MB 5.3% node
+cpu pid=581 rss=70MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=90MB 0.8% python
+=== sample 8 19:48:52 load=0.35 ===
+Mem:            1967        1297         158           0         689         670
+Swap:           2047         521        1526
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=130MB 43.8% pip
+cpu pid=1512 rss=248MB 5.3% node
+cpu pid=581 rss=70MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=90MB 0.8% python
+=== sample 9 19:48:54 load=0.41 ===
+Mem:            1967        1298         157           0         689         669
+Swap:           2047         521        1526
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=128MB 45.3% pip
+cpu pid=1512 rss=249MB 5.3% node
+cpu pid=581 rss=70MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=90MB 0.8% python
+=== sample 10 19:48:56 load=0.41 ===
+Mem:            1967        1308         147           0         689         659
+Swap:           2047         521        1526
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=140MB 46.7% pip
+cpu pid=1512 rss=249MB 5.3% node
+cpu pid=581 rss=70MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=90MB 0.8% python
+=== sample 11 19:48:58 load=0.45 ===
+Mem:            1967        1322         133           0         690         645
+Swap:           2047         521        1526
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=154MB 49.7% pip
+cpu pid=1512 rss=249MB 5.3% node
+cpu pid=581 rss=70MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=90MB 0.8% python
+=== sample 12 19:49:00 load=0.45 ===
+Mem:            1967        1333         116           0         695         634
+Swap:           2047         521        1526
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=165MB 50.4% pip
+cpu pid=1512 rss=249MB 5.3% node
+cpu pid=581 rss=70MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=90MB 0.8% python
+=== sample 13 19:49:02 load=0.58 ===
+Mem:            1967        1331          73           0         741         636
+Swap:           2047         521        1526
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=165MB 48.1% pip
+cpu pid=1512 rss=250MB 5.3% node
+cpu pid=581 rss=70MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=90MB 0.8% python
+=== sample 14 19:49:04 load=0.58 ===
+Mem:            1967        1328          95           0         721         639
+Swap:           2047         527        1520
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=168MB 49.3% pip
+cpu pid=1512 rss=250MB 5.3% node
+cpu pid=581 rss=69MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=88MB 0.8% python
+=== sample 15 19:49:06 load=0.58 ===
+Mem:            1967        1349          69           0         728         618
+Swap:           2047         535        1512
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=194MB 52.8% pip
+cpu pid=1512 rss=250MB 5.3% node
+cpu pid=581 rss=67MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=86MB 0.8% python
+=== sample 16 19:49:08 load=0.69 ===
+Mem:            1967        1348          64           0         735         619
+Swap:           2047         537        1510
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=194MB 55.5% pip
+cpu pid=1512 rss=250MB 5.3% node
+cpu pid=581 rss=67MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=86MB 0.8% python
+=== sample 17 19:49:10 load=0.69 ===
+Mem:            1967        1341          83           0         723         626
+Swap:           2047         542        1505
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=194MB 57.9% pip
+cpu pid=1512 rss=249MB 5.2% node
+cpu pid=581 rss=66MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=85MB 0.8% python
+=== sample 18 19:49:12 load=0.72 ===
+Mem:            1967        1341          83           0         724         626
+Swap:           2047         544        1503
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=194MB 59.4% pip
+cpu pid=1512 rss=250MB 5.2% node
+cpu pid=581 rss=65MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=84MB 0.8% python
+=== sample 19 19:49:14 load=0.72 ===
+Mem:            1967        1344          68           0         738         623
+Swap:           2047         548        1499
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=196MB 61.6% pip
+cpu pid=1512 rss=250MB 5.2% node
+cpu pid=581 rss=64MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=83MB 0.8% python
+=== sample 20 19:49:16 load=0.72 ===
+Mem:            1967        1340          78           0         733         627
+Swap:           2047         550        1497
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=196MB 63.4% pip
+cpu pid=1512 rss=250MB 5.2% node
+cpu pid=581 rss=64MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=82MB 0.8% python
+=== sample 21 19:49:18 load=0.74 ===
+Mem:            1967        1343          65           0         745         624
+Swap:           2047         550        1497
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=197MB 64.7% pip
+cpu pid=1512 rss=252MB 5.2% node
+cpu pid=581 rss=64MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=82MB 0.8% python
+=== sample 22 19:49:20 load=0.74 ===
+Mem:            1967        1339          85           0         728         628
+Swap:           2047         554        1493
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=197MB 65.9% pip
+cpu pid=1512 rss=253MB 5.2% node
+cpu pid=581 rss=63MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=81MB 0.8% python
+=== sample 23 19:49:22 load=0.76 ===
+Mem:            1967        1339         138           0         675         628
+Swap:           2047         554        1493
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6272 rss=197MB 67.2% pip
+cpu pid=1512 rss=253MB 5.2% node
+cpu pid=581 rss=63MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=81MB 0.8% python
+=== sample 24 19:49:24 load=0.76 ===
+Mem:            1967        1200         277           0         675         767
+Swap:           2047         554        1493
+cpu pid=PID rss=0MB %CPU% COMMAND
+cpu pid=6515 rss=4MB 50.0% ps
+cpu pid=1512 rss=253MB 5.2% node
+cpu pid=581 rss=63MB 1.8% python
+cpu pid=1606 rss=302MB 1.3% tsserver[5.9.2]
+cpu pid=580 rss=81MB 0.8% python
+  WARNING: Retrying (Retry(total=4, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ProtocolError('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))': /packages/1e/d3/26bf1008eb3d2daa8ef4cacc7f3bfdc11818d111f7e2d0201bc6e3b49d45/annotated_doc-0.0.4-py3-none-any.whl.metadata
+PIP_DONE 0 1780602562

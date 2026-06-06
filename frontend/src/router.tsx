@@ -9,6 +9,7 @@ import { RouteError } from "./ui/route-error";
 import { LoginPage } from "./views/auth/LoginPage";
 import { RegisterPage } from "./views/auth/RegisterPage";
 import { ForgotPasswordPage } from "./views/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "./views/auth/ResetPasswordPage";
 
 import { DashboardPage } from "./views/dashboard/DashboardPage";
 import { OnboardingPage } from "./views/onboarding/OnboardingPage";
@@ -55,6 +56,7 @@ export const router = createBrowserRouter([
   { path: "/login", element: withBoundary(<LoginPage />) },
   { path: "/register", element: withBoundary(<RegisterPage />) },
   { path: "/forgot-password", element: withBoundary(<ForgotPasswordPage />) },
+  { path: "/reset-password", element: withBoundary(<ResetPasswordPage />) },
   {
     path: "/app",
     element: withBoundary(

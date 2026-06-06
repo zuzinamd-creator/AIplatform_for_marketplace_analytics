@@ -70,7 +70,12 @@ def validate_environment() -> StartupValidationReport:
         warnings.append("DEBUG=true in production is discouraged")
     if settings.maintenance_mode:
         warnings.append("MAINTENANCE_MODE=true — worker/dispatch/AI may be limited")
-    if not settings.secret_key or settings.secret_key == "change-me":
+    _weak_secret_keys = {
+        "change-me",
+        "change-me-to-a-long-random-secret",
+        "change-me-to-a-long-random-secret-min-32-chars",
+    }
+    if not settings.secret_key or settings.secret_key in _weak_secret_keys:
         errors.append("SECRET_KEY must be set to a non-default value")
     if not settings.database_url:
         errors.append("DATABASE_URL is required")

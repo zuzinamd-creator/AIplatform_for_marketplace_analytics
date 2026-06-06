@@ -137,6 +137,7 @@ class ETLPipeline:
         if isinstance(result.wb_financial, WbFinancialProcessResult):
             persist_service = WbFinancialPersistService(self.db, self.user_id)
             costs = await persist_service.load_cost_snapshots(self.db, self.user_id)
+            await self.db.commit()
             wb_enriched = WbFinancialProcessor.enrich_with_costs(result.wb_financial, costs)
             persist_kwargs = {
                 "report": report,
@@ -151,8 +152,7 @@ class ETLPipeline:
             if in_transaction:
                 loss_analytics = await persist_service.persist(**persist_kwargs)
             else:
-                async with TenantSession.transaction(self.db, self.user_id):
-                    loss_analytics = await persist_service.persist(**persist_kwargs)
+                loss_analytics = await persist_service.persist(**persist_kwargs)
             analytics_payload = extend_analytics_payload(
                 dict(wb_enriched.analytics_payload),
                 loss_analytics=loss_analytics,

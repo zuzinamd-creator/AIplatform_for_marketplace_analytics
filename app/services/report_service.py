@@ -4,14 +4,22 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import defer
 
 from app.core.config import settings
 from app.core.queue import EnqueuePayload, get_queue_backend
+from app.core.ttl_cache import TtlCache
 from app.models.finance.ledger import FinancialLedgerEntry
-from app.models.job import EtlJob
-from app.models.report import Marketplace, Report, ReportType
+from app.models.job import EtlJob, JobStatus
+from app.models.report import Marketplace, Report, ReportStatus, ReportType
+from app.schemas.report import ReportResponse
+from app.schemas.report_mappers import report_to_response
+from app.schemas.report_projection import report_status_from_job_status
 from app.models.user import User
 from app.services.base import TenantScopedService
+
+
+_reports_list_cache: TtlCache[list[ReportResponse]] = TtlCache(ttl_seconds=45)
 
 
 class ReportService(TenantScopedService):
@@ -119,9 +127,16 @@ class ReportService(TenantScopedService):
         self,
         skip: int = 0,
         limit: int = 200,
-    ) -> list[tuple[Report, EtlJob | None, date | None, date | None]]:
+    ) -> list[ReportResponse]:
+        cache_key = f"{self.user.id}:{skip}:{limit}"
+        cached = _reports_list_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        # List view must not load raw_data (~MB per report); period comes from ledger bounds.
         query = (
             select(Report)
+            .options(defer(Report.raw_data))
             .where(Report.user_id == self.user.id)
             .order_by(Report.created_at.desc())
             .offset(skip)
@@ -130,15 +145,34 @@ class ReportService(TenantScopedService):
         async with self._rls_transaction():
             result = await self.db.execute(query)
             reports = list(result.scalars().all())
-        period_bounds = await self._period_bounds_for_reports([r.id for r in reports])
-        rows: list[tuple[Report, EtlJob | None, date | None, date | None]] = []
-        for report in reports:
-            job = await self._latest_job(report.id)
-            ps, pe = period_bounds.get(report.id, (None, None))
-            rows.append((report, job, ps, pe))
-        return rows
+            if not reports:
+                return []
+            report_ids = [r.id for r in reports]
+            jobs_by_report = await self._latest_jobs_for_reports(report_ids)
+            period_bounds = await self._period_bounds_for_report_ids(report_ids)
+            responses = [
+                report_to_response(
+                    report,
+                    jobs_by_report.get(report.id),
+                    period_start=period_bounds.get(report.id, (None, None))[0],
+                    period_end=period_bounds.get(report.id, (None, None))[1],
+                )
+                for report in reports
+            ]
+        _reports_list_cache.set(cache_key, responses)
+        return responses
+
+    def invalidate_list_cache(self) -> None:
+        _reports_list_cache.invalidate_prefix(f"{self.user.id}:")
 
     async def _period_bounds_for_reports(
+        self,
+        report_ids: list[UUID],
+    ) -> dict[UUID, tuple[date | None, date | None]]:
+        async with self._rls_transaction():
+            return await self._period_bounds_for_report_ids(report_ids)
+
+    async def _period_bounds_for_report_ids(
         self,
         report_ids: list[UUID],
     ) -> dict[UUID, tuple[date | None, date | None]]:
@@ -153,8 +187,7 @@ class ReportService(TenantScopedService):
             .where(FinancialLedgerEntry.report_id.in_(report_ids))
             .group_by(FinancialLedgerEntry.report_id)
         )
-        async with self._rls_transaction():
-            result = await self.db.execute(query)
+        result = await self.db.execute(query)
         return {
             row.report_id: (row.period_start, row.period_end)
             for row in result.all()
@@ -164,22 +197,39 @@ class ReportService(TenantScopedService):
         query = select(Report).where(Report.id == report_id, Report.user_id == self.user.id)
         async with self._rls_transaction():
             result = await self.db.execute(query)
-        report = result.scalar_one_or_none()
-        if not report:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
-        ps, pe = (await self._period_bounds_for_reports([report.id])).get(report.id, (None, None))
-        return report, await self._latest_job(report.id), ps, pe
+            report = result.scalar_one_or_none()
+            if not report:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+            jobs_by_report = await self._latest_jobs_for_reports([report.id])
+            period_bounds = await self._period_bounds_for_report_ids([report.id])
+        job = jobs_by_report.get(report.id)
+        ps, pe = period_bounds.get(report.id, (None, None))
+        return report, job, ps, pe
 
     async def _latest_job(self, report_id: UUID) -> EtlJob | None:
-        query = (
-            select(EtlJob)
-            .where(EtlJob.report_id == report_id)
-            .order_by(EtlJob.created_at.desc())
-            .limit(1)
-        )
         async with self._rls_transaction():
-            result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+            jobs = await self._latest_jobs_for_reports([report_id])
+        return jobs.get(report_id)
+
+    async def _latest_jobs_for_reports(self, report_ids: list[UUID]) -> dict[UUID, EtlJob]:
+        if not report_ids:
+            return {}
+        latest_created = (
+            select(
+                EtlJob.report_id.label("report_id"),
+                func.max(EtlJob.created_at).label("max_created_at"),
+            )
+            .where(EtlJob.report_id.in_(report_ids))
+            .group_by(EtlJob.report_id)
+            .subquery()
+        )
+        query = select(EtlJob).join(
+            latest_created,
+            (EtlJob.report_id == latest_created.c.report_id)
+            & (EtlJob.created_at == latest_created.c.max_created_at),
+        )
+        result = await self.db.execute(query)
+        return {job.report_id: job for job in result.scalars().all()}
 
     async def persist_business_result(
         self,
@@ -207,12 +257,34 @@ class ReportService(TenantScopedService):
                 await self.db.refresh(report)
         return report
 
-    async def ack_job(self, job_id: UUID, *, in_transaction: bool = False) -> None:
-        if in_transaction:
+    async def _sync_report_status(self, report_id: UUID, job_status: JobStatus) -> None:
+        target = report_status_from_job_status(job_status)
+        result = await self.db.execute(
+            select(Report).where(Report.id == report_id, Report.user_id == self.user.id)
+        )
+        report = result.scalar_one_or_none()
+        if report is None or report.status == target:
+            return
+        report.status = target
+        if job_status == JobStatus.COMPLETED and report.processed_at is None:
+            report.processed_at = datetime.now(UTC)
+        self.db.add(report)
+
+    async def ack_job(self, job_id: UUID, *, report_id: UUID | None = None, in_transaction: bool = False) -> None:
+        async def _run() -> None:
             await self._queue.ack(str(job_id))
+            rid = report_id
+            if rid is None:
+                job_row = await self.db.execute(select(EtlJob.report_id).where(EtlJob.id == job_id))
+                rid = job_row.scalar_one_or_none()
+            if rid is not None:
+                await self._sync_report_status(rid, JobStatus.COMPLETED)
+
+        if in_transaction:
+            await _run()
         else:
             async with self._rls_transaction():
-                await self._queue.ack(str(job_id))
+                await _run()
 
     async def fail_job(
         self,
@@ -242,6 +314,12 @@ class ReportService(TenantScopedService):
                 poison=poison,
                 retry_reason=reason,
             )
+            job_row = await self.db.execute(
+                select(EtlJob.report_id, EtlJob.status).where(EtlJob.id == job_id)
+            )
+            row = job_row.one_or_none()
+            if row is not None:
+                await self._sync_report_status(row.report_id, row.status)
 
         if in_transaction:
             await _apply()

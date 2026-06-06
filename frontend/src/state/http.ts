@@ -1,5 +1,7 @@
 import axios from "axios";
 
+import { handleUnauthorized } from "./session";
+
 import type {
   AIOperationalStatusResponse,
   AIRunDetailResponse,
@@ -128,6 +130,22 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
+const AUTH_PUBLIC_PATHS = ["/auth/login", "/auth/register", "/auth/forgot-password", "/auth/reset-password"];
+
+http.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      const url = error.config?.url ?? "";
+      const isPublicAuth = AUTH_PUBLIC_PATHS.some((path) => url.includes(path));
+      if (!isPublicAuth && accessToken) {
+        handleUnauthorized();
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
 function unwrap<T>(data: unknown): T {
   return data as T;
 }
@@ -186,6 +204,18 @@ export const api = {
     async forgotPassword(email: string) {
       const { data } = await http.post("/auth/forgot-password", { email });
       return unwrap<{ message: string }>(data);
+    },
+    async changePassword(payload: {
+      current_password: string;
+      new_password: string;
+      confirm_password: string;
+    }) {
+      const { data } = await http.post("/auth/change-password", payload);
+      return unwrap<{ message: string }>(data);
+    },
+    async resetPassword(payload: { token: string; new_password: string; confirm_password: string }) {
+      const { data } = await http.post("/auth/reset-password", payload);
+      return unwrap<Token>(data);
     },
   },
 
@@ -320,6 +350,10 @@ export const api = {
       const { data } = await http.get("/system/persistence-status");
       return unwrap<Record<string, unknown>>(data);
     },
+    async dataIntegrity() {
+      const { data } = await http.get("/system/data-integrity");
+      return unwrap<Record<string, unknown>>(data);
+    },
   },
 
   ai: {
@@ -411,6 +445,33 @@ export const api = {
     async usage() {
       const { data } = await http.get("/ai/usage");
       return unwrap<{ tokens_total: number; estimated_cost_usd?: number; runs_total: number }>(data);
+    },
+  },
+
+  dashboard: {
+    async summary(params: {
+      marketplace: string;
+      start: string;
+      end: string;
+      compare_start?: string;
+      compare_end?: string;
+    }) {
+      const { data } = await http.get("/dashboard/summary", { params });
+      return unwrap<{
+        queue: PaginatedQueueResponse;
+        runtime: RuntimeSummaryResponse;
+        ai_ops: AIOperationalStatusResponse;
+        todays_focus: TodaysFocusResponse;
+        recommendations: PaginatedRecommendationsResponse;
+        revenue_summary: RevenueKpiSummaryResponse;
+        revenue_summary_compare: RevenueKpiSummaryResponse | null;
+        revenue_trend_daily: RevenueTrendResponse;
+        finance_summary: FinancialKpiSummaryResponse;
+        finance_trend_daily: FinancialTrendsResponse;
+        top_skus: TopSkusResponse;
+        coverage: AnalyticsCoverageResponse;
+        generated_at: string;
+      }>(data);
     },
   },
 

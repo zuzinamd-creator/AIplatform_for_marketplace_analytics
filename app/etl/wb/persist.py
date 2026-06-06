@@ -166,6 +166,7 @@ class WbFinancialPersistService(WbPersistLayersMixin, WbPersistAggregatesMixin):
             },
         )
 
+        await self.db.commit()
         snapshot_service = InventorySnapshotRebuildService(self.db, self.user_id)
         async with TenantSession.transaction(self.db, self.user_id):
             await snapshot_service.validate_opening_balances_streamed(

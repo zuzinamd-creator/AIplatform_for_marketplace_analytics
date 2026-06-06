@@ -39,6 +39,8 @@ async def process_wb_streamed(
     """
     persist_service = WbFinancialPersistService(db, user_id)
     costs = await persist_service.load_cost_snapshots(db, user_id)
+    # Close autobegin read txn so phase-1 chunks can open isolated transactions.
+    await db.commit()
 
     parse_session = WbStreamChunkIterator(
         report_id=report.id,

@@ -1,0 +1,16 @@
+[Unit]
+Description=Marketplace Analytics DR backup drill
+Documentation=file:///root/AIplatform_for_marketplace_analytics/scripts/dr_restore_drill.sh
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/AIplatform_for_marketplace_analytics
+Environment=BACKUP_DIR=/root/backups/marketplace-drill
+ExecStartPre=/bin/mkdir -p /var/log/marketplace-drill
+ExecStart=/root/AIplatform_for_marketplace_analytics/scripts/dr_restore_drill.sh
+StandardOutput=append:/var/log/marketplace-drill/latest.log
+StandardError=append:/var/log/marketplace-drill/latest.log
+
+[Install]
+WantedBy=multi-user.target

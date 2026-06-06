@@ -8,6 +8,7 @@ import { Button } from "../../ui/button";
 import { Input, Label, Select } from "../../ui/field";
 import { StatusBadge } from "../../ui/status-badge";
 import { toast } from "../../ui/toast";
+import { SecuritySettingsCard } from "./SecuritySettingsCard";
 
 export function SettingsPage() {
   const [profile, setProfile] = useState(() => loadWorkspaceProfile());
@@ -83,6 +84,8 @@ export function SettingsPage() {
           Показывать внутренние страницы в навигации
         </label>
       </Card>
+
+      <SecuritySettingsCard />
 
       <Card className="space-y-3 p-5">
         <div className="text-sm font-semibold">Уведомления (внутри приложения)</div>

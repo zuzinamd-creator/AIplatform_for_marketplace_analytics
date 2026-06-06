@@ -1,0 +1,21 @@
+[Unit]
+Description=Marketplace Analytics Backend (FastAPI / uvicorn)
+Documentation=file:///root/AIplatform_for_marketplace_analytics/README.md
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/AIplatform_for_marketplace_analytics
+EnvironmentFile=-/root/AIplatform_for_marketplace_analytics/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/root/AIplatform_for_marketplace_analytics/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-graceful-shutdown 30
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=35
+
+[Install]
+WantedBy=multi-user.target

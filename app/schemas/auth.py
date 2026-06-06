@@ -42,6 +42,22 @@ class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
 
+class ChangePasswordRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    current_password: str = Field(min_length=8, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+    confirm_password: str = Field(min_length=8, max_length=128)
+
+
+class ResetPasswordRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    token: str = Field(min_length=16, max_length=256)
+    new_password: str = Field(min_length=8, max_length=128)
+    confirm_password: str = Field(min_length=8, max_length=128)
+
+
 class MessageResponse(BaseModel):
     model_config = ConfigDict(strict=True)
 

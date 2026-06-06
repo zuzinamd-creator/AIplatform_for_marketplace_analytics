@@ -22,7 +22,11 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", settings.async_database_url)
+_migration_url = (settings.alembic_database_url or settings.database_url).strip()
+config.set_main_option(
+    "sqlalchemy.url",
+    sqlalchemy_async_database_url(_migration_url) if _migration_url else settings.async_database_url,
+)
 
 target_metadata = Base.metadata
 
@@ -57,10 +61,11 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_migrations_online() -> None:
+    migration_url = (settings.alembic_database_url or settings.database_url).strip()
     connectable = create_async_engine(
-        sqlalchemy_async_database_url(),
+        sqlalchemy_async_database_url(migration_url),
         poolclass=pool.NullPool,
-        connect_args=asyncpg_connect_args(),
+        connect_args=asyncpg_connect_args(migration_url),
     )
 
     # begin() commits on success; connect() alone leaves DDL uncommitted with asyncpg.

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.environment import detect_environment
 from app.core.security_context import TenantSession
 from app.models.ai_execution import AIExecutionRun
+from app.models.cost_history import CostHistory
 from app.models.finance.ledger import FinancialLedgerEntry
 from app.models.report import Report
 from app.models.workflow import SellerWorkflowEvent
@@ -21,6 +22,7 @@ class PersistenceStatus:
     db_name: str
     persistent_storage: bool
     total_reports: int
+    total_cost_rows: int
     total_ledger_rows: int
     total_ai_runs: int
     total_workflows: int
@@ -41,6 +43,13 @@ class PersistenceValidationService:
                 (
                     await self.db.execute(
                         select(func.count()).select_from(Report)
+                    )
+                ).scalar_one()
+            )
+            total_cost_rows = int(
+                (
+                    await self.db.execute(
+                        select(func.count()).select_from(CostHistory)
                     )
                 ).scalar_one()
             )
@@ -78,6 +87,7 @@ class PersistenceValidationService:
             db_name=env.db_name,
             persistent_storage=not env.is_ephemeral,
             total_reports=total_reports,
+            total_cost_rows=total_cost_rows,
             total_ledger_rows=total_ledger_rows,
             total_ai_runs=total_ai_runs,
             total_workflows=total_workflows,

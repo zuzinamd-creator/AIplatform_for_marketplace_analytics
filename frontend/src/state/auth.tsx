@@ -1,10 +1,13 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
 import { api, setAccessToken } from "../state/http";
 import type { UserResponse } from "./types";
 
+import { SESSION_EXPIRED_KEY, setUnauthorizedHandler } from "./session";
+
 const TOKEN_KEY = "ma.accessToken";
+export { SESSION_EXPIRED_KEY };
 
 type AuthContextValue = {
   token: string | null;
@@ -31,10 +34,27 @@ export function AuthProvider(props: { children: React.ReactNode }) {
     try {
       const me = await api.auth.me();
       setUser(me);
+    } catch {
+      setUser(null);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      localStorage.removeItem(TOKEN_KEY);
+      setAccessToken(null);
+      setToken(null);
+      setUser(null);
+      sessionStorage.setItem(SESSION_EXPIRED_KEY, "1");
+      const path = window.location.pathname;
+      if (!path.startsWith("/login")) {
+        window.location.assign("/login");
+      }
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   const signIn = async (newToken: string) => {
     localStorage.setItem(TOKEN_KEY, newToken);

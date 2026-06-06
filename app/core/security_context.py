@@ -25,6 +25,8 @@ class TenantSession:
     @staticmethod
     @asynccontextmanager
     async def transaction(db: AsyncSession, user_id: UUID) -> AsyncGenerator[None]:
+        if db.in_transaction():
+            await db.commit()
         async with db.begin():
             await set_queue_role_context(db, False)
             await set_current_user_context(db, user_id)

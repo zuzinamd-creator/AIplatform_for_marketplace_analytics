@@ -26,4 +26,5 @@ async def set_local_lock_timeout(db: AsyncSession, *, timeout_ms: int) -> None:
     """SET LOCAL lock_timeout — fail fast on row lock waits (multi-worker aggregates)."""
     if timeout_ms <= 0:
         return
-    await db.execute(text("SET LOCAL lock_timeout = :value"), {"value": f"{int(timeout_ms)}ms"})
+    ms = int(timeout_ms)
+    await db.execute(text(f"SET LOCAL lock_timeout = '{ms}ms'"))

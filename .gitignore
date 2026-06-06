@@ -1,4 +1,10 @@
 .env
+.marketplace_recovery*
+.marketplace_smtp_credentials
+.marketplace_db_credentials
+.mvp_test_user_credentials
+.ops_access*
+docs/ops/ACCOUNT_RECOVERY_*.md
 .venv/
 venv/
 __pycache__/

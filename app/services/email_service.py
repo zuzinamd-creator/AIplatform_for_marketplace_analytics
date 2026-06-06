@@ -13,7 +13,10 @@ class EmailDeliveryError(RuntimeError):
 
 
 def _smtp_configured() -> bool:
-    return bool(settings.smtp_host.strip() and settings.smtp_from.strip())
+    if not settings.smtp_host.strip() or not settings.smtp_from.strip():
+        return False
+    # Mail.ru and most providers require authenticated SMTP.
+    return bool(settings.smtp_user.strip() and settings.smtp_password.strip())
 
 
 def smtp_configured() -> bool:
