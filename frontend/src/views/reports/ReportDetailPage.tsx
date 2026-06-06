@@ -55,8 +55,19 @@ export function ReportDetailPage() {
       toast("Не удалось удалить отчёт", error.message || undefined);
     },
   });
+  const retry = useMutation({
+    mutationFn: () => api.reports.retry(reportId!),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["reports"] });
+      toast("Обработка перезапущена");
+    },
+    onError: (error: Error) => {
+      toast("Не удалось перезапустить обработку", error.message || undefined);
+    },
+  });
 
   const r = q.data;
+  const isFailed = (r?.status ?? "").toLowerCase().includes("fail");
   const canDelete = r && !isReportProcessing(r.status, r.job?.status);
 
   return (
@@ -67,6 +78,16 @@ export function ReportDetailPage() {
           <p className="page-subtitle">Статус обработки берётся из очереди ETL (`etl_jobs`).</p>
         </div>
         <div className="flex items-center gap-2">
+          {r?.retryable ? (
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={retry.isPending}
+              onClick={() => retry.mutate()}
+            >
+              {retry.isPending ? "Запуск…" : "Повторить обработку"}
+            </Button>
+          ) : null}
           {canDelete ? (
             <Button
               variant="secondary"
@@ -97,9 +118,20 @@ export function ReportDetailPage() {
             <div className="mt-3">
               <StatusBadge tone={toneForStatus(r.status)}>{r.status}</StatusBadge>
             </div>
+            {isFailed ? (
+              <div className="mt-2 text-xs font-medium uppercase tracking-wide text-semantic-danger">
+                Ошибка обработки
+              </div>
+            ) : null}
+            {r.error_hint ? (
+              <div className="mt-3 rounded-lg border border-semantic-warning/30 bg-semantic-warning-bg p-3 text-xs text-ink-secondary">
+                {r.error_hint}
+              </div>
+            ) : null}
             {r.error_message ? (
               <div className="mt-3 rounded-lg border border-semantic-danger/30 bg-semantic-danger-bg p-3 text-xs text-semantic-danger">
-                {r.error_message}
+                <div className="font-medium">Техническая информация</div>
+                <div className="mt-1 break-words">{r.error_message}</div>
               </div>
             ) : null}
           </Card>

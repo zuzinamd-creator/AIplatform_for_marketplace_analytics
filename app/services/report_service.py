@@ -329,3 +329,61 @@ class ReportService(TenantScopedService):
         else:
             async with self._rls_transaction():
                 await self._queue.heartbeat(str(job_id))
+
+    async def retry_processing(self, report_id: UUID) -> ReportResponse:
+        """Requeue a failed/dead-letter ETL job for the tenant's report."""
+        from app.core.security_context import QueueSession, TenantSession
+        from app.operations.recovery import TenantRecoveryService
+
+        report, job, period_start, period_end = await self.get_report(report_id)
+        if job is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No ETL job found for this report",
+            )
+        if not is_report_retryable(job):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Report is not in a failed state",
+            )
+
+        if job.status == JobStatus.DEAD_LETTER:
+            result = await TenantRecoveryService(self.db, self.user.id).replay_dead_letter_job(
+                job.id,
+                reset_attempt_counter=True,
+            )
+            if result.affected_count == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=result.detail,
+                )
+        else:
+            async with TenantSession.transaction(self.db, self.user.id):
+                row = await self.db.get(EtlJob, job.id)
+                if row is None or row.user_id != self.user.id:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="ETL job not found",
+                    )
+                row.attempt_count = 0
+                row.status = JobStatus.PENDING
+                row.last_error = None
+                row.claimed_at = None
+                row.processing_started_at = None
+                row.completed_at = None
+                await self._sync_report_status(report_id, JobStatus.PENDING)
+            async with QueueSession.transaction(self.db):
+                await get_queue_backend(self.db).requeue(str(job.id))
+
+        self.invalidate_list_cache()
+        logger.info(
+            "report_retry_queued",
+            extra={"report_id": str(report_id), "job_id": str(job.id)},
+        )
+        report, job, period_start, period_end = await self.get_report(report_id)
+        return report_to_response(
+            report,
+            job,
+            period_start=period_start,
+            period_end=period_end,
+        )

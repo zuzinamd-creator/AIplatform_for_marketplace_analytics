@@ -139,7 +139,8 @@ class ETLPipeline:
         if isinstance(result.wb_financial, WbFinancialProcessResult):
             persist_service = WbFinancialPersistService(self.db, self.user_id)
             costs = await persist_service.load_cost_snapshots(self.db, self.user_id)
-            await self.db.commit()
+            if not in_transaction:
+                await self.db.commit()
             wb_enriched = WbFinancialProcessor.enrich_with_costs(result.wb_financial, costs)
             persist_kwargs = {
                 "report": report,
@@ -210,10 +211,15 @@ class ETLPipeline:
         if not anomalies:
             return
         try:
-            async with TenantSession.transaction(self.db, self.user_id):
+            if in_transaction:
                 await EtlAnomalyPersistService(self.db, self.user_id).persist_best_effort(
                     list(anomalies)
                 )
+            else:
+                async with TenantSession.transaction(self.db, self.user_id):
+                    await EtlAnomalyPersistService(self.db, self.user_id).persist_best_effort(
+                        list(anomalies)
+                    )
         except Exception:
             pass
 

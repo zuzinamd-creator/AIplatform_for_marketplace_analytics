@@ -4,9 +4,13 @@ export type ReportResponse = {
   marketplace: string;
   report_type: string;
   original_filename: string;
-  file_checksum: string;
+  file_checksum?: string;
   status: string;
   error_message?: string | null;
+  error_hint?: string | null;
+  retryable?: boolean;
+  attempt_count?: number;
+  max_attempts?: number;
   created_at: string;
   processed_at?: string | null;
   period_start?: string | null;

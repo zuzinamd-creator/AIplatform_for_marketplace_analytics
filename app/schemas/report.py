@@ -18,6 +18,8 @@ class ReportResponse(BaseModel):
     status: ReportStatus
     row_count: int | None = Field(default=None, ge=0)
     error_message: str | None = Field(default=None, min_length=1, max_length=4096)
+    error_hint: str | None = Field(default=None, min_length=1, max_length=2048)
+    retryable: bool = False
     attempt_count: int = Field(ge=0)
     max_attempts: int = Field(ge=1)
     idempotency_key: str | None = Field(default=None, min_length=1, max_length=128)

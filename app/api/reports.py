@@ -111,6 +111,15 @@ async def get_report(
     return report_to_response(report, job, period_start=ps, period_end=pe)
 
 
+@router.post("/{report_id}/retry", response_model=ReportResponse)
+async def retry_report(
+    report_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ReportResponse:
+    return await ReportService(db, current_user).retry_processing(report_id)
+
+
 @router.delete("/{report_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_report(
     report_id: UUID,

@@ -5,6 +5,7 @@ from sqlalchemy import inspect
 from app.models.job import EtlJob
 from app.models.report import Report
 from app.schemas.report import ReportResponse
+from app.schemas.report_errors import is_report_retryable, user_facing_error_hint
 from app.schemas.report_projection import (
     derive_error_message,
     derive_processed_at,
@@ -51,6 +52,11 @@ def report_to_response(
         status=derive_report_status(job),
         row_count=report.row_count,
         error_message=derive_error_message(report, job),
+        error_hint=user_facing_error_hint(
+            last_error=job.last_error if job else None,
+            job=job,
+        ),
+        retryable=is_report_retryable(job),
         attempt_count=job.attempt_count if job else 0,
         max_attempts=job.max_attempts if job else 3,
         idempotency_key=report.file_checksum or (job.idempotency_key if job else None),

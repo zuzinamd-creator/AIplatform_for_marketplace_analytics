@@ -14,6 +14,7 @@ class RetryReason(StrEnum):
     WORKER_SHUTDOWN = "worker_shutdown"
     LEGACY_FILE_TOO_LARGE = "legacy_file_too_large"
     VISIBILITY_TIMEOUT = "visibility_timeout"
+    SESSION_TRANSACTION = "session_transaction"
     GENERIC = "generic"
 
 
@@ -56,6 +57,8 @@ def classify_retry_reason(
         return RetryReason.LEGACY_FILE_TOO_LARGE
     if "visibility timeout" in lowered:
         return RetryReason.VISIBILITY_TIMEOUT
+    if "closed transaction" in lowered:
+        return RetryReason.SESSION_TRANSACTION
     return RetryReason.GENERIC
 
 

@@ -50,6 +50,7 @@ export function ReportsPage() {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
   const q = useQuery({
     queryKey: ["reports", "list", 0, LIST_LIMIT],
     queryFn: () => api.reports.list(0, LIST_LIMIT),
@@ -66,6 +67,16 @@ export function ReportsPage() {
     onError: (error: Error) => {
       toast("Не удалось удалить отчёт", error.message || undefined);
       setDeletingId(null);
+    },
+  });
+  const retry = useMutation({
+    mutationFn: (reportId: string) => api.reports.retry(reportId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["reports"] });
+      toast("Обработка перезапущена");
+    },
+    onError: (error: Error) => {
+      toast("Не удалось перезапустить обработку", error.message || undefined);
     },
   });
 
@@ -146,9 +157,23 @@ export function ReportsPage() {
                   <StatusBadge tone={toneForStatus(r.status)}>{r.status}</StatusBadge>
                 </div>
                 <div className="col-span-2 truncate text-ink-muted">
-                  {r.error_message ? `Ошибка: ${r.error_message}` : r.job?.status ? `Задача: ${r.job.status}` : ""}
+                  {r.error_hint ?? (r.error_message ? `Ошибка: ${r.error_message}` : r.job?.status ? `Задача: ${r.job.status}` : "")}
                 </div>
-                <div className="col-span-1 flex justify-end">
+                <div className="col-span-1 flex justify-end gap-1">
+                  {r.retryable ? (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      disabled={retry.isPending && retryingId === r.id}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setRetryingId(r.id);
+                        retry.mutate(r.id, { onSettled: () => setRetryingId(null) });
+                      }}
+                    >
+                      {retry.isPending && retryingId === r.id ? "…" : "Повтор"}
+                    </Button>
+                  ) : null}
                   {canDelete ? (
                     <Button
                       variant="secondary"

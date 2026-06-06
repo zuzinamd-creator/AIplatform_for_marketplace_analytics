@@ -219,9 +219,8 @@ async def process_next_job() -> bool:
                         user_row = await db.execute(select(User).where(User.id == job.user_id))
                         user = user_row.scalar_one_or_none()
 
-                    if not report or not user:
-                        logger.error("worker_persist_target_missing")
-                        async with TenantSession.transaction(db, job.user_id):
+                        if not report or not user:
+                            logger.error("worker_persist_target_missing")
                             if user:
                                 await ReportService(db, user).fail_job(
                                     job.job_id,
@@ -230,14 +229,11 @@ async def process_next_job() -> bool:
                                     max_attempts=job.max_attempts,
                                     in_transaction=True,
                                 )
-                        return True
+                            return True
 
-                    await db.commit()
-
-                    report_service = ReportService(db, user)
-                    pipeline = ETLPipeline(db, job.user_id)
-                    with track_duration(logger, "etl_persist_result", job_id=str(job.job_id)):
-                        async with TenantSession.transaction(db, job.user_id):
+                        report_service = ReportService(db, user)
+                        pipeline = ETLPipeline(db, job.user_id)
+                        with track_duration(logger, "etl_persist_result", job_id=str(job.job_id)):
                             await pipeline.persist_result(
                                 report,
                                 etl_result,
@@ -245,7 +241,6 @@ async def process_next_job() -> bool:
                                 job_id=job.job_id,
                                 in_transaction=True,
                             )
-                    async with TenantSession.transaction(db, job.user_id):
                         await report_service.ack_job(
                             job.job_id,
                             report_id=job.report_id,
