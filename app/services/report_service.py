@@ -2,14 +2,14 @@ from datetime import UTC, date, datetime
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
 from app.core.config import settings
 from app.core.queue import EnqueuePayload, get_queue_backend
 from app.core.ttl_cache import TtlCache
-from app.models.finance.ledger import FinancialLedgerEntry
+from app.domain.reports.period_queries import fetch_sale_period_bounds_for_reports
 from app.models.job import EtlJob, JobStatus
 from app.models.report import Marketplace, Report, ReportStatus, ReportType
 from app.schemas.report import ReportResponse
@@ -133,7 +133,7 @@ class ReportService(TenantScopedService):
         if cached is not None:
             return cached
 
-        # List view must not load raw_data (~MB per report); period comes from ledger bounds.
+        # List view must not load raw_data (~MB per report); period comes from sale rows.
         query = (
             select(Report)
             .options(defer(Report.raw_data))
@@ -176,22 +176,7 @@ class ReportService(TenantScopedService):
         self,
         report_ids: list[UUID],
     ) -> dict[UUID, tuple[date | None, date | None]]:
-        if not report_ids:
-            return {}
-        query = (
-            select(
-                FinancialLedgerEntry.report_id,
-                func.min(FinancialLedgerEntry.operation_date).label("period_start"),
-                func.max(FinancialLedgerEntry.operation_date).label("period_end"),
-            )
-            .where(FinancialLedgerEntry.report_id.in_(report_ids))
-            .group_by(FinancialLedgerEntry.report_id)
-        )
-        result = await self.db.execute(query)
-        return {
-            row.report_id: (row.period_start, row.period_end)
-            for row in result.all()
-        }
+        return await fetch_sale_period_bounds_for_reports(self.db, report_ids)
 
     async def get_report(self, report_id: UUID) -> tuple[Report, EtlJob | None, date | None, date | None]:
         query = select(Report).where(Report.id == report_id, Report.user_id == self.user.id)

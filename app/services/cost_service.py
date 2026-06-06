@@ -1,5 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
+from io import BytesIO
 from uuid import UUID
 
 import pandas as pd
@@ -7,7 +8,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.etl.loaders import load_file_to_dataframe
+from app.etl.wb.persist import WbFinancialPersistService
 from app.models.cost_history import CostHistory
 from app.models.product import Product
 from app.models.user import User
@@ -42,6 +43,55 @@ class CostService(TenantScopedService):
         super().__init__(db, user_id=user.id)
         self.user = user
 
+    @staticmethod
+    def _parse_import_date(raw: object) -> date | None:
+        """Normalize Excel/pandas date cells to plain date for strict API models."""
+        if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+            return None
+        if isinstance(raw, datetime):
+            return raw.date()
+        if type(raw) is date:
+            return raw
+        parsed = pd.to_datetime(raw, errors="coerce")
+        if pd.isna(parsed):
+            return None
+        if isinstance(parsed, datetime):
+            return parsed.date()
+        if isinstance(parsed, date):
+            return parsed
+        return None
+
+    @staticmethod
+    def _load_cost_import_dataframe(filename: str, content: bytes) -> pd.DataFrame:
+        """Load cost CSV/Excel without WB report header heuristics."""
+        lower = filename.lower()
+        buffer = BytesIO(content)
+        try:
+            if lower.endswith(".csv"):
+                return pd.read_csv(buffer)
+            if lower.endswith((".xlsx", ".xls")):
+                return pd.read_excel(buffer)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Не удалось прочитать файл: {exc}",
+            ) from exc
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Неподдерживаемый формат файла: {filename}",
+        )
+
+    @staticmethod
+    def _cell_text(value: object) -> str | None:
+        if value is None or (isinstance(value, float) and pd.isna(value)):
+            return None
+        text = str(value).strip()
+        return text or None
+
+    async def _refresh_financial_projections(self) -> None:
+        async with self._rls_transaction():
+            await WbFinancialPersistService(self.db, self.user.id).rebuild_all_financial_projections()
+
     async def create_cost(
         self,
         *,
@@ -71,6 +121,7 @@ class CostService(TenantScopedService):
             self.db.add(row)
             await self.db.flush()
             await self.db.refresh(row)
+        await self._refresh_financial_projections()
         return row
 
     async def list_costs(
@@ -149,6 +200,7 @@ class CostService(TenantScopedService):
             self.db.add(row)
             await self.db.flush()
             await self.db.refresh(row)
+        await self._refresh_financial_projections()
         return row
 
     async def get_cost(self, cost_id: UUID) -> CostHistory:
@@ -192,19 +244,9 @@ class CostService(TenantScopedService):
             date_col = column_map.get("effective_from")
             product_col = column_map.get("product_cost")
 
-            sku_value = None
-            if sku_col:
-                sku_value = str(row.get(sku_col, "")).strip() or None
+            sku_value = self._cell_text(row.get(sku_col)) if sku_col else None
 
-            eff: date | None = None
-            if date_col:
-                raw = row.get(date_col)
-                if isinstance(raw, date):
-                    eff = raw
-                else:
-                    parsed = pd.to_datetime(raw, errors="coerce")
-                    if not pd.isna(parsed):
-                        eff = parsed.date()
+            eff = self._parse_import_date(row.get(date_col)) if date_col else None
 
             product_cost = None
             if product_col:
@@ -217,14 +259,9 @@ class CostService(TenantScopedService):
             currency = None
             currency_col = column_map.get("currency")
             if currency_col:
-                v = row.get(currency_col)
-                currency = str(v).strip()[:3] if v is not None else None
+                currency = (self._cell_text(row.get(currency_col)) or "")[:3] or None
 
-            comment = None
-            comment_col = column_map.get("comment")
-            if comment_col:
-                v = row.get(comment_col)
-                comment = str(v).strip() if v is not None else None
+            comment = self._cell_text(row.get(comment_col)) if (comment_col := column_map.get("comment")) else None
 
             total = None
             if product_cost is not None:
@@ -247,7 +284,7 @@ class CostService(TenantScopedService):
         return rows
 
     async def preview_import(self, *, filename: str, content: bytes) -> CostImportPreviewResponse:
-        df = load_file_to_dataframe(filename, content)
+        df = self._load_cost_import_dataframe(filename, content)
         column_map = self._resolve_cost_columns(list(df.columns))
 
         issues: list[CostImportIssue] = []
@@ -277,7 +314,7 @@ class CostService(TenantScopedService):
         )
 
     async def bulk_import_v2(self, *, filename: str, content: bytes) -> CostImportResultResponse:
-        df = load_file_to_dataframe(filename, content)
+        df = self._load_cost_import_dataframe(filename, content)
         column_map = self._resolve_cost_columns(list(df.columns))
         if not column_map.get("internal_sku") or not column_map.get("effective_from"):
             raise HTTPException(
@@ -333,23 +370,18 @@ class CostService(TenantScopedService):
                     )
                     continue
 
-                effective_raw = row[date_col]
-                if isinstance(effective_raw, date):
-                    effective_from = effective_raw
-                else:
-                    parsed = pd.to_datetime(effective_raw, errors="coerce")
-                    if pd.isna(parsed):
-                        skipped_rows += 1
-                        issues.append(
-                            CostImportIssue(
-                                severity="warning",
-                                code="bad_date",
-                                message="Не удалось распарсить дату — строка пропущена.",
-                                row_index=int(index),
-                            )
+                effective_from = self._parse_import_date(row[date_col])
+                if effective_from is None:
+                    skipped_rows += 1
+                    issues.append(
+                        CostImportIssue(
+                            severity="warning",
+                            code="bad_date",
+                            message="Не удалось распарсить дату — строка пропущена.",
+                            row_index=int(index),
                         )
-                        continue
-                    effective_from = parsed.date()
+                    )
+                    continue
 
                 product_cost = parse_decimal(row[product_col])
                 if product_cost is None or product_cost <= Decimal("0"):
@@ -429,6 +461,7 @@ class CostService(TenantScopedService):
 
             await self.db.flush()
 
+        await self._refresh_financial_projections()
         return CostImportResultResponse(
             detected_columns=column_map,
             total_rows=int(len(df)),
@@ -440,7 +473,7 @@ class CostService(TenantScopedService):
         )
 
     async def bulk_import(self, *, filename: str, content: bytes) -> list[CostHistory]:
-        df = load_file_to_dataframe(filename, content)
+        df = self._load_cost_import_dataframe(filename, content)
         column_map = self._resolve_cost_columns(list(df.columns))
         if not column_map.get("internal_sku") or not column_map.get("effective_from"):
             raise HTTPException(
@@ -465,14 +498,9 @@ class CostService(TenantScopedService):
                 if not sku_value:
                     continue
 
-                effective_raw = row[date_col]
-                if isinstance(effective_raw, date):
-                    effective_from = effective_raw
-                else:
-                    parsed = pd.to_datetime(effective_raw, errors="coerce")
-                    if pd.isna(parsed):
-                        continue
-                    effective_from = parsed.date()
+                effective_from = self._parse_import_date(row[date_col])
+                if effective_from is None:
+                    continue
 
                 product_cost = parse_decimal(row[product_col])
                 if product_cost is None or product_cost <= Decimal("0"):

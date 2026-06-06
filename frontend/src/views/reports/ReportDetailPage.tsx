@@ -7,6 +7,12 @@ import { Card } from "../../ui/card";
 import { StatusBadge } from "../../ui/status-badge";
 import { toast } from "../../ui/toast";
 
+function isReportProcessing(status?: string, jobStatus?: string | null): boolean {
+  const s = (status ?? "").toLowerCase();
+  const j = (jobStatus ?? "").toLowerCase();
+  return s === "processing" || j === "processing";
+}
+
 function toneForStatus(status?: string) {
   const s = (status ?? "").toLowerCase();
   if (s.includes("fail") || s.includes("dead")) return "bad" as const;
@@ -51,7 +57,7 @@ export function ReportDetailPage() {
   });
 
   const r = q.data;
-  const canDelete = r && !String(r.status).toLowerCase().includes("process");
+  const canDelete = r && !isReportProcessing(r.status, r.job?.status);
 
   return (
     <div className="page-shell">
@@ -71,7 +77,7 @@ export function ReportDetailPage() {
                 remove.mutate();
               }}
             >
-              Удалить отчёт
+              {remove.isPending ? "Удаление…" : "Удалить отчёт"}
             </Button>
           ) : null}
           <Link className="link-muted" to="/app/reports">

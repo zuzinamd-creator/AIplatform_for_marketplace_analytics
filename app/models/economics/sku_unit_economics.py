@@ -20,6 +20,7 @@ class SkuUnitEconomicsDaily(Base, TenantMixin, TimestampMixin):
     __tablename__ = "sku_unit_economics_daily"
     __table_args__ = (
         UniqueConstraint(
+            "user_id",
             "sku",
             "metric_date",
             "marketplace",

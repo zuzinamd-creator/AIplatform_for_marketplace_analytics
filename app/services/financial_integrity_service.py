@@ -8,6 +8,8 @@ from decimal import Decimal
 
 from sqlalchemy import func, select
 
+from app.domain.finance.cost_lookup import resolve_cost_snapshots, unit_cost_on_date
+from app.etl.wb.persist_aggregates import WbPersistAggregatesMixin
 from app.models.cost_history import CostHistory
 from app.models.economics.sku_unit_economics import SkuUnitEconomicsDaily
 from app.models.finance.aggregates import DailyAggregate
@@ -68,7 +70,7 @@ class FinancialIntegrityService(TenantScopedService):
                 IntegrityWarning(
                     code="negative_revenue",
                     severity="critical",
-                    message="Negative revenue detected for the selected period (check normalization signs and returns).",
+                    message="Отрицательная выручка за период — проверьте знаки и возвраты в отчёте.",
                     context={"marketplace": marketplace.value},
                 )
             )
@@ -78,7 +80,7 @@ class FinancialIntegrityService(TenantScopedService):
                 IntegrityWarning(
                     code="profit_gt_revenue",
                     severity="critical",
-                    message="Profit exceeds revenue for the selected period (financially impossible).",
+                    message="Прибыль больше выручки — финансово невозможно, проверьте агрегацию.",
                     context={
                         "marketplace": marketplace.value,
                         "revenue": str(revenue),
@@ -95,7 +97,7 @@ class FinancialIntegrityService(TenantScopedService):
                     IntegrityWarning(
                         code="abnormal_margin",
                         severity="warning",
-                        message="Abnormal margin detected (outside [-100%; 100%]). Check duplicated aggregation or sign errors.",
+                        message="Аномальная маржа (вне диапазона −100%…100%) — возможны дубли или ошибка знаков.",
                         context={
                             "marketplace": marketplace.value,
                             "margin_pct": str(margin.quantize(Decimal("0.01"))),
@@ -103,8 +105,6 @@ class FinancialIntegrityService(TenantScopedService):
                     )
                 )
 
-        # Missing cost basis warning (profitability completeness).
-        # Heuristic: if tenant has no cost history, profit/margin are not financially governed.
         cost_stmt = select(func.count(CostHistory.id))
         cost_res = await self.execute_with_rls(cost_stmt)
         has_costs = int(cost_res.scalar_one() or 0) > 0
@@ -113,7 +113,7 @@ class FinancialIntegrityService(TenantScopedService):
                 IntegrityWarning(
                     code="missing_cost_basis",
                     severity="warning",
-                    message="No cost history detected; profit and margin may be overstated (COGS assumed 0). Upload costs to enable governed gross profit.",
+                    message="Себестоимость не загружена — прибыль и маржа могут быть завышены.",
                     context={"marketplace": marketplace.value},
                 )
             )
@@ -162,7 +162,7 @@ class FinancialIntegrityService(TenantScopedService):
                 IntegrityWarning(
                     code="payout_reconciliation_mismatch",
                     severity="warning",
-                    message="Payout reconciliation mismatches detected between expected and actual payouts (check returns/fees sign mapping).",
+                    message="Есть расхождение выплат: проверьте возвраты, комиссии и знаки сумм в отчёте.",
                     context={"absolute_difference_sum": str(diff_abs_sum_d), "reports": str(int(rec_count or 0))},
                 )
             )
@@ -196,15 +196,25 @@ class FinancialIntegrityService(TenantScopedService):
             SkuUnitEconomicsDaily.metric_date >= period.start,
             SkuUnitEconomicsDaily.metric_date <= period.end,
         ]
-        total_stmt = select(func.count(func.distinct(SkuUnitEconomicsDaily.sku))).where(*filters)
-        covered_stmt = (
-            select(func.count(func.distinct(SkuUnitEconomicsDaily.sku)))
+        selling_stmt = (
+            select(SkuUnitEconomicsDaily.sku)
             .where(*filters)
-            .where(SkuUnitEconomicsDaily.cogs > 0)
+            .where(SkuUnitEconomicsDaily.units_sold > 0)
+            .group_by(SkuUnitEconomicsDaily.sku)
         )
-        total_skus = int((await self.execute_with_rls(total_stmt)).scalar_one() or 0)
-        if total_skus == 0:
+        selling_res = await self.execute_with_rls(selling_stmt)
+        selling_skus = [str(row[0]) for row in selling_res.all() if row[0]]
+        if not selling_skus:
             return None
-        covered_skus = int((await self.execute_with_rls(covered_stmt)).scalar_one() or 0)
-        return (Decimal(covered_skus) / Decimal(total_skus) * Decimal("100")).quantize(Decimal("0.01"))
+
+        if self.user_id is None:
+            return None
+        async with self._rls_transaction():
+            cost_lookup = await WbPersistAggregatesMixin.load_cost_snapshots(self.db, self.user_id)
+        covered = 0
+        for sku in selling_skus:
+            history = resolve_cost_snapshots(cost_lookup, sku)
+            if unit_cost_on_date(history, period.end) is not None:
+                covered += 1
+        return (Decimal(covered) / Decimal(len(selling_skus)) * Decimal("100")).quantize(Decimal("0.01"))
 

@@ -22,6 +22,8 @@ from app.etl.wb.processor import WbFinancialProcessor
 from app.etl.wb.types import WbFinancialProcessResult
 from app.models.ai_insights import AIInsight, InsightStatus
 from app.models.report import Marketplace, Report, ReportType
+from app.domain.reports.period import attach_period_to_raw_data, period_bounds_for_wb_rows
+from app.domain.reports.period_queries import fetch_sale_period_bounds_for_reports
 from app.services.report_service import ReportService
 
 
@@ -168,9 +170,19 @@ class ETLPipeline:
                 report_id=report.id,
                 in_transaction=in_transaction,
             )
+            if wb_enriched.normalized_rows:
+                period_start, period_end = period_bounds_for_wb_rows(wb_enriched.normalized_rows)
+            else:
+                bounds = await fetch_sale_period_bounds_for_reports(self.db, [report.id])
+                period_start, period_end = bounds.get(report.id, (None, None))
+            raw_data = attach_period_to_raw_data(
+                dict(wb_enriched.raw_snapshot),
+                period_start=period_start,
+                period_end=period_end,
+            )
             return await report_service.persist_business_result(
                 report,
-                raw_data=dict(wb_enriched.raw_snapshot),
+                raw_data=raw_data,
                 row_count=wb_enriched.row_count,
                 in_transaction=in_transaction,
             )

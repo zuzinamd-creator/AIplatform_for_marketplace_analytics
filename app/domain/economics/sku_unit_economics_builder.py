@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
+from app.domain.finance.cost_lookup import resolve_cost_snapshots, unit_cost_on_date
 from app.domain.finance.types import LedgerEntryDraft, SkuCostSnapshot
 from app.models.finance.enums import LedgerOperationType
 from app.models.report import Marketplace
@@ -83,7 +84,13 @@ class SkuUnitEconomicsBuilder:
             op = row.operation_type
             sums[op] = sums.get(op, Decimal("0")) + Decimal(row.amount)
             if op == LedgerOperationType.SALE and Decimal(row.amount) > 0:
-                units_sold += 1
+                qty = 1
+                if row.entry_metadata and "quantity" in row.entry_metadata:
+                    try:
+                        qty = max(int(row.entry_metadata["quantity"]), 1)
+                    except (TypeError, ValueError):
+                        qty = 1
+                units_sold += qty
 
         revenue = sums.get(LedgerOperationType.SALE, Decimal("0"))
         returns_amount = abs(sums.get(LedgerOperationType.RETURN, Decimal("0")))
@@ -97,7 +104,7 @@ class SkuUnitEconomicsBuilder:
         deductions = abs(sums.get(LedgerOperationType.DEDUCTION, Decimal("0")))
         compensation = sums.get(LedgerOperationType.COMPENSATION, Decimal("0"))
 
-        unit_cost = SkuUnitEconomicsBuilder._unit_cost_on_date(costs_by_sku.get(sku, []), metric_date)
+        unit_cost = unit_cost_on_date(resolve_cost_snapshots(costs_by_sku, sku), metric_date)
         cogs = (unit_cost * Decimal(units_sold)) if unit_cost is not None else Decimal("0")
 
         gross_profit = (revenue - returns_amount) + compensation

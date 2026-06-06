@@ -39,7 +39,6 @@ import { AnomaliesPage } from "./views/ops/AnomaliesPage";
 import { RuntimeHealthPage } from "./views/ops/RuntimeHealthPage";
 import { RuntimeSummaryPage } from "./views/ops/RuntimeSummaryPage";
 import { SemanticsStatusPage } from "./views/ops/SemanticsStatusPage";
-import { CostCoveragePage } from "./views/finance/CostCoveragePage";
 import { ReconciliationPage } from "./views/finance/ReconciliationPage";
 import { EconomicsPage } from "./views/economics/EconomicsPage";
 import { SkuDrilldownPage } from "./views/economics/SkuDrilldownPage";
@@ -75,7 +74,7 @@ export const router = createBrowserRouter([
       { path: "reports/upload", element: withBoundary(<UploadReportPage />) },
       { path: "reports/:reportId", element: withBoundary(<ReportDetailPage />) },
       { path: "costs", element: withBoundary(<CostsPage />) },
-      { path: "finance/costs", element: withBoundary(<CostCoveragePage />) },
+      { path: "finance/costs", element: <Navigate to="/app/costs" replace /> },
       { path: "finance/reconciliation", element: withBoundary(<ReconciliationPage />) },
       { path: "economics", element: withBoundary(<EconomicsPage />) },
       { path: "economics/sku/:sku", element: withBoundary(<SkuDrilldownPage />) },

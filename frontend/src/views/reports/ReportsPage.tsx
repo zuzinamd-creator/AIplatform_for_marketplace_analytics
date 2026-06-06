@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
 
@@ -9,6 +9,17 @@ import { Card } from "../../ui/card";
 import { Button } from "../../ui/button";
 import { Label, Select } from "../../ui/field";
 import { StatusBadge } from "../../ui/status-badge";
+import { toast } from "../../ui/toast";
+
+function isReportProcessing(status?: string, jobStatus?: string | null): boolean {
+  const s = (status ?? "").toLowerCase();
+  const j = (jobStatus ?? "").toLowerCase();
+  return s === "processing" || j === "processing";
+}
+
+function canDeleteReport(status?: string, jobStatus?: string | null): boolean {
+  return !isReportProcessing(status, jobStatus);
+}
 
 function toneForStatus(status?: string) {
   const s = (status ?? "").toLowerCase();
@@ -36,10 +47,26 @@ function fmtPeriod(start?: string | null, end?: string | null): string {
 const LIST_LIMIT = 200;
 
 export function ReportsPage() {
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const q = useQuery({
     queryKey: ["reports", "list", 0, LIST_LIMIT],
     queryFn: () => api.reports.list(0, LIST_LIMIT),
+  });
+
+  const remove = useMutation({
+    mutationFn: (reportId: string) => api.reports.delete(reportId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["reports"] });
+      await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast("Отчёт удалён");
+      setDeletingId(null);
+    },
+    onError: (error: Error) => {
+      toast("Не удалось удалить отчёт", error.message || undefined);
+      setDeletingId(null);
+    },
   });
 
   const filtered = useMemo(() => {
@@ -96,29 +123,51 @@ export function ReportsPage() {
           <div className="col-span-2">Маркетплейс</div>
           <div className="col-span-2">Период</div>
           <div className="col-span-2">Статус</div>
-          <div className="col-span-3">Примечания</div>
+          <div className="col-span-2">Примечания</div>
+          <div className="col-span-1 text-right">Действия</div>
         </div>
 
         {q.isLoading ? (
           <div className="px-4 py-6 text-sm text-ink-secondary">Загрузка…</div>
         ) : filtered.length > 0 ? (
-          filtered.map((r) => (
-            <Link
-              key={r.id}
-              to={`/app/reports/${r.id}`}
-              className="grid grid-cols-12 gap-0 border-b border-surface-subtle px-4 py-3 text-sm transition hover:bg-surface-inset"
-            >
-              <div className="col-span-3 truncate font-medium text-ink-secondary">{r.original_filename}</div>
-              <div className="col-span-2 truncate text-ink-muted">{r.marketplace}</div>
-              <div className="col-span-2 truncate text-ink-secondary">{fmtPeriod(r.period_start, r.period_end)}</div>
-              <div className="col-span-2">
-                <StatusBadge tone={toneForStatus(r.status)}>{r.status}</StatusBadge>
+          filtered.map((r) => {
+            const canDelete = canDeleteReport(r.status, r.job?.status);
+            return (
+              <div
+                key={r.id}
+                className="grid grid-cols-12 gap-0 border-b border-surface-subtle px-4 py-3 text-sm transition hover:bg-surface-inset"
+              >
+                <Link to={`/app/reports/${r.id}`} className="col-span-3 truncate font-medium text-ink-secondary hover:underline">
+                  {r.original_filename}
+                </Link>
+                <div className="col-span-2 truncate text-ink-muted">{r.marketplace}</div>
+                <div className="col-span-2 truncate text-ink-secondary">{fmtPeriod(r.period_start, r.period_end)}</div>
+                <div className="col-span-2">
+                  <StatusBadge tone={toneForStatus(r.status)}>{r.status}</StatusBadge>
+                </div>
+                <div className="col-span-2 truncate text-ink-muted">
+                  {r.error_message ? `Ошибка: ${r.error_message}` : r.job?.status ? `Задача: ${r.job.status}` : ""}
+                </div>
+                <div className="col-span-1 flex justify-end">
+                  {canDelete ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={remove.isPending && deletingId === r.id}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (!window.confirm("Удалить отчёт и все связанные проводки? Это действие необратимо.")) return;
+                        setDeletingId(r.id);
+                        remove.mutate(r.id);
+                      }}
+                    >
+                      {remove.isPending && deletingId === r.id ? "Удаление…" : "Удалить"}
+                    </Button>
+                  ) : null}
+                </div>
               </div>
-              <div className="col-span-3 truncate text-ink-muted">
-                {r.error_message ? `Ошибка: ${r.error_message}` : r.job?.status ? `Задача: ${r.job.status}` : ""}
-              </div>
-            </Link>
-          ))
+            );
+          })
         ) : q.data && q.data.length > 0 ? (
           <div className="px-4 py-10 text-center">
             <div className="text-sm font-medium">Нет отчётов по выбранному фильтру</div>

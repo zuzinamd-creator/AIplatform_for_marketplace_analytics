@@ -32,7 +32,7 @@ class TenantContainmentGuard:
             row = await self.db.get(TenantContainmentState, user_id)
             return self._result_from_row(row)
 
-        async with DispatchSession.transaction(self.db):
+        async with TenantSession.transaction(self.db, user_id):
             row = await self.db.get(TenantContainmentState, user_id)
         return self._result_from_row(row)
 

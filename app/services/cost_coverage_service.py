@@ -9,6 +9,8 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.finance.cost_lookup import resolve_cost_snapshots, unit_cost_on_date
+from app.etl.wb.persist_aggregates import WbPersistAggregatesMixin
 from app.models.cost_history import CostHistory
 from app.models.economics.sku_unit_economics import SkuUnitEconomicsDaily
 from app.models.report import Marketplace
@@ -80,19 +82,18 @@ class CostCoverageService(TenantScopedService):
         ).where(*filters)
         totals_res = await self.execute_with_rls(totals_stmt)
         total_skus, units_sold, revenue_sum, cogs_sum = totals_res.one()
-
-        covered_stmt = select(func.count(func.distinct(SkuUnitEconomicsDaily.sku))).where(*filters).where(
-            SkuUnitEconomicsDaily.cogs > 0
-        )
-        covered_res = await self.execute_with_rls(covered_stmt)
-        covered_skus = int(covered_res.scalar_one() or 0)
-
         total_skus_i = int(total_skus or 0)
-        sku_cov = (
-            (Decimal(covered_skus) / Decimal(total_skus_i) * Decimal("100"))
-            if total_skus_i > 0
-            else None
+
+        gaps = await self.sales_coverage_gaps(
+            marketplace=marketplace,
+            period=period,
+            limit=200,
         )
+        covered_skus = int(gaps["covered_skus"])
+        missing_skus: list[str] = list(gaps["missing_skus"])
+        if gaps["total_selling_skus"]:
+            total_skus_i = int(gaps["total_selling_skus"])
+        sku_cov = gaps["sku_cost_coverage_pct"]
 
         warnings: list[IntegrityWarning] = []
         if total_skus_i > 0 and covered_skus == 0 and Decimal(revenue_sum) > 0:
@@ -145,7 +146,11 @@ class CostCoverageService(TenantScopedService):
             sku_warnings: list[IntegrityWarning] = []
             rev_d = Decimal(rev)
             cogs_d = Decimal(cogs)
-            cov_pct = (Decimal("100") if (Decimal(u) > 0 and cogs_d > 0) else Decimal("0")) if int(u or 0) > 0 else None
+            cov_pct = (
+                Decimal("100")
+                if int(u or 0) > 0 and str(sku) not in missing_skus
+                else (Decimal("0") if int(u or 0) > 0 else None)
+            )
 
             last_cost_stmt = (
                 select(func.max(CostHistory.effective_from))
@@ -154,7 +159,7 @@ class CostCoverageService(TenantScopedService):
             last_cost_res = await self.execute_with_rls(last_cost_stmt)
             last_cost = last_cost_res.scalar_one_or_none()
 
-            if int(u or 0) > 0 and cogs_d == 0:
+            if int(u or 0) > 0 and cogs_d == 0 and str(sku) in missing_skus:
                 sku_warnings.append(
                     IntegrityWarning(
                         code="missing_sku_cost",
@@ -206,7 +211,87 @@ class CostCoverageService(TenantScopedService):
             sku_cost_coverage_pct=sku_cov,
             cost_completeness_score=score,
             items=items,
+            missing_skus=missing_skus,
             freshness=freshness,
             warnings=warnings,
         )
+
+    async def sales_coverage_gaps(
+        self,
+        *,
+        marketplace: Marketplace,
+        period: CoveragePeriod | None = None,
+        limit: int = 50,
+    ) -> dict:
+        """Selling SKUs without cost for the sales period (for costs page / dashboard warnings)."""
+        if period is None:
+            bounds = await self.execute_with_rls(
+                select(
+                    func.min(SkuUnitEconomicsDaily.metric_date),
+                    func.max(SkuUnitEconomicsDaily.metric_date),
+                ).where(
+                    SkuUnitEconomicsDaily.marketplace == marketplace,
+                    SkuUnitEconomicsDaily.units_sold > 0,
+                )
+            )
+            period_start, period_end = bounds.one()
+            if period_start is None or period_end is None:
+                return {
+                    "marketplace": marketplace,
+                    "period_start": None,
+                    "period_end": None,
+                    "total_selling_skus": 0,
+                    "covered_skus": 0,
+                    "sku_cost_coverage_pct": None,
+                    "missing_skus": [],
+                }
+            period = CoveragePeriod(start=period_start, end=period_end)
+
+        selling_stmt = (
+            select(SkuUnitEconomicsDaily.sku)
+            .where(
+                SkuUnitEconomicsDaily.marketplace == marketplace,
+                SkuUnitEconomicsDaily.metric_date >= period.start,
+                SkuUnitEconomicsDaily.metric_date <= period.end,
+                SkuUnitEconomicsDaily.units_sold > 0,
+            )
+            .group_by(SkuUnitEconomicsDaily.sku)
+            .order_by(SkuUnitEconomicsDaily.sku.asc())
+        )
+        selling_res = await self.execute_with_rls(selling_stmt)
+        selling_skus = [str(row[0]) for row in selling_res.all() if row[0]]
+        if not selling_skus:
+            return {
+                "marketplace": marketplace,
+                "period_start": period.start,
+                "period_end": period.end,
+                "total_selling_skus": 0,
+                "covered_skus": 0,
+                "sku_cost_coverage_pct": None,
+                "missing_skus": [],
+            }
+
+        async with self._rls_transaction():
+            cost_lookup = await WbPersistAggregatesMixin.load_cost_snapshots(self.db, self.user_id)
+
+        missing: list[str] = []
+        covered = 0
+        for sku in selling_skus:
+            history = resolve_cost_snapshots(cost_lookup, sku)
+            if unit_cost_on_date(history, period.end) is not None:
+                covered += 1
+            else:
+                missing.append(sku)
+
+        total = len(selling_skus)
+        pct = (Decimal(covered) / Decimal(total) * Decimal("100")).quantize(Decimal("0.01")) if total else None
+        return {
+            "marketplace": marketplace,
+            "period_start": period.start,
+            "period_end": period.end,
+            "total_selling_skus": total,
+            "covered_skus": covered,
+            "sku_cost_coverage_pct": pct,
+            "missing_skus": missing[:limit],
+        }
 

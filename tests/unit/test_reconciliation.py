@@ -42,3 +42,47 @@ def test_reconciliation_is_deterministic() -> None:
     assert result.expected_payout == Decimal("900.00")
     assert result.actual_payout == Decimal("850.00")
     assert result.difference == Decimal("-50.00")
+
+
+def test_reconciliation_includes_compensation_in_expected_payout() -> None:
+    entries = [
+        LedgerEntryDraft(
+            operation_date=date(2026, 1, 1),
+            sku="SKU-1",
+            nm_id="123",
+            operation_type=LedgerOperationType.SALE,
+            amount=Decimal("1000.00"),
+            currency="RUB",
+            source_row_id="r1:sale",
+        ),
+        LedgerEntryDraft(
+            operation_date=date(2026, 1, 1),
+            sku="SKU-1",
+            nm_id="123",
+            operation_type=LedgerOperationType.COMMISSION,
+            amount=Decimal("-100.00"),
+            currency="RUB",
+            source_row_id="r1:commission",
+        ),
+        LedgerEntryDraft(
+            operation_date=date(2026, 1, 1),
+            sku="SKU-1",
+            nm_id="123",
+            operation_type=LedgerOperationType.COMPENSATION,
+            amount=Decimal("50.00"),
+            currency="RUB",
+            source_row_id="r1:compensation",
+        ),
+        LedgerEntryDraft(
+            operation_date=date(2026, 1, 1),
+            sku="SKU-1",
+            nm_id="123",
+            operation_type=LedgerOperationType.PAYOUT,
+            amount=Decimal("950.00"),
+            currency="RUB",
+            source_row_id="r1:payout",
+        ),
+    ]
+    result = ReconciliationCalculator.calculate(entries)
+    assert result.expected_payout == Decimal("950.00")
+    assert result.difference == Decimal("0.00")

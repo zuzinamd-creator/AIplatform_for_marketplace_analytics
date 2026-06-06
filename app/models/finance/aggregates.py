@@ -13,7 +13,12 @@ from app.models.report import Marketplace
 class DailyAggregate(Base, TenantMixin, TimestampMixin):
     __tablename__ = "daily_aggregates"
     __table_args__ = (
-        UniqueConstraint("aggregate_date", "marketplace", name="uq_daily_aggregate_day_marketplace"),
+        UniqueConstraint(
+            "user_id",
+            "aggregate_date",
+            "marketplace",
+            name="uq_daily_aggregate_day_marketplace",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -35,7 +40,13 @@ class DailyAggregate(Base, TenantMixin, TimestampMixin):
 class SkuDailyMetric(Base, TenantMixin, TimestampMixin):
     __tablename__ = "sku_daily_metrics"
     __table_args__ = (
-        UniqueConstraint("sku", "metric_date", "marketplace", name="uq_sku_daily_metric"),
+        UniqueConstraint(
+            "user_id",
+            "sku",
+            "metric_date",
+            "marketplace",
+            name="uq_sku_daily_metric",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

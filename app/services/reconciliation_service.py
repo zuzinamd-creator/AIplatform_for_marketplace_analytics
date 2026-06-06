@@ -115,13 +115,18 @@ class ReconciliationService(TenantScopedService):
                     message="Обнаружена отрицательная выручка за период (ошибка нормализации знаков).",
                 )
             )
-        if abs(payout_diff) > Decimal("0"):
+        # MVP: do not flag payout_mismatch — WB «К перечислению» uses settlement base
+        # (discounted buyer price), not «Цена розничная − commission» from this report.
+        if revenue > 0 and payout_actual > 0:
             warnings.append(
                 IntegrityWarning(
-                    code="payout_mismatch",
-                    severity="warning",
-                    message="Фактические выплаты не совпадают с расчётными по компонентам (возможна неполная загрузка отчётов/компонентов).",
-                    context={"difference": str(payout_diff)},
+                    code="reconciliation_methodology_note",
+                    severity="info",
+                    message=(
+                        "Сверка выплат в MVP показывает только разбор компонентов. "
+                        "Колонка «К перечислению» в отчёте WB не равна «выручка − комиссия» "
+                        "из-за скидок/СПП; автоматическое сравнение с expected_payout отключено."
+                    ),
                 )
             )
 

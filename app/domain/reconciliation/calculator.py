@@ -31,6 +31,7 @@ class ReconciliationCalculator:
         logistics = zero
         deductions = zero
         returns_amount = zero
+        compensation = zero
         payout_actual = zero
 
         for entry in entries:
@@ -51,10 +52,12 @@ class ReconciliationCalculator:
                 deductions += abs(amount)
             elif entry.operation_type == LedgerOperationType.RETURN:
                 returns_amount += abs(amount)
+            elif entry.operation_type == LedgerOperationType.COMPENSATION:
+                compensation += amount
             elif entry.operation_type == LedgerOperationType.PAYOUT:
                 payout_actual += amount
 
-        net = gross - commissions - logistics - deductions - returns_amount
+        net = gross - commissions - logistics - deductions - returns_amount + compensation
         expected = net
         difference = payout_actual - expected
         return ReconciliationResult(

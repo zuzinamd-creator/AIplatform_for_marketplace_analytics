@@ -172,6 +172,7 @@ export type CostCoverageResponse = {
     last_cost_effective_from?: string | null;
     warnings: IntegrityWarning[];
   }>;
+  missing_skus?: string[];
   freshness: AnalyticsFreshnessMeta;
   warnings: IntegrityWarning[];
 };

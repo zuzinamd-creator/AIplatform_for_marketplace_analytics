@@ -4,6 +4,7 @@ import { useDropzone } from "react-dropzone";
 
 import { api, formatApiError } from "../../state/http";
 import type { CostResponse } from "../../state/types-costs";
+import { loadWorkspaceProfile } from "../../state/onboarding";
 import { formatMetric } from "../../utils/format";
 import { Card } from "../../ui/card";
 import { Button } from "../../ui/button";
@@ -11,6 +12,7 @@ import { CollapsibleSection } from "../../ui/collapsible-section";
 import { Input, Label, Select } from "../../ui/field";
 import { StatusBadge } from "../../ui/status-badge";
 import { toast } from "../../ui/toast";
+import { WarnCallout } from "../../ui/warn-callout";
 
 type EditableField = "product_cost" | "packaging_cost" | "inbound_logistics_cost" | "additional_cost";
 
@@ -42,6 +44,8 @@ function numOrEmpty(v: string): string {
 
 export function CostsPage() {
   const qc = useQueryClient();
+  const workspace = loadWorkspaceProfile();
+  const marketplace = workspace.marketplace === "unknown" ? "wildberries" : workspace.marketplace;
   const [picked, setPicked] = useState<File | null>(null);
   const [showPreview, setShowPreview] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("all");
@@ -61,6 +65,11 @@ export function CostsPage() {
   const list = useQuery({
     queryKey: ["costs", "list", listParams],
     queryFn: () => api.costs.list(listParams),
+  });
+
+  const salesGaps = useQuery({
+    queryKey: ["costs", "salesCoverageGaps", marketplace],
+    queryFn: () => api.costs.salesCoverageGaps({ marketplace }),
   });
 
   const preview = useQuery({
@@ -84,8 +93,9 @@ export function CostsPage() {
       );
       setPicked(null);
       await qc.invalidateQueries({ queryKey: ["costs", "list"] });
+      await qc.invalidateQueries({ queryKey: ["costs", "salesCoverageGaps"] });
       await qc.invalidateQueries({ queryKey: ["analytics", "coverage"] });
-      await qc.invalidateQueries({ queryKey: ["analytics", "costCoverage"] });
+      await qc.invalidateQueries({ queryKey: ["dashboard"] });
       await qc.invalidateQueries({ queryKey: ["ai", "recommendations"] });
     },
     onError: (err) => toast("Ошибка импорта", formatApiError(err)),
@@ -109,6 +119,8 @@ export function CostsPage() {
       setEditing(null);
       setDraft({});
       await qc.invalidateQueries({ queryKey: ["costs", "list"] });
+      await qc.invalidateQueries({ queryKey: ["costs", "salesCoverageGaps"] });
+      await qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast("Сохранено", "Себестоимость обновлена.");
     },
     onError: (err) => toast("Ошибка сохранения", formatApiError(err)),
@@ -186,6 +198,23 @@ export function CostsPage() {
           Импорт по SKU и ручное редактирование ячеек. Данные привязаны к вашему аккаунту.
         </p>
       </div>
+
+      {salesGaps.data && salesGaps.data.missing_skus.length > 0 && salesGaps.data.period_start && salesGaps.data.period_end ? (
+        <WarnCallout title="Не хватает себестоимости для части продаж">
+          <p className="text-sm">
+            Для отчётов о продажах за период {salesGaps.data.period_start} → {salesGaps.data.period_end} не указана
+            себестоимость для {salesGaps.data.missing_skus.length} SKU
+            {salesGaps.data.total_selling_skus
+              ? ` (из ${salesGaps.data.total_selling_skus} товаров с продажами)`
+              : ""}
+            .
+          </p>
+          <p className="mt-2 text-xs text-ink-muted">
+            {salesGaps.data.missing_skus.slice(0, 12).join(" · ")}
+            {salesGaps.data.missing_skus.length > 12 ? ` · и ещё ${salesGaps.data.missing_skus.length - 12}` : ""}
+          </p>
+        </WarnCallout>
+      ) : null}
 
       <CollapsibleSection
         title="Импорт файла"

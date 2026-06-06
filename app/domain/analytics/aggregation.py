@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
+from app.domain.finance.cost_lookup import resolve_cost_snapshots, unit_cost_on_date
 from app.domain.finance.types import LedgerEntryDraft, SkuCostSnapshot
 from app.models.finance.enums import LedgerOperationType
 from app.models.report import Marketplace
@@ -138,7 +139,17 @@ class AggregationEngine:
 
     @staticmethod
     def _units_sold(entries: list[LedgerEntryDraft]) -> int:
-        return sum(1 for e in entries if e.operation_type == LedgerOperationType.SALE and e.amount > 0)
+        return sum(AggregationEngine._sale_quantity(e) for e in entries if e.operation_type == LedgerOperationType.SALE and e.amount > 0)
+
+    @staticmethod
+    def _sale_quantity(entry: LedgerEntryDraft) -> int:
+        if entry.entry_metadata and "quantity" in entry.entry_metadata:
+            try:
+                qty = int(entry.entry_metadata["quantity"])
+                return qty if qty > 0 else 1
+            except (TypeError, ValueError):
+                pass
+        return 1
 
     @staticmethod
     def _sum_cogs(entries: list[LedgerEntryDraft], costs: dict[str, list[SkuCostSnapshot]]) -> Decimal:
@@ -146,9 +157,9 @@ class AggregationEngine:
         for entry in entries:
             if entry.operation_type != LedgerOperationType.SALE or not entry.sku:
                 continue
-            unit_cost = AggregationEngine._cost_on_date(costs.get(entry.sku, []), entry.operation_date)
+            unit_cost = unit_cost_on_date(resolve_cost_snapshots(costs, entry.sku), entry.operation_date)
             if unit_cost is not None:
-                total += unit_cost
+                total += unit_cost * Decimal(AggregationEngine._sale_quantity(entry))
         return total
 
     @staticmethod

@@ -9,7 +9,46 @@
 - **RLS (Row Level Security)** — строгая tenant-изоляция на уровне PostgreSQL.
 - **ИИ только advisory** — ИИ не мутирует источники правды; при деградации данных снижает уверенность.
 
-## Документация (RU)
+## Финансовая модель (MVP)
+
+Все KPI считаются из **append-only ledger** (`financial_ledger_entries`), построенного из строк отчёта WB с row-type семантикой (`app/domain/finance/wb_row_semantics.py`).
+
+| KPI | Формула | Поле WB |
+|-----|---------|---------|
+| **Revenue** | Σ `SALE.amount` | «Цена розничная» на строках «Продажа» |
+| **Commission** | Σ \|`COMMISSION.amount`\| | «Вознаграждение ВВ» только на «Продажа»/«Возврат» |
+| **Logistics** | Σ \|`LOGISTICS.amount`\| | «Услуги по доставке…» на строках «Логистика» |
+| **Returns** | Σ \|`RETURN.amount`\| | «Возврат» (не PVZ-колонки на строках продажи) |
+| **Payout** | Σ `PAYOUT.amount` | «К перечислению продавцу…» на «Продажа» |
+| **Profit** | Σ ledger (кроме `PAYOUT`) − COGS | Управленческая; WB не даёт |
+| **Margin %** | profit / revenue × 100 | Только при 100% cost coverage |
+| **ROI** | profit / COGS × 100 | Только при COGS > 0 |
+| **Contribution margin** | (revenue − returns + compensation) − fees − COGS | Unit economics (`sku_unit_economics_daily`) |
+| **Average check** | revenue / units_sold | units_sold = Σ quantity на «Продажа» |
+
+### Правило себестоимости
+
+Каждая запись `cost_history` имеет `effective_from`. Для продажи от даты **D** выбирается запись с **max(effective_from) ≤ D**. Новая себестоимость действует до следующей записи по SKU. **Исторические агрегаты не пересчитываются автоматически** — только через rebuild/incremental projection.
+
+### Trust Gating (profit / margin)
+
+| Coverage | trust | profit | margin | SKU profit в AI |
+|----------|-------|--------|--------|-----------------|
+| 0% | insufficient | скрыт | скрыт | 0 / null |
+| 1–99% | partial | показан | скрыт | 0 |
+| 100% | full | показан | показан | факт |
+
+Применяется: Dashboard, все `/analytics/*` profit-поля, AI payload.
+
+### Ограничения MVP
+
+- **buyout_rate** — не реализован (нужен отчёт заказов).
+- **inventory_value** — нет; есть `frozen_capital` = stock × unit_cost при наличии snapshot и COGS.
+- **Reconciliation (сверка выплат)** — только разбор компонентов; автоматический `payout_mismatch` отключён: WB «К перечислению» ≠ «розничная − комиссия» из-за СПП/скидок.
+- **Profit / margin / ROI** — требуют загрузки себестоимости; при coverage < 100% margin скрывается.
+
+После изменения ledger-логики выполните: `python scripts/rebuild_financial_projections.py`.
+
 
 - Архитектурные инварианты: `docs/architecture/invariants.md`
 - Аналитика и целостность: `docs/analytics/financial_semantics.md`, `docs/analytics/integrity_validation.md`, `docs/analytics/report_coverage.md`

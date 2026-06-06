@@ -39,3 +39,13 @@ export type CostListParams = {
   effective_from?: string;
   effective_to?: string;
 };
+
+export type SalesCostCoverageGapsResponse = {
+  marketplace: string;
+  period_start: string | null;
+  period_end: string | null;
+  total_selling_skus: number;
+  covered_skus: number;
+  sku_cost_coverage_pct?: string | null;
+  missing_skus: string[];
+};

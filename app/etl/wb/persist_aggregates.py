@@ -6,19 +6,26 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security_context import TenantSession
+from app.core.tenant_context import set_current_user_context, set_queue_role_context
 from app.domain.analytics.aggregation import AggregationEngine, DailyAggregateDraft, SkuDailyMetricDraft
 from app.domain.economics.sku_unit_economics_builder import SkuUnitEconomicsBuilder, SkuUnitEconomicsDraft
+from app.domain.finance.cost_lookup import build_cost_lookup
+from app.domain.finance.ledger import LedgerBuilder
 from app.domain.finance.types import LedgerEntryDraft, SkuCostSnapshot
 from app.etl.db_batch import INSERT_BATCH_SIZE, iter_batches
 from app.etl.wb.types import WbFinancialProcessResult
 from app.models.cost_history import CostHistory
 from app.models.economics.sku_unit_economics import SkuUnitEconomicsDaily
 from app.models.finance import DailyAggregate, FinancialLedgerEntry, SkuDailyMetric
+from app.models.finance.normalized import NormalizedReportRow
 from app.models.report import Marketplace
+from app.models.sku_mapping import SKUMapping
+from app.parsers.wb.rehydrate import normalized_row_from_stored
 
 
 class WbPersistAggregatesMixin:
@@ -32,21 +39,34 @@ class WbPersistAggregatesMixin:
         db: AsyncSession,
         user_id: UUID,
     ) -> dict[str, list[SkuCostSnapshot]]:
-        result = await db.execute(select(CostHistory).where(CostHistory.user_id == user_id))
-        costs: dict[str, list[SkuCostSnapshot]] = {}
-        for row in result.scalars().all():
-            costs.setdefault(row.internal_sku, []).append(
-                SkuCostSnapshot(
-                    sku=row.internal_sku,
-                    effective_from=row.effective_from,
-                    product_cost=row.product_cost,
-                    packaging_cost=row.packaging_cost,
-                    inbound_logistics_cost=row.inbound_logistics_cost,
-                    additional_cost=row.additional_cost,
-                    currency=row.currency,
+        async def _load() -> dict[str, list[SkuCostSnapshot]]:
+            result = await db.execute(select(CostHistory).where(CostHistory.user_id == user_id))
+            costs: dict[str, list[SkuCostSnapshot]] = {}
+            for row in result.scalars().all():
+                costs.setdefault(row.internal_sku, []).append(
+                    SkuCostSnapshot(
+                        sku=row.internal_sku,
+                        effective_from=row.effective_from,
+                        product_cost=row.product_cost,
+                        packaging_cost=row.packaging_cost,
+                        inbound_logistics_cost=row.inbound_logistics_cost,
+                        additional_cost=row.additional_cost,
+                        currency=row.currency,
+                    )
                 )
-            )
-        return costs
+            mapping_rows = await db.execute(select(SKUMapping).where(SKUMapping.user_id == user_id))
+            marketplace_map = {
+                m.marketplace_sku: m.internal_sku for m in mapping_rows.scalars().all()
+            }
+            return build_cost_lookup(costs, marketplace_sku_to_internal=marketplace_map or None)
+
+        if db.in_transaction():
+            await set_queue_role_context(db, False)
+            await set_current_user_context(db, user_id)
+            return await _load()
+
+        async with TenantSession.transaction(db, user_id):
+            return await _load()
 
     async def _resolve_affected_dates(
         self,
@@ -109,9 +129,26 @@ class WbPersistAggregatesMixin:
 
         marketplace_value = Marketplace.WILDBERRIES.value
         await self._purge_sku_aggregates_for_dates(affected_dates, marketplace=marketplace_value)
+        await self._purge_daily_aggregates_for_dates(affected_dates, marketplace=marketplace_value)
         await self._batch_upsert_daily_aggregates(daily, affected_dates)
         await self._batch_upsert_sku_daily_metrics(sku_rows, affected_dates)
         await self._batch_upsert_sku_unit_economics(unit_econ_rows)
+
+    async def _purge_daily_aggregates_for_dates(
+        self,
+        affected_dates: set[date],
+        *,
+        marketplace: str,
+    ) -> None:
+        if not affected_dates:
+            return
+        await self.db.execute(
+            delete(DailyAggregate).where(
+                DailyAggregate.user_id == self.user_id,
+                DailyAggregate.aggregate_date.in_(affected_dates),
+                DailyAggregate.marketplace == marketplace,
+            )
+        )
 
     async def _purge_sku_aggregates_for_dates(
         self,
@@ -316,6 +353,10 @@ class WbPersistAggregatesMixin:
             affected_dates,
             marketplace=Marketplace.WILDBERRIES.value,
         )
+        await self._purge_daily_aggregates_for_dates(
+            affected_dates,
+            marketplace=Marketplace.WILDBERRIES.value,
+        )
         drafts = await self._load_ledger_drafts_for_dates(affected_dates)
         if not drafts:
             await self.db.execute(
@@ -353,3 +394,80 @@ class WbPersistAggregatesMixin:
         await self._batch_upsert_daily_aggregates(daily, affected_dates)
         await self._batch_upsert_sku_daily_metrics(sku_rows, affected_dates)
         await self._batch_upsert_sku_unit_economics(unit_econ_rows)
+
+    async def rebuild_ledger_from_normalized_rows(self) -> set[date]:
+        """
+        Rebuild financial ledger from stored raw payloads (e.g. after parser mapping fixes).
+        """
+        rows = list(
+            (
+                await self.db.execute(
+                    select(NormalizedReportRow)
+                    .where(NormalizedReportRow.user_id == self.user_id)
+                    .order_by(NormalizedReportRow.source_row_index.asc())
+                )
+            ).scalars().all()
+        )
+        if not rows:
+            return set()
+
+        await self.db.execute(
+            delete(FinancialLedgerEntry).where(FinancialLedgerEntry.user_id == self.user_id)
+        )
+
+        affected_dates: set[date] = set()
+        values: list[dict] = []
+        for stored in rows:
+            norm = normalized_row_from_stored(
+                source_row_id=stored.source_row_id,
+                source_row_index=stored.source_row_index,
+                operation_date=stored.operation_date,
+                sku=stored.sku,
+                nm_id=stored.nm_id,
+                raw_payload=stored.raw_payload,
+            )
+            default_date = norm.operation_date or date.today()
+            for entry in LedgerBuilder.from_normalized_rows([norm], default_date=default_date):
+                affected_dates.add(entry.operation_date)
+                values.append(
+                    {
+                        "user_id": self.user_id,
+                        "report_id": stored.report_id,
+                        "operation_date": entry.operation_date,
+                        "sku": entry.sku,
+                        "nm_id": entry.nm_id,
+                        "operation_type": entry.operation_type,
+                        "amount": entry.amount,
+                        "currency": entry.currency,
+                        "source_row_id": entry.source_row_id,
+                        "entry_metadata": entry.entry_metadata,
+                    }
+                )
+
+        if values:
+            stmt = insert(FinancialLedgerEntry).on_conflict_do_nothing(
+                constraint="uq_ledger_report_source_row"
+            )
+            for batch in iter_batches(values, batch_size=INSERT_BATCH_SIZE):
+                await self.db.execute(stmt, batch)
+
+        if affected_dates:
+            await self.rebuild_projections_for_dates(affected_dates)
+        return affected_dates
+
+    async def rebuild_all_financial_projections(self) -> None:
+        """Rebuild SKU/day economics after cost imports."""
+        dates = {
+            value
+            for (value,) in (
+                await self.db.execute(
+                    select(func.distinct(FinancialLedgerEntry.operation_date)).where(
+                        FinancialLedgerEntry.user_id == self.user_id,
+                        FinancialLedgerEntry.operation_date.is_not(None),
+                    )
+                )
+            ).all()
+            if value is not None
+        }
+        if dates:
+            await self.rebuild_projections_for_dates(dates)

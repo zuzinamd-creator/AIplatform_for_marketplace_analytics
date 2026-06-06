@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import date
 from uuid import UUID
 
@@ -9,8 +10,8 @@ from fastapi import HTTPException, status
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.observability import get_logger
 from app.etl.storage import delete_report_file
-from app.etl.wb.inventory_snapshot_rebuild import InventorySnapshotRebuildService
 from app.etl.wb.persist import WbFinancialPersistService
 from app.models.ai_insights import AIInsight
 from app.models.cost_history import CostHistory
@@ -19,6 +20,9 @@ from app.models.job import EtlJob, JobStatus
 from app.models.report import Report
 from app.models.user import User
 from app.services.base import TenantScopedService
+from app.services.semantics_invalidation_service import SemanticsInvalidationService
+
+logger = get_logger(__name__)
 
 
 class ReportDeletionService(TenantScopedService):
@@ -27,6 +31,7 @@ class ReportDeletionService(TenantScopedService):
         self.user = user
 
     async def delete_report(self, report_id: UUID) -> None:
+        storage_uri: str | None = None
         async with self._rls_transaction():
             report = await self._get_owned_report(report_id)
             await self._assert_deletable(report_id)
@@ -53,12 +58,13 @@ class ReportDeletionService(TenantScopedService):
             persist = WbFinancialPersistService(self.db, self.user.id)
             await persist.rebuild_projections_for_dates(affected_dates)
             if earliest_date is not None:
-                await InventorySnapshotRebuildService(self.db, self.user.id).rebuild(
-                    earliest_affected_date=earliest_date,
+                await SemanticsInvalidationService(self.db, self.user.id).request_rebuild(
+                    semantics_version="1.0",
+                    reason=f"report_deleted:{report_id}",
                 )
 
         if storage_uri:
-            delete_report_file(storage_uri)
+            asyncio.create_task(_delete_report_file_best_effort(storage_uri))
 
     async def _get_owned_report(self, report_id: UUID) -> Report:
         result = await self.db.execute(
@@ -93,3 +99,10 @@ class ReportDeletionService(TenantScopedService):
             .distinct()
         )
         return {value for (value,) in result.all() if value is not None}
+
+
+async def _delete_report_file_best_effort(storage_uri: str) -> None:
+    try:
+        await asyncio.to_thread(delete_report_file, storage_uri)
+    except Exception:
+        logger.exception("report_file_delete_failed", extra={"storage_uri": storage_uri})

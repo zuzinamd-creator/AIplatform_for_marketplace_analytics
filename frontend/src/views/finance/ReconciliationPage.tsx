@@ -42,8 +42,9 @@ export function ReconciliationPage() {
         <div>
           <h1 className="page-title">Финансовая сверка</h1>
           <p className="page-subtitle">
-            Детальный разбор: почему <span className="font-medium">выплата</span> не равна{" "}
-            <span className="font-medium">прибыли</span>.
+            Справочный разбор компонентов периода. В MVP автоматическое сравнение выплат с expected_payout
+            отключено — колонка WB «К перечислению» использует базу расчёта со скидками (СПП), отличную от
+            «Цена розничная − комиссия».
           </p>
         </div>
         <StatusBadge tone={stale ? "warn" : "info"}>{stale ? "данные устарели" : "актуально"}</StatusBadge>

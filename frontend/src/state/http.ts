@@ -83,7 +83,13 @@ export type CostImportResultResponse = {
   issues: CostImportIssue[];
 };
 import type { Token, UserCreate, UserResponse } from "./types-auth";
-import type { CostCreateRequest, CostListParams, CostResponse, CostUpdateRequest } from "./types-costs";
+import type {
+  CostCreateRequest,
+  CostListParams,
+  CostResponse,
+  CostUpdateRequest,
+  SalesCostCoverageGapsResponse,
+} from "./types-costs";
 import type { ReportResponse, ReportUploadResponse } from "./types-reports";
 import type { WorkflowEventCreateRequest, WorkflowEventResponse, WorkflowHistoryResponse } from "./types-workflow";
 import type {
@@ -169,6 +175,9 @@ export function formatApiError(err: unknown): string {
     if (err.response?.status === 503) {
       return "Отправка email недоступна. Обратитесь к администратору.";
     }
+    if (err.code === "ECONNABORTED" || err.message.toLowerCase().includes("timeout")) {
+      return "Операция заняла слишком много времени. Проверьте список отчётов — удаление могло завершиться на сервере.";
+    }
     if (err.response?.status === 500) {
       return "Server error — try again or check docker compose logs api";
     }
@@ -229,7 +238,7 @@ export const api = {
       return unwrap<ReportResponse>(data);
     },
     async delete(reportId: string) {
-      await http.delete(`/reports/${reportId}`);
+      await http.delete(`/reports/${reportId}`, { timeout: 180_000 });
     },
     async upload(
       form: FormData,
@@ -309,6 +318,10 @@ export const api = {
     async get(costId: string) {
       const { data } = await http.get(`/costs/${costId}`);
       return unwrap<CostResponse>(data);
+    },
+    async salesCoverageGaps(params: { marketplace: string; start?: string; end?: string; limit?: number }) {
+      const { data } = await http.get("/costs/sales-coverage-gaps", { params });
+      return unwrap<SalesCostCoverageGapsResponse>(data);
     },
   },
 

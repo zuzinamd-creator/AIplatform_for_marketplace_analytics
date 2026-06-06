@@ -76,7 +76,7 @@ class TrendPoint(BaseModel):
 
     date: date
     revenue: Decimal
-    net_profit: Decimal
+    net_profit: Decimal | None = None
     margin_pct: Decimal | None = None
     units_sold: int
 
@@ -97,7 +97,7 @@ class TopSkuRow(BaseModel):
 
     sku: str = Field(min_length=1, max_length=128)
     revenue: Decimal
-    net_profit: Decimal
+    net_profit: Decimal | None = None
     margin_pct: Decimal | None = None
     units_sold: int
     contribution_pct: Decimal | None = None
@@ -267,7 +267,7 @@ class FinancialTrendPoint(BaseModel):
 
     date: date
     sales_revenue: Decimal = Decimal("0")
-    gross_profit: Decimal = Decimal("0")
+    gross_profit: Decimal | None = None
     margin_pct: Decimal | None = None
     logistics: Decimal = Decimal("0")
     advertisement: Decimal = Decimal("0")
@@ -291,9 +291,9 @@ class SkuEconomicsRow(BaseModel):
 
     sku: str
     revenue: Decimal
-    contribution_margin: Decimal
-    gross_profit: Decimal
-    cogs: Decimal
+    contribution_margin: Decimal | None = None
+    gross_profit: Decimal | None = None
+    cogs: Decimal | None = None
     returns_amount: Decimal
     payout: Decimal
     commissions: Decimal
@@ -342,6 +342,7 @@ class CostCoverageResponse(BaseModel):
     sku_cost_coverage_pct: Decimal | None = None
     cost_completeness_score: Decimal | None = None
     items: list[CostCoverageSkuRow] = Field(default_factory=list)
+    missing_skus: list[str] = Field(default_factory=list)
     freshness: AnalyticsFreshnessMeta
     warnings: list[IntegrityWarning] = Field(default_factory=list)
 

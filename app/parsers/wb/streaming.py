@@ -107,7 +107,7 @@ def _row_from_values(
 
 @contextmanager
 def _open_xlsx_workbook(path: Path):
-    workbook = load_workbook(path, read_only=True, data_only=True)
+    workbook = load_workbook(path, read_only=False, data_only=True)
     try:
         yield workbook
     finally:

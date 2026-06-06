@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Line, LineChart, ResponsiveContainer, Tooltip, YAxis } from "recharts";
 import { Filter, Search, TrendingUp } from "lucide-react";
@@ -113,25 +113,28 @@ export function EconomicsPage() {
       }),
   });
 
-  const topSkusForSparklines = useMemo(() => (a.data?.items ?? []).slice(0, 10).map((r) => r.sku), [a.data]);
-  const sparklines = topSkusForSparklines.map((sku) =>
-    useQuery({
-      enabled: !!sku && !!a.data,
+  const topSkusForSparklines = useMemo(
+    () => (a.data?.items ?? []).slice(0, 10).map((r) => r.sku),
+    [a.data],
+  );
+  const sparklineQueries = useQueries({
+    queries: topSkusForSparklines.map((sku) => ({
       queryKey: ["analytics", "skuDrilldown", marketplace, start, end, sku],
       queryFn: () => api.analytics.skuDrilldown({ marketplace, start, end, sku }),
+      enabled: !!sku && !!a.data,
       staleTime: 60_000,
-    }),
-  );
+    })),
+  });
   const sparkBySku = useMemo(() => {
     const m = new Map<string, Array<{ x: string; y: number }>>();
-    sparklines.forEach((q) => {
+    sparklineQueries.forEach((q) => {
       const sku = q.data?.sku;
       if (!sku) return;
       const pts = (q.data?.points ?? []).map((p) => ({ x: p.date, y: Number(p.gross_profit) }));
       m.set(sku, pts);
     });
     return m;
-  }, [sparklines]);
+  }, [sparklineQueries]);
 
   const compareBySku = useMemo(() => {
     const m = new Map<string, { cm: number; m: number | null }>();
@@ -161,6 +164,12 @@ export function EconomicsPage() {
       </div>
 
       <PeriodSelector onChange={setPeriodSel} />
+
+      {a.isError ? (
+        <Card className="border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+          Не удалось загрузить экономику SKU: {a.error instanceof Error ? a.error.message : "ошибка сервера"}
+        </Card>
+      ) : null}
 
       {integrityBanner(a.data?.integrity ?? null)}
 
@@ -210,6 +219,7 @@ export function EconomicsPage() {
                 <th className="py-2">Статус</th>
                 <th className="py-2">Выручка</th>
                 <th className="py-2">Валовая прибыль</th>
+                <th className="py-2">Себестоимость</th>
                 <th className="py-2">Маржинальный вклад</th>
                 <th className="py-2">Маржа</th>
                 <th className="py-2">Логистика</th>
@@ -236,6 +246,7 @@ export function EconomicsPage() {
                     </td>
                     <td className="px-3 py-3">{formatRub(r.revenue)}</td>
                     <td className="px-3 py-3">{formatRub(r.gross_profit)}</td>
+                    <td className="px-3 py-3">{formatRub(r.cogs)}</td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
                         <span>{formatRub(r.contribution_margin)}</span>
@@ -286,7 +297,7 @@ export function EconomicsPage() {
               })}
               {!a.isLoading && !(a.data?.items?.length ?? 0) ? (
                 <tr>
-                  <td className="px-3 py-8 text-center text-ink-muted" colSpan={11}>
+                  <td className="px-3 py-8 text-center text-ink-muted" colSpan={12}>
                     Нет данных по SKU за выбранный период. Проверьте период и загрузку отчетов.
                   </td>
                 </tr>

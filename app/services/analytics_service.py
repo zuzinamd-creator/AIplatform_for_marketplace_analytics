@@ -10,7 +10,11 @@ from typing import cast
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.analytics.profit_trust import apply_profit_trust_to_kpis
+from app.domain.analytics.profit_trust import (
+    apply_profit_trust_to_kpis,
+    gate_margin_decimal,
+    gate_profit_decimal,
+)
 from app.domain.economics.inventory_math import compute_turnover, days_since, stock_risk_label
 from app.models.cost_history import CostHistory
 from app.models.economics.sku_unit_economics import SkuUnitEconomicsDaily
@@ -285,6 +289,10 @@ class AnalyticsService(TenantScopedService):
             total_profit=Decimal(total_profit),
             margin_pct=margin,
         )
+        if units_sold and int(units_sold) > 0:
+            avg_check = Decimal(total_revenue) / Decimal(units_sold)
+        else:
+            avg_check = None
         return RevenueKpiSummaryResponse(
             marketplace=marketplace,
             period_start=period.start,
@@ -415,6 +423,8 @@ class AnalyticsService(TenantScopedService):
             by_day.setdefault(d, {})[op] = Decimal(total)
 
         points: list[FinancialTrendPoint] = []
+        integrity = await self._integrity(marketplace=marketplace, period=period, semantics_version=freshness.semantics_version)
+        trust = integrity.profit_metrics_trust if integrity else "insufficient"
         for row in agg_rows:
             day = row.aggregate_date
             led = by_day.get(day, {})
@@ -423,12 +433,17 @@ class AnalyticsService(TenantScopedService):
             payout = led.get(LedgerOperationType.PAYOUT, Decimal("0"))
             logistics = abs(led.get(LedgerOperationType.LOGISTICS, Decimal("0")))
             ads = abs(led.get(LedgerOperationType.ADVERTISEMENT, Decimal("0")))
+            profit_out, margin_out = apply_profit_trust_to_kpis(
+                trust=trust or "insufficient",
+                total_profit=row.net_profit,
+                margin_pct=row.margin,
+            )
             points.append(
                 FinancialTrendPoint(
                     date=day,
                     sales_revenue=sales,
-                    gross_profit=row.net_profit,
-                    margin_pct=row.margin,
+                    gross_profit=profit_out,
+                    margin_pct=margin_out,
                     logistics=logistics,
                     advertisement=ads,
                     payout=payout,
@@ -442,7 +457,7 @@ class AnalyticsService(TenantScopedService):
             period_end=period.end,
             points=points,
             freshness=freshness,
-            integrity=await self._integrity(marketplace=marketplace, period=period),
+            integrity=integrity,
         )
 
     async def sku_economics(
@@ -506,27 +521,34 @@ class AnalyticsService(TenantScopedService):
         )
         stmt = stmt.order_by(sort_col.desc() if order_key != "asc" else sort_col.asc()).offset(skip).limit(limit)
         res = await self.execute_with_rls(stmt)
-        items = [
-            SkuEconomicsRow(
-                sku=str(r[0]),
-                revenue=Decimal(r[1]),
-                contribution_margin=Decimal(r[2]),
-                gross_profit=Decimal(r[3]),
-                cogs=Decimal(r[4]),
-                returns_amount=Decimal(r[5]),
-                payout=Decimal(r[6]),
-                commissions=Decimal(r[7]),
-                logistics=Decimal(r[8]),
-                storage=Decimal(r[9]),
-                ads=Decimal(r[10]),
-                penalties=Decimal(r[11]),
-                margin_pct=r[12],
-                return_rate=r[13],
-                ad_cost_ratio=r[14],
-                logistics_burden=r[15],
+        integrity = await self._integrity(
+            marketplace=marketplace, period=period, semantics_version=freshness.semantics_version
+        )
+        trust = integrity.profit_metrics_trust if integrity else "insufficient"
+        items: list[SkuEconomicsRow] = []
+        for r in res.all():
+            cm = gate_profit_decimal(Decimal(r[2]), trust=trust or "insufficient")
+            gp = gate_profit_decimal(Decimal(r[3]), trust=trust or "insufficient")
+            items.append(
+                SkuEconomicsRow(
+                    sku=str(r[0]),
+                    revenue=Decimal(r[1]),
+                    contribution_margin=cm,
+                    gross_profit=gp,
+                    cogs=Decimal(r[4]) if trust == "full" else None,
+                    returns_amount=Decimal(r[5]),
+                    payout=Decimal(r[6]),
+                    commissions=Decimal(r[7]),
+                    logistics=Decimal(r[8]),
+                    storage=Decimal(r[9]),
+                    ads=Decimal(r[10]),
+                    penalties=Decimal(r[11]),
+                    margin_pct=gate_margin_decimal(r[12], trust=trust or "insufficient"),
+                    return_rate=r[13],
+                    ad_cost_ratio=r[14],
+                    logistics_burden=r[15],
+                )
             )
-            for r in res.all()
-        ]
 
         return SkuEconomicsResponse(
             marketplace=marketplace,
@@ -550,12 +572,14 @@ class AnalyticsService(TenantScopedService):
         )
         res = await self.execute_with_rls(stmt)
         rows = list(res.scalars().all())
+        integrity = await self._integrity(marketplace=marketplace, period=period)
+        trust = integrity.profit_metrics_trust if integrity else "insufficient"
         points = [
             TrendPoint(
                 date=r.aggregate_date,
                 revenue=r.revenue,
-                net_profit=r.net_profit,
-                margin_pct=r.margin,
+                net_profit=gate_profit_decimal(r.net_profit, trust=trust or "insufficient"),
+                margin_pct=gate_margin_decimal(r.margin, trust=trust or "insufficient"),
                 units_sold=r.units_sold,
             )
             for r in rows
@@ -566,7 +590,7 @@ class AnalyticsService(TenantScopedService):
             period_end=period.end,
             points=points,
             freshness=await self._freshness(),
-            integrity=await self._integrity(marketplace=marketplace, period=period),
+            integrity=integrity,
         )
 
     async def top_skus(
@@ -608,11 +632,16 @@ class AnalyticsService(TenantScopedService):
         total_res = await self.execute_with_rls(total_stmt)
         total_revenue = Decimal(total_res.scalar_one())
 
+        integrity = await self._integrity(marketplace=marketplace, period=period)
+        trust = integrity.profit_metrics_trust if integrity else "insufficient"
+
         items: list[TopSkuRow] = []
         for sku, revenue, profit, units_sold in res.all():
             margin = None
             if revenue and Decimal(revenue) > 0:
                 margin = (Decimal(profit) / Decimal(revenue)) * Decimal("100")
+            profit_out = gate_profit_decimal(Decimal(profit), trust=trust or "insufficient")
+            margin_out = gate_margin_decimal(margin, trust=trust or "insufficient")
             contribution = (
                 (Decimal(revenue) / total_revenue) * Decimal("100")
                 if total_revenue > 0
@@ -622,8 +651,8 @@ class AnalyticsService(TenantScopedService):
                 TopSkuRow(
                     sku=str(sku),
                     revenue=Decimal(revenue),
-                    net_profit=Decimal(profit),
-                    margin_pct=margin,
+                    net_profit=profit_out,
+                    margin_pct=margin_out,
                     units_sold=int(units_sold or 0),
                     contribution_pct=contribution,
                 )
@@ -635,7 +664,7 @@ class AnalyticsService(TenantScopedService):
             sort=sort_key,
             items=items,
             freshness=await self._freshness(),
-            integrity=await self._integrity(marketplace=marketplace, period=period),
+            integrity=integrity,
         )
 
     async def warehouse_analytics(

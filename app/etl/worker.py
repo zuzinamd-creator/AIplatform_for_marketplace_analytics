@@ -141,10 +141,11 @@ async def process_next_job() -> bool:
                     ):
                         suffix = Path(job.original_filename).suffix.lower() or ".xlsx"
                         async with SessionLocal() as parse_db:
-                            report_row = await parse_db.execute(
-                                select(Report).where(Report.id == job.report_id)
-                            )
-                            report_for_parse = report_row.scalar_one_or_none()
+                            async with TenantSession.transaction(parse_db, job.user_id):
+                                report_row = await parse_db.execute(
+                                    select(Report).where(Report.id == job.report_id)
+                                )
+                                report_for_parse = report_row.scalar_one_or_none()
                             if not report_for_parse:
                                 raise ValueError("Report not found for streaming parse")
                             with materialize_report_file(
@@ -210,12 +211,13 @@ async def process_next_job() -> bool:
 
             try:
                 async with SessionLocal() as db:
-                    report_row = await db.execute(
-                        select(Report).where(Report.id == job.report_id)
-                    )
-                    report = report_row.scalar_one_or_none()
-                    user_row = await db.execute(select(User).where(User.id == job.user_id))
-                    user = user_row.scalar_one_or_none()
+                    async with TenantSession.transaction(db, job.user_id):
+                        report_row = await db.execute(
+                            select(Report).where(Report.id == job.report_id)
+                        )
+                        report = report_row.scalar_one_or_none()
+                        user_row = await db.execute(select(User).where(User.id == job.user_id))
+                        user = user_row.scalar_one_or_none()
 
                     if not report or not user:
                         logger.error("worker_persist_target_missing")
@@ -235,13 +237,14 @@ async def process_next_job() -> bool:
                     report_service = ReportService(db, user)
                     pipeline = ETLPipeline(db, job.user_id)
                     with track_duration(logger, "etl_persist_result", job_id=str(job.job_id)):
-                        await pipeline.persist_result(
-                            report,
-                            etl_result,
-                            report_service,
-                            job_id=job.job_id,
-                            in_transaction=False,
-                        )
+                        async with TenantSession.transaction(db, job.user_id):
+                            await pipeline.persist_result(
+                                report,
+                                etl_result,
+                                report_service,
+                                job_id=job.job_id,
+                                in_transaction=True,
+                            )
                     async with TenantSession.transaction(db, job.user_id):
                         await report_service.ack_job(
                             job.job_id,

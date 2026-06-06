@@ -147,10 +147,10 @@ def locate_wb_table(path: Path, *, filename: str) -> WbTableLocation:
     if suffix not in {".xlsx"}:
         raise ValueError(f"Streaming parse is not supported for {suffix!r}; use .xlsx or .csv")
 
-    workbook = load_workbook(path, read_only=True, data_only=True)
+    workbook = load_workbook(path, read_only=False, data_only=True)
     try:
         located = locate_wb_table_in_workbook(workbook)
-        if located is not None:
+        if located is not None and header_signature_score(located.headers) >= MIN_SIGNATURE_HITS * 100:
             return located
         sheet = workbook.active
         try:
@@ -162,7 +162,7 @@ def locate_wb_table(path: Path, *, filename: str) -> WbTableLocation:
             sheet_name=sheet.title,
             header_row_index=0,
             headers=headers,
-            estimated_data_rows=0,
+            estimated_data_rows=max(0, (sheet.max_row or 1) - 1),
         )
     finally:
         workbook.close()
@@ -186,7 +186,7 @@ def load_wb_dataframe(filename: str, content: bytes) -> pd.DataFrame:
 
     if suffix == ".xlsx":
         buffer.seek(0)
-        workbook = load_workbook(buffer, read_only=True, data_only=True)
+        workbook = load_workbook(buffer, read_only=False, data_only=True)
         try:
             located = locate_wb_table_in_workbook(workbook)
         finally:
@@ -221,7 +221,7 @@ def iter_wb_sheet_rows(
                 yield located, iter([tuple(row)])
         return
 
-    with load_workbook(path, read_only=True, data_only=True) as workbook:
+    with load_workbook(path, read_only=False, data_only=True) as workbook:
         sheet = workbook[located.sheet_name or workbook.active.title]
 
         def _rows() -> Iterator[tuple[object, ...]]:

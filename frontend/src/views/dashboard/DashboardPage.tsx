@@ -79,9 +79,7 @@ export function DashboardPage() {
   const coveredSkus = data?.cost_coverage?.covered_skus ?? null;
   const totalSkusCov = data?.cost_coverage?.total_skus ?? null;
   const profitTrust = data?.revenue_summary.integrity?.profit_metrics_trust;
-  const uncoveredSkus = (data?.cost_coverage?.items ?? []).filter(
-    (row) => row.units_sold > 0 && Number(row.cogs ?? "0") === 0,
-  ).length;
+  const missingCostSkus = data?.cost_coverage?.missing_skus ?? [];
   const aRevenue = Number(data?.revenue_summary.kpis.total_revenue ?? "0");
   const bRevenue = Number(data?.revenue_summary_compare?.kpis.total_revenue ?? "0");
   const deltaRevenue = compare ? aRevenue - bRevenue : null;
@@ -154,7 +152,7 @@ export function DashboardPage() {
             </Link>
           </Card>
           <Card className="p-4">
-            <div className="text-xs font-medium text-ink-muted">Себестоимость по товарам</div>
+            <div className="text-xs font-medium text-ink-muted">Себестоимость</div>
             <div className="mt-2 text-sm text-ink-secondary">
               {totalSkusCov && coveredSkus !== null
                 ? `${coveredSkus} из ${totalSkusCov} товаров с себестоимостью (${formatPct(costCoveragePct)})`
@@ -165,8 +163,8 @@ export function DashboardPage() {
                     : "Укажите себестоимость для точной прибыли"}
               {(data?.ai_ops as Record<string, unknown>)?.degraded_intelligence_mode ? " · ИИ осторожен" : ""}
             </div>
-            <Link to="/app/finance/costs" className="link-muted mt-3 inline-block text-xs">
-              Себестоимость по товарам →
+            <Link to="/app/costs" className="link-muted mt-3 inline-block text-xs">
+              Себестоимость →
             </Link>
           </Card>
         </div>
@@ -263,8 +261,11 @@ export function DashboardPage() {
                 ))}
                 {costCoveragePct !== null && Number(costCoveragePct) < 100 ? (
                   <li>
-                    Покрытие себестоимостью {formatPct(costCoveragePct)} — {uncoveredSkus} SKU без COGS.
-                    Маржа без себестоимости отражает только комиссии маркетплейса.
+                    Для периода {start} → {end} не указана себестоимость у {missingCostSkus.length || "некоторых"} SKU
+                    {missingCostSkus.length
+                      ? `: ${missingCostSkus.slice(0, 5).join(", ")}${missingCostSkus.length > 5 ? "…" : ""}`
+                      : ""}
+                    . Прибыль и маржа могут быть скрыты или неточны.
                   </li>
                 ) : null}
               </ul>

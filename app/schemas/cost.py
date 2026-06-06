@@ -42,3 +42,15 @@ class CostResponse(BaseModel):
     currency: str
     effective_from: date
     comment: str | None
+
+
+class SalesCostCoverageGapsResponse(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    marketplace: str
+    period_start: date | None = None
+    period_end: date | None = None
+    total_selling_skus: int = 0
+    covered_skus: int = 0
+    sku_cost_coverage_pct: Decimal | None = None
+    missing_skus: list[str] = Field(default_factory=list)

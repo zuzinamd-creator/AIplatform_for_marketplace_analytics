@@ -14,9 +14,11 @@ from app.core.template_paths import (
     cost_import_template_resolution,
 )
 from app.models.user import User
-from app.schemas.cost import CostCreateRequest, CostResponse, CostUpdateRequest
+from app.schemas.cost import CostCreateRequest, CostResponse, CostUpdateRequest, SalesCostCoverageGapsResponse
 from app.schemas.cost_import import CostImportPreviewResponse, CostImportResultResponse
 from app.services.cost_service import CostService
+from app.services.cost_coverage_service import CostCoverageService, CoveragePeriod
+from app.models.report import Marketplace
 
 router = APIRouter()
 
@@ -75,6 +77,29 @@ async def update_cost(
         comment=payload.comment,
     )
     return CostResponse.model_validate(row)
+
+
+@router.get("/sales-coverage-gaps", response_model=SalesCostCoverageGapsResponse)
+async def sales_coverage_gaps(
+    marketplace: Marketplace,
+    start: date | None = None,
+    end: date | None = None,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> SalesCostCoverageGapsResponse:
+    period = CoveragePeriod(start=start, end=end) if start and end else None
+    svc = CostCoverageService(db, current_user.id)
+    data = await svc.sales_coverage_gaps(marketplace=marketplace, period=period, limit=limit)
+    return SalesCostCoverageGapsResponse(
+        marketplace=data["marketplace"].value if hasattr(data["marketplace"], "value") else str(data["marketplace"]),
+        period_start=data["period_start"],
+        period_end=data["period_end"],
+        total_selling_skus=data["total_selling_skus"],
+        covered_skus=data["covered_skus"],
+        sku_cost_coverage_pct=data["sku_cost_coverage_pct"],
+        missing_skus=data["missing_skus"],
+    )
 
 
 @router.get("/import/template")
