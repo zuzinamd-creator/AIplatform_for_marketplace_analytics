@@ -327,9 +327,14 @@ export function RecommendationsPage() {
 function RecommendationRow(props: { r: any; onWorkflow: (action: string) => void }) {
   const r = props.r;
   const plan = (r.action_plan ?? {}) as Record<string, unknown>;
-  const u = (plan.seller_usefulness ?? {}) as Record<string, unknown>;
+  const u = (plan.seller_usefulness ?? plan) as Record<string, unknown>;
   const impactEst = plan.impact_estimate as Record<string, unknown> | undefined;
   const urgency = String(u.urgency ?? impactEst?.urgency ?? "");
+  const dataGaps = (u.data_gaps ?? plan.data_gaps) as string[] | undefined;
+  const subtitle =
+    String(u.recommended_action ?? plan.recommended_action ?? u.why_this_matters ?? r.summary ?? "");
+  const conf =
+    r.confidence_score != null ? `${Math.round(Number(r.confidence_score) * 100)}%` : "n/a";
   const tier =
     (r.lineage as { priority_tier?: string } | undefined)?.priority_tier ??
     (u.prioritization as { priority_tier?: string } | undefined)?.priority_tier;
@@ -341,11 +346,16 @@ function RecommendationRow(props: { r: any; onWorkflow: (action: string) => void
           <div className="truncate text-sm font-medium text-ink">
             {String(r.title ?? r.summary ?? t("ai.rec_fallback_title"))}
           </div>
-          <div className="mt-1 line-clamp-2 text-xs text-ink-muted">{String(u.why_this_matters ?? r.summary ?? "")}</div>
+          <div className="mt-1 line-clamp-2 text-xs text-ink-muted">{subtitle}</div>
+          {dataGaps && dataGaps.length > 0 ? (
+            <div className="mt-1 line-clamp-1 text-xs text-amber-700">
+              {t("ai.data_gap_hint")}: {dataGaps[0]}
+            </div>
+          ) : null}
         </Link>
         <div className="flex flex-wrap gap-1">
           {tier ? <StatusBadge tone={tier === "today" ? "warn" : "info"}>{tier}</StatusBadge> : null}
-          <StatusBadge tone="info">{String(r.confidence_score ?? "n/a")}</StatusBadge>
+          <StatusBadge tone="info">{conf}</StatusBadge>
           {urgency ? <StatusBadge tone="warn">{urgency}</StatusBadge> : null}
           <StatusBadge tone="info">{String(r.seller_workflow_state ?? "active")}</StatusBadge>
         </div>

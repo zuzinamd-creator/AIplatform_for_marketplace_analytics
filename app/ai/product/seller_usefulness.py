@@ -1,10 +1,11 @@
-"""Seller-facing usefulness enrichment (deterministic, non-LLM filler)."""
+"""Seller-facing usefulness enrichment (deterministic, Russian UI copy)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
 
+from app.ai.product.data_gap_advisor import build_data_gap_advice
 from app.dto.ai_analytics_dto import GroundedContextDTO, ValidatedInsightDTO
 from app.dto.ai_intelligence_dto import ScoredRecommendationDTO
 
@@ -20,6 +21,7 @@ class SellerUsefulnessDTO:
     concrete_next_action: str
     confidence_explanation: str
     limitations: list[str]
+    data_gaps: list[str]
 
 
 def build_seller_usefulness(
@@ -29,9 +31,10 @@ def build_seller_usefulness(
     grounded: GroundedContextDTO,
     flags: list[str],
 ) -> SellerUsefulnessDTO:
+    snap = grounded.metrics_snapshot or {}
     limitations: list[str] = [
-        "Advisory only — does not change prices, ads, or inventory in your marketplace account.",
-        "KPIs come from your uploaded reports and deterministic analytics, not from live marketplace APIs.",
+        "Совет носит рекомендательный характер — цены, рекламу и остатки нужно менять в кабинете WB вручную.",
+        "Цифры основаны на загруженных отчётах, а не на live-API маркететплейса.",
     ]
 
     urgency_score = 50
@@ -46,50 +49,49 @@ def build_seller_usefulness(
 
     if "stale_or_degraded_context" in flags:
         urgency_score = min(urgency_score, 45)
-        limitations.append("Data may be stale or rebuild is in progress — verify KPIs before acting.")
+        limitations.append("Данные могут быть устаревшими — дождитесь пересчёта агрегатов и проверьте KPI.")
 
     if "no_evidence" in flags:
-        limitations.append("Limited evidence references attached to this recommendation.")
+        limitations.append("Мало ссылок на первоисточник — сверьте цифры на Dashboard перед действиями.")
 
-    urgency = "this_week"
+    urgency = "на этой неделе"
     if urgency_score >= 80:
-        urgency = "today"
+        urgency = "сегодня"
     elif urgency_score >= 60:
-        urgency = "this_week"
+        urgency = "на этой неделе"
     else:
-        urgency = "when_convenient"
+        urgency = "когда будет время"
 
-    why = (
-        "This insight connects governed KPIs to a specific operational decision "
-        "(revenue, margin, inventory risk, or data quality)."
-    )
-    if validated.workflow.value == "anomaly_explanation":
-        why = "Data-quality issues can distort revenue and margin KPIs until resolved."
-    elif scored.revenue_opportunity_score >= Decimal("40"):
-        why = "Revenue or margin signals suggest a near-term profit opportunity if you act on evidence."
+    why = _pick_why(scored=scored, validated=validated, grounded=grounded)
 
-    impact = "moderate operational or profit impact if validated"
+    impact = "умеренное влияние на прибыль после проверки цифр"
     if urgency_score >= 80:
-        impact = "high — address before trusting week-over-week comparisons"
+        impact = "высокое — сначала устраните проблему данных, иначе KPI будут искажены"
     elif urgency_score < 45:
-        impact = "low — informational; verify when convenient"
+        impact = "низкое — информационная рекомендация"
 
-    upside = "Protect margin or recover revenue after evidence check"
-    downside = "Delayed action may leave incorrect listings, costs, or campaigns unchanged"
+    upside = "Защита маржи или рост выручки после проверки фактов"
+    downside = "Без действий ситуация по SKU и марже может не улучшиться"
     if "stale_or_degraded_context" in flags:
-        downside = "Acting on stale KPIs may cause wrong pricing or stock decisions"
+        downside = "Решения по устаревшим KPI могут привести к неверным ценам или закупкам"
 
-    action = scored.bullets[0] if scored.bullets else (
-        "Open evidence → confirm numbers in analytics → apply change in marketplace seller cabinet → mark completed here."
+    data_gaps = build_data_gap_advice(
+        sku_count=int(snap.get("sku_count") or 0),
+        total_revenue=_dec(snap.get("total_revenue")),
+        margin=_dec(snap.get("margin")),
+        cost_coverage_pct=snap.get("cost_coverage_pct"),
+        inventory_signals=bool(snap.get("inventory_signals_available")),
+        ad_spend_available=bool(snap.get("ad_spend_available")),
+        anomalies=[str(a) for a in (snap.get("anomaly_messages") or [])],
     )
 
-    conf_parts = [f"Model confidence {scored.confidence:.0%} after validation."]
+    action = _pick_action(scored=scored, validated=validated, data_gaps=data_gaps)
+
+    conf_parts = [f"Уверенность модели {scored.confidence:.0%} после проверки данных."]
     if flags:
-        conf_parts.append(f"Adjusted for: {', '.join(flags)}.")
-    if grounded.degraded_mode:
-        conf_parts.append("Degraded runtime context reduced confidence.")
+        conf_parts.append(f"Скорректировано: {', '.join(_flag_label(f) for f in flags)}.")
     if validated.stale_data_warning:
-        conf_parts.append("Stale data warning active.")
+        conf_parts.append("Активно предупреждение об устаревших данных.")
 
     return SellerUsefulnessDTO(
         why_this_matters=why,
@@ -101,4 +103,72 @@ def build_seller_usefulness(
         concrete_next_action=action[:500],
         confidence_explanation=" ".join(conf_parts),
         limitations=limitations,
+        data_gaps=data_gaps,
     )
+
+
+def _pick_why(
+    *,
+    scored: ScoredRecommendationDTO,
+    validated: ValidatedInsightDTO,
+    grounded: GroundedContextDTO,
+) -> str:
+    if validated.workflow.value == "anomaly_explanation":
+        return "Ошибки в данных искажают выручку и маржу — сначала исправьте источник."
+    for bullet in scored.bullets:
+        if bullet and len(bullet) > 20 and _looks_russian(bullet):
+            return bullet[:400]
+    if validated.summary and _looks_russian(validated.summary):
+        return validated.summary[:400]
+    if validated.summary:
+        return validated.summary[:400]
+    rev = grounded.metrics_snapshot.get("total_revenue")
+    if rev is not None:
+        return f"За период отчёта зафиксирована выручка {rev} ₽ — проверьте топ-SKU и маржу."
+    return "Есть сигнал по KPI отчёта — откройте детали и сверьте с Dashboard."
+
+
+def _pick_action(
+    *,
+    scored: ScoredRecommendationDTO,
+    validated: ValidatedInsightDTO,
+    data_gaps: list[str],
+) -> str:
+    for bullet in scored.bullets[1:]:
+        if bullet and len(bullet) > 15:
+            return bullet[:500]
+    if scored.bullets:
+        return scored.bullets[0][:500]
+    if data_gaps:
+        return data_gaps[0]
+    return (
+        "Откройте детали → сверьте KPI на Dashboard → при необходимости загрузите недостающие данные "
+        "→ примените изменение в кабинете WB → отметьте выполненным здесь."
+    )
+
+
+def _dec(val: object) -> Decimal | None:
+    if val is None:
+        return None
+    try:
+        return Decimal(str(val))
+    except Exception:
+        return None
+
+
+def _looks_russian(text: str) -> bool:
+    return any("\u0400" <= c <= "\u04FF" for c in text)
+
+
+def _flag_label(flag: str) -> str:
+    labels = {
+        "stale_or_degraded_context": "устаревший контекст",
+        "no_evidence": "мало evidence",
+        "generic_wording": "общая формулировка",
+        "contradictions": "противоречия",
+        "unsupported_claims": "неподтверждённые утверждения",
+        "fatigue_cooldown": "повтор рекомендации",
+        "fatigue_decay": "снижение новизны",
+        "fatigue_suppress": "дубликат",
+    }
+    return labels.get(flag, flag)

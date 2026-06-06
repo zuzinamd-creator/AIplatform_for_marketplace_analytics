@@ -36,7 +36,7 @@ class FunnelAnalyst(DomainAnalystBase):
                     severity="medium",
                     evidence_refs=evidence,
                     recommended_actions=[
-                        "Diversify promoted SKUs to reduce single-SKU dependency (advisory).",
+                        "Снизьте зависимость от одного SKU — продвигайте другие позиции.",
                     ],
                 )
             )
@@ -48,7 +48,7 @@ class FunnelAnalyst(DomainAnalystBase):
                     confidence=Decimal("0.75"),
                     severity="low",
                     evidence_refs=evidence,
-                    recommended_actions=["Monitor conversion by SKU tier in deterministic analytics."],
+                    recommended_actions=["Отслеживайте конверсию по группам SKU в аналитике."],
                 )
             )
 

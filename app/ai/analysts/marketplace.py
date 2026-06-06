@@ -34,7 +34,7 @@ class MarketplaceComparisonAnalyst(DomainAnalystBase):
                 severity="low",
                 evidence_refs=evidence,
                 recommended_actions=[
-                    "Upload additional marketplace reports for cross-marketplace comparison advisory.",
+                    "Загрузите отчёты других маркетплейсов для сравнительного анализа.",
                 ],
             )
         ]

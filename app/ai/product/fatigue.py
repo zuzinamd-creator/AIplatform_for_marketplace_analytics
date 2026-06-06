@@ -76,7 +76,7 @@ async def assess_fatigue(
 
     novelty = max(0.15, 1.0 - (c7 * 0.2) - (c30 * 0.05))
     penalty = min(40.0, c7 * DECAY_PER_REPEAT)
-    suppress = c7 >= SUPPRESS_AFTER_REPEATS or (cooldown and c7 >= 2)
+    suppress = c7 >= 1 or (cooldown and c7 >= 1)
 
     return FatigueAssessment(
         fingerprint=fingerprint,

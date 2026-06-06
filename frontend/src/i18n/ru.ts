@@ -84,6 +84,7 @@ export const RU = {
 
     stream_error_prefix: "[ошибка]",
     rec_fallback_title: "Рекомендация",
+    data_gap_hint: "Для более точного анализа",
   },
   settings: {
     security_title: "Безопасность",

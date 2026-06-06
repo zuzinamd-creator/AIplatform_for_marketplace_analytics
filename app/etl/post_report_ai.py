@@ -4,15 +4,49 @@ from __future__ import annotations
 
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.observability import get_logger
 from app.core.security_context import TenantSession
 from app.dto.ai_analytics_dto import AIRunRequestDTO, AnalyticsWorkflow
+from app.models.ai_insights import AIInsight
+from app.models.ai_intelligence import AIRecommendation
 from app.models.report import Report, ReportType
 
 logger = get_logger("post_report_ai")
+
+
+async def _recommendation_exists_for_report(
+    db: AsyncSession,
+    *,
+    user_id: UUID,
+    report_id: UUID,
+) -> bool:
+    async with TenantSession.transaction(db, user_id):
+        linked = (
+            await db.execute(
+                select(AIRecommendation.id)
+                .join(AIInsight, AIRecommendation.insight_id == AIInsight.id)
+                .where(
+                    AIRecommendation.user_id == user_id,
+                    AIInsight.context_payload["report_id"].astext == str(report_id),  # type: ignore[index]
+                )
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        if linked is not None:
+            return True
+        fp_report = (
+            await db.execute(
+                select(AIRecommendation.id)
+                .where(AIRecommendation.user_id == user_id)
+                .where(AIRecommendation.lineage["report_id"].astext == str(report_id))  # type: ignore[index]
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        return fp_report is not None
 
 
 async def maybe_generate_recommendation_after_report(
@@ -36,6 +70,13 @@ async def maybe_generate_recommendation_after_report(
             return
         if report.report_type != ReportType.FINANCE:
             return
+
+    if await _recommendation_exists_for_report(db, user_id=user_id, report_id=report_id):
+        logger.info(
+            "post_report_ai_skipped_existing",
+            extra={"user_id": str(user_id), "report_id": str(report_id)},
+        )
+        return
 
     from app.services.ai_service import AIService
 

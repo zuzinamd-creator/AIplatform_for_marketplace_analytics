@@ -55,12 +55,18 @@ def compute_fingerprint(
     title: str,
     summary: str,
     evidence_ids: tuple[str, ...],
+    metrics_snapshot: dict | None = None,
 ) -> str:
+    snap = metrics_snapshot or {}
+    report_id = str(snap.get("report_id") or "")
+    period = f"{snap.get('source_period_start', '')}:{snap.get('source_period_end', '')}"
+    revenue = str(snap.get("total_revenue") or "")
     base = "|".join(
         [
             _normalize_text(workflow),
-            _normalize_text(title),
-            _normalize_text(summary),
+            _normalize_text(report_id),
+            _normalize_text(period),
+            _normalize_text(revenue),
             "|".join(sorted(_normalize_text(e) for e in evidence_ids))[:1200],
         ]
     )
@@ -87,6 +93,7 @@ def apply_quality(
         title=scored.title,
         summary=scored.summary,
         evidence_ids=evidence_ids,
+        metrics_snapshot=dict(grounded.metrics_snapshot),
     )
 
     conf = Decimal(scored.confidence)

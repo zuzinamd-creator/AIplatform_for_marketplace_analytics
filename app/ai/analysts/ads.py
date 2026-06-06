@@ -33,7 +33,7 @@ class AdsAnalyst(DomainAnalystBase):
                         severity="low",
                         evidence_refs=evidence,
                         recommended_actions=[
-                            "Import ad campaign reports before requesting spend optimization advisory.",
+                            "Импортируйте отчёты по рекламным кампаниям для оптимизации расходов.",
                         ],
                     )
                 ],

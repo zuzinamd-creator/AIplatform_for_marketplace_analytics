@@ -84,6 +84,7 @@ class AIIntelligenceEngine:
             title=rec.title,
             summary=rec.summary,
             evidence_ids=evidence_ids,
+            metrics_snapshot=dict(grounded.metrics_snapshot),
         )
         fatigue = await assess_fatigue(self.db, self.user_id, fp_preview)
         quality = apply_quality(
@@ -175,6 +176,7 @@ class AIIntelligenceEngine:
             ),
             lineage={
                 "parent_insight_id": str(insight_id) if insight_id else None,
+                "report_id": quality.seller_usefulness.get("report_id"),
                 "fingerprint": fingerprint,
                 "novelty_score": quality.seller_usefulness.get("novelty_score"),
                 "priority_tier": (quality.seller_usefulness.get("prioritization") or {}).get(
@@ -186,6 +188,18 @@ class AIIntelligenceEngine:
             },
         )
         async with TenantSession.transaction(self.db, self.user_id):
+            report_id = quality.seller_usefulness.get("report_id")
+            if report_id:
+                by_report = (
+                    await self.db.execute(
+                        select(AIRecommendation)
+                        .where(AIRecommendation.user_id == self.user_id)
+                        .where(AIRecommendation.lineage["report_id"].astext == str(report_id))  # type: ignore[attr-defined]
+                        .limit(1)
+                    )
+                ).scalars().first()
+                if by_report is not None:
+                    return by_report.id
             if quality.fatigue and quality.fatigue.should_suppress_duplicate:
                 existing = (
                     await self.db.execute(

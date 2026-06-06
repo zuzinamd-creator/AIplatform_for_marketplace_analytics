@@ -33,8 +33,8 @@ class SalesAnalyst(DomainAnalystBase):
                     severity="medium",
                     evidence_refs=evidence,
                     recommended_actions=[
-                        "Review top-SKU contribution before pricing changes.",
-                        "Compare period-over-period in analytics dashboard (deterministic).",
+                        "Сверьте вклад топ-SKU перед изменением цен.",
+                        "Сравните период с предыдущим на Dashboard.",
                     ],
                 )
             )
@@ -48,7 +48,7 @@ class SalesAnalyst(DomainAnalystBase):
                     severity="high",
                     evidence_refs=evidence,
                     recommended_actions=[
-                        "Confirm cost import completeness before acting on margin advisory.",
+                        "Проверьте полноту импорта себестоимости перед решениями по марже.",
                     ],
                 )
             )
@@ -62,7 +62,7 @@ class SalesAnalyst(DomainAnalystBase):
                     confidence=Decimal("0.85"),
                     severity="low",
                     evidence_refs=evidence + [f"sku:{top.internal_sku}"],
-                    recommended_actions=["Prioritize listing quality and stock for top revenue SKU."],
+                    recommended_actions=["Улучшите карточку и наличие на складе у лидера по выручке."],
                 )
             )
 

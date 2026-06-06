@@ -49,7 +49,7 @@ def test_seller_usefulness_has_required_fields() -> None:
     u = build_seller_usefulness(scored=scored, validated=_validated(), grounded=_grounded(), flags=[])
     assert u.why_this_matters
     assert u.expected_business_impact
-    assert u.urgency in ("today", "this_week", "when_convenient")
+    assert u.urgency in ("today", "this_week", "when_convenient", "сегодня", "на этой неделе", "когда будет время")
     assert u.concrete_next_action
     assert u.confidence_explanation
     assert u.limitations

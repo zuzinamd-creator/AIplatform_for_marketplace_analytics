@@ -81,9 +81,9 @@ def build_actionable_payload(
     root_cause = _root_cause(wf, flags, validated)
     what_changed = _what_changed(grounded, validated)
     what_today = usefulness.concrete_next_action if priority.priority_tier == PRIORITY_TODAY else (
-        "Review in today's focus queue — no immediate marketplace change required."
+        "Просмотрите в списке «Фокус дня» — срочных действий на маркетплейсе не требуется."
     )
-    effort = "15–30 min" if priority.priority_tier == PRIORITY_TODAY else "30–60 min this week"
+    effort = "15–30 мин" if priority.priority_tier == PRIORITY_TODAY else "30–60 мин на этой неделе"
     if wf == "anomaly_explanation":
         effort = "30–45 min (data fix before other actions)"
 
@@ -96,6 +96,8 @@ def build_actionable_payload(
         "what_changed": what_changed,
         "what_to_do_today": what_today,
         "recommended_action": usefulness.concrete_next_action,
+        "data_gaps": usefulness.data_gaps,
+        "report_id": grounded.metrics_snapshot.get("report_id"),
         "estimated_effort": effort,
         "expected_outcome": usefulness.estimated_upside,
         "estimated_upside": usefulness.estimated_upside,
@@ -129,23 +131,27 @@ def build_actionable_payload(
 
 def _root_cause(workflow: str, flags: list[str], validated: ValidatedInsightDTO) -> str:
     if workflow == "anomaly_explanation":
-        return "Report or ETL data quality issue affecting KPI reliability."
+        return "Проблема качества данных в отчёте или ETL — KPI могут быть неточными."
     if "stale_or_degraded_context" in flags:
-        return "Analytics snapshot may be outdated (rebuild or pending refresh)."
+        return "Снимок аналитики устарел или идёт пересчёт агрегатов."
     if validated.unsupported_claims:
-        return "Model output included claims not fully supported by governed metrics."
+        return "Часть выводов модели не подтверждена governed-метриками."
     if workflow == "inventory_insight":
-        return "SKU or stock signals in governed package suggest inventory attention."
-    return "Shift in governed revenue, margin, or catalog metrics vs prior period."
+        return "Сигналы по остаткам или SKU требуют внимания."
+    return "Изменение выручки, маржи или структуры каталога за период отчёта."
 
 
 def _what_changed(grounded: GroundedContextDTO, validated: ValidatedInsightDTO) -> str:
-    parts = [f"Workflow: {validated.workflow.value}"]
+    parts = [f"Сценарий: {validated.workflow.value}"]
     if grounded.freshness_note:
-        parts.append(f"Freshness: {grounded.freshness_note}")
+        parts.append(f"Актуальность: {grounded.freshness_note}")
+    if grounded.source_period_start and grounded.source_period_end:
+        parts.append(
+            f"Период: {grounded.source_period_start} — {grounded.source_period_end}."
+        )
     rev = grounded.metrics_snapshot.get("total_revenue")
     if rev is not None:
-        parts.append(f"Governed total_revenue present ({rev}).")
+        parts.append(f"Выручка за период: {rev} ₽.")
     return " ".join(parts)
 
 
@@ -243,7 +249,7 @@ class TodaysFocusService:
             quick_wins=quick_wins,
             priority_queue=items[:15],
             advisory_notice=(
-                "Today's Focus is advisory. Verify evidence before marketplace changes. "
-                "Impact figures are ranges, not guarantees."
+                "«Фокус дня» — рекомендации, а не автоматические действия. "
+                "Проверяйте цифры перед изменениями в кабинете WB."
             ),
         )

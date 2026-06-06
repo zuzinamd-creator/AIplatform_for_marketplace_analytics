@@ -44,7 +44,7 @@ class AnomalyAnalyst(DomainAnalystBase):
                     severity="critical" if sev == "high" else sev,  # type: ignore[arg-type]
                     evidence_refs=evidence + [f"anomaly:{anom.type}"],
                     recommended_actions=[
-                        "Resolve data-quality issue in source report before trusting revenue KPIs.",
+                        "Исправьте проблему качества данных в отчёте перед доверием к выручке.",
                     ],
                 )
             )

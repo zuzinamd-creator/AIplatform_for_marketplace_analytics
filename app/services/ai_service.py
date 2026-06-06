@@ -29,6 +29,7 @@ from app.models.workflow import SellerWorkflowEvent
 from app.schemas.ai import PageMeta
 from app.schemas.ai_intelligence import RecommendationStatsResponse
 from app.schemas.ai_usage import AIUsageResponse
+from app.domain.reports.period_queries import fetch_sale_period_bounds_for_reports
 from app.services.cost_coverage_service import CostCoverageService, CoveragePeriod
 from app.services.reconciliation_service import ReconciliationPeriod, ReconciliationService
 
@@ -486,16 +487,19 @@ class AIService:
                 return None
 
             marketplace = report.marketplace
-            period_bounds = await self.db.execute(
-                select(
-                    func.min(DailyAggregate.aggregate_date),
-                    func.max(DailyAggregate.aggregate_date),
-                ).where(
-                    DailyAggregate.user_id == self.user_id,
-                    DailyAggregate.marketplace == marketplace,
+            bounds_map = await fetch_sale_period_bounds_for_reports(self.db, [report.id])
+            period_start, period_end = bounds_map.get(report.id, (None, None))
+            if period_start is None or period_end is None:
+                period_bounds = await self.db.execute(
+                    select(
+                        func.min(DailyAggregate.aggregate_date),
+                        func.max(DailyAggregate.aggregate_date),
+                    ).where(
+                        DailyAggregate.user_id == self.user_id,
+                        DailyAggregate.marketplace == marketplace,
+                    )
                 )
-            )
-            period_start, period_end = period_bounds.one()
+                period_start, period_end = period_bounds.one()
             if period_start is None or period_end is None:
                 return AnalyticsProcessor.prepare_ai_insight(
                     report_id=report.id,

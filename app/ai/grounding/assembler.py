@@ -13,6 +13,11 @@ def build_grounded_context(ctx: AIExecutionContext) -> GroundedContextDTO:
     metrics: dict = {}
     if ctx.insight_input is not None:
         metrics = ctx.insight_input.to_legacy_dict()
+        metrics["anomaly_messages"] = [
+            str(a.get("message", "")) for a in (metrics.get("anomalies") or [])
+        ]
+        metrics["inventory_signals_available"] = False
+        metrics["ad_spend_available"] = False
 
     freshness_parts: list[str] = []
     if ctx.rebuild_running_count > 0:

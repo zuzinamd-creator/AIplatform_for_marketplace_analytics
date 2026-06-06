@@ -33,7 +33,7 @@ class InventoryAnalyst(DomainAnalystBase):
                         severity="low",
                         evidence_refs=evidence,
                         recommended_actions=[
-                            "Enable inventory snapshots in ETL for stock-out and loss advisory.",
+                            "Подключите снимки остатков в ETL для советов по складу и потерям.",
                         ],
                     )
                 ],
