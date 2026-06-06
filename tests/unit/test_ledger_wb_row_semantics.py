@@ -57,6 +57,29 @@ def test_logistics_row_reads_amount_from_raw_when_canonical_empty() -> None:
     assert not any(e.operation_type == LedgerOperationType.COMMISSION for e in entries)
 
 
+def test_return_row_does_not_emit_sale_revenue() -> None:
+    row = NormalizedWbRow(
+        source_row_id="r-ret",
+        source_row_index=3,
+        operation_date=date(2026, 5, 4),
+        sku="SKU-3",
+        nm_id=None,
+        canonical={
+            "operation_type": "Возврат",
+            "retail_amount": Decimal("3698"),
+            "commission": Decimal("125.03"),
+            "payout": Decimal("-2000"),
+        },
+        raw={},
+    )
+    entries = LedgerBuilder.from_normalized_rows([row], default_date=date(2026, 5, 4))
+    types = {entry.operation_type for entry in entries}
+    assert LedgerOperationType.SALE not in types
+    assert LedgerOperationType.RETURN in types
+    ret = next(e for e in entries if e.operation_type == LedgerOperationType.RETURN)
+    assert ret.amount == Decimal("-3698")
+
+
 def test_sale_row_stores_quantity_in_metadata() -> None:
     row = NormalizedWbRow(
         source_row_id="r-qty",

@@ -68,7 +68,8 @@ def allows_payout(kind: WbFinanceRowKind) -> bool:
 
 
 def allows_retail_amount(kind: WbFinanceRowKind) -> bool:
-    return kind in {WbFinanceRowKind.SALE, WbFinanceRowKind.RETURN}
+    """Revenue is recognized only on sale rows; returns use RETURN entries."""
+    return kind == WbFinanceRowKind.SALE
 
 
 def allows_return_amount(kind: WbFinanceRowKind) -> bool:

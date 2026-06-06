@@ -47,6 +47,11 @@ def _column_match_score(field: str, column: str) -> int:
                     score += 40
                 if "операц" in column_norm:
                     score += 30
+            if field == "retail_amount":
+                if "скид" in column_norm or "withdisc" in column_norm or "disc" in column_norm:
+                    score -= 60
+                if "рознич" in column_norm or "retail" in column_norm:
+                    score += 30
             best = max(best, score)
     return best
 

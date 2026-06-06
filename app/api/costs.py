@@ -173,6 +173,15 @@ async def import_costs(
     return [CostResponse.model_validate(row) for row in rows]
 
 
+@router.delete("/{cost_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_cost(
+    cost_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    await CostService(db, current_user).delete_cost(cost_id)
+
+
 @router.get("/{cost_id}", response_model=CostResponse)
 async def get_cost(
     cost_id: UUID,

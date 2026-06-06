@@ -15,7 +15,7 @@
 
 | KPI | Формула | Поле WB |
 |-----|---------|---------|
-| **Revenue** | Σ `SALE.amount` | «Цена розничная» на строках «Продажа» |
+| **Revenue** | Σ `SALE.amount` on «Продажа» rows only | «Цена розничная» (без СПП-колонки, если обе есть) |
 | **Commission** | Σ \|`COMMISSION.amount`\| | «Вознаграждение ВВ» только на «Продажа»/«Возврат» |
 | **Logistics** | Σ \|`LOGISTICS.amount`\| | «Услуги по доставке…» на строках «Логистика» |
 | **Returns** | Σ \|`RETURN.amount`\| | «Возврат» (не PVZ-колонки на строках продажи) |
@@ -49,6 +49,41 @@
 
 После изменения ledger-логики выполните: `python scripts/rebuild_financial_projections.py`.
 
+### Период аналитики (MVP)
+
+**Официальное правило:** период Dashboard/Trends/AI определяется по **дате продажи** (`operation_date` на строках «Продажа» в отчёте WB), а не по дате загрузки файла или завершения ETL.
+
+| Дата | Использование |
+|------|----------------|
+| **Дата продажи** (`operation_date`) | Ledger, daily aggregates, Dashboard, Trends, SKU economics, AI |
+| **Дата заказа** | Не используется для финансовой аналитики MVP |
+| **Период отчёта WB** (заголовок файла) | Только UI-подсказка; границы отчёта в UI = min/max дат продаж |
+| **Дата загрузки / ETL** | Очередь и статус обработки; не фильтрует KPI |
+
+### Pipeline загрузки отчёта продаж
+
+```mermaid
+flowchart LR
+  A[Upload API] --> B[Validate + checksum]
+  B --> C[Persist file]
+  C --> D[Enqueue ETL job]
+  D --> E[Worker claim]
+  E --> F[Parse WB rows]
+  F --> G[Normalized rows]
+  G --> H[Ledger append]
+  H --> I[Aggregates rebuild]
+  I --> J[Dashboard API]
+```
+
+**Гарантии MVP:**
+- Идемпотентность: повторная загрузка того же checksum → тот же report (без дубля).
+- Partial upload: файл либо принят целиком, либо отклонён на валидации; ledger пишется по чанкам с retry.
+- Отчёт не исчезает без явного DELETE пользователем; в UI скрываются только записи за пределами последних 200 (pagination TODO).
+- Rebuild ledger не удаляет reports — только пересчитывает projections.
+
+### Удаление себестоимости
+
+`DELETE /api/v1/costs/{id}` — удаляет одну запись `cost_history`, пересчитывает coverage и финансовые projections. После удаления ошибочной записи действует предыдущая `effective_from` (effective dating).
 
 - Архитектурные инварианты: `docs/architecture/invariants.md`
 - Аналитика и целостность: `docs/analytics/financial_semantics.md`, `docs/analytics/integrity_validation.md`, `docs/analytics/report_coverage.md`

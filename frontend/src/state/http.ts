@@ -272,6 +272,9 @@ export const api = {
       const { data } = await http.patch(`/costs/${costId}`, payload);
       return unwrap<CostResponse>(data);
     },
+    async delete(costId: string) {
+      await http.delete(`/costs/${costId}`);
+    },
     async import(file: File) {
       const form = new FormData();
       form.set("file", file);

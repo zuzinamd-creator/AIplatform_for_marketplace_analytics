@@ -203,6 +203,13 @@ class CostService(TenantScopedService):
         await self._refresh_financial_projections()
         return row
 
+    async def delete_cost(self, cost_id: UUID) -> None:
+        row = await self.get_cost(cost_id)
+        async with self._rls_transaction():
+            await self.db.delete(row)
+            await self.db.flush()
+        await self._refresh_financial_projections()
+
     async def get_cost(self, cost_id: UUID) -> CostHistory:
         async with self._rls_transaction():
             result = await self.db.execute(select(CostHistory).where(CostHistory.id == cost_id))
@@ -539,4 +546,5 @@ class CostService(TenantScopedService):
             await self.db.flush()
             for row in created:
                 await self.db.refresh(row)
+        await self._refresh_financial_projections()
         return created

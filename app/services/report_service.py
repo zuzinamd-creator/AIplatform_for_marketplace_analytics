@@ -2,10 +2,11 @@ from datetime import UTC, date, datetime
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
+from app.core.observability import get_logger
 from app.core.config import settings
 from app.core.queue import EnqueuePayload, get_queue_backend
 from app.core.ttl_cache import TtlCache
@@ -20,6 +21,7 @@ from app.services.base import TenantScopedService
 
 
 _reports_list_cache: TtlCache[list[ReportResponse]] = TtlCache(ttl_seconds=45)
+logger = get_logger(__name__)
 
 
 class ReportService(TenantScopedService):
@@ -94,6 +96,15 @@ class ReportService(TenantScopedService):
             )
             job = await self._queue.enqueue(payload)
             await self.db.refresh(job)
+            logger.info(
+                "report_upload_enqueued",
+                extra={
+                    "report_id": str(report.id),
+                    "user_id": str(self.user.id),
+                    "checksum": report.file_checksum,
+                    "job_id": str(job.id),
+                },
+            )
             return job
 
     async def enqueue_processing(

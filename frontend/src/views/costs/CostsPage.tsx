@@ -101,6 +101,19 @@ export function CostsPage() {
     onError: (err) => toast("Ошибка импорта", formatApiError(err)),
   });
 
+  const removeCost = useMutation({
+    mutationFn: (costId: string) => api.costs.delete(costId),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["costs", "list"] });
+      await qc.invalidateQueries({ queryKey: ["costs", "salesCoverageGaps"] });
+      await qc.invalidateQueries({ queryKey: ["analytics", "coverage"] });
+      await qc.invalidateQueries({ queryKey: ["dashboard"] });
+      await qc.invalidateQueries({ queryKey: ["ai", "recommendations"] });
+      toast("Удалено", "Запись себестоимости удалена, показатели пересчитаны.");
+    },
+    onError: (err) => toast("Ошибка удаления", formatApiError(err)),
+  });
+
   const saveCell = useMutation({
     mutationFn: async ({
       row,
@@ -372,6 +385,7 @@ export function CostsPage() {
                   <th className="px-3 py-2">Доп.</th>
                   <th className="px-3 py-2">Итого</th>
                   <th className="px-3 py-2">Валюта</th>
+                  <th className="px-3 py-2 w-24" />
                 </tr>
               </thead>
               <tbody>
@@ -385,6 +399,26 @@ export function CostsPage() {
                     <td className="px-3 py-2">{renderEditable(row, "additional_cost")}</td>
                     <td className="px-3 py-2 font-medium">{displayCost(row.cost)}</td>
                     <td className="px-3 py-2 text-ink-muted">{row.currency}</td>
+                    <td className="px-3 py-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-semantic-danger"
+                        disabled={removeCost.isPending}
+                        onClick={() => {
+                          const label = `${row.internal_sku} с ${fmtDate(row.effective_from)}`;
+                          if (
+                            window.confirm(
+                              `Удалить запись себестоимости «${label}»?\n\nПоказатели прибыли и coverage будут пересчитаны.`,
+                            )
+                          ) {
+                            removeCost.mutate(row.id);
+                          }
+                        }}
+                      >
+                        Удалить
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
