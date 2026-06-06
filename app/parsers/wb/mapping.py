@@ -4,6 +4,7 @@ from __future__ import annotations
 
 CANONICAL_FIELDS = (
     "operation_date",
+    "sale_date",
     "sku",
     "nm_id",
     "operation_type",
@@ -30,6 +31,11 @@ FIELD_ALIASES: dict[str, tuple[str, ...]] = {
         "date",
         "report_date",
         "period",
+    ),
+    "sale_date": (
+        "дата продажи",
+        "sale_date",
+        "sale date",
     ),
     "sku": (
         "sku",

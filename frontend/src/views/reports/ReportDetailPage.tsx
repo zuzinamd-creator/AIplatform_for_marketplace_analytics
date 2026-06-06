@@ -112,9 +112,11 @@ export function ReportDetailPage() {
       ) : r ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Card className="p-5">
-            <div className="text-sm font-semibold text-ink">Файл</div>
-            <div className="mt-2 text-sm text-ink-secondary">{r.original_filename}</div>
-            <div className="mt-1 font-mono text-[11px] text-ink-muted">{r.file_checksum}</div>
+            <div className="text-sm font-semibold text-ink">Отчёт</div>
+            <div className="mt-2 text-sm text-ink-secondary">
+              № {r.report_number ?? "—"}
+            </div>
+            <div className="mt-1 text-xs text-ink-muted">{r.original_filename}</div>
             <div className="mt-3">
               <StatusBadge tone={toneForStatus(r.status)}>{r.status}</StatusBadge>
             </div>

@@ -7,11 +7,13 @@ from datetime import date
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from app.domain.reports.sale_date import extract_sale_date
 from app.models.inventory.enums import InventoryOperationType
+from app.parsers.wb.base import NormalizedWbRow
 from app.parsers.wb.operation_semantics import resolve_inventory_operation_type
 
 if TYPE_CHECKING:
-    from app.parsers.wb.base import NormalizedWbRow
+    pass
 
 
 def is_wb_sale_payment_justification(operation_label: object) -> bool:
@@ -23,34 +25,28 @@ def merge_report_period_bounds(
     bounds: dict[UUID, tuple[date | None, date | None]],
     *,
     report_id: UUID,
-    operation_date: date,
-    operation_label: object,
+    sale_date: date,
 ) -> None:
-    """Extend period bounds with a normalized row when it is a sale with a sale date."""
-    if not is_wb_sale_payment_justification(operation_label):
-        return
+    """Extend period bounds with a sale row's «Дата продажи»."""
     existing = bounds.get(report_id)
     if existing is None:
-        bounds[report_id] = (operation_date, operation_date)
+        bounds[report_id] = (sale_date, sale_date)
         return
     period_start, period_end = existing
     if period_start is None or period_end is None:
-        bounds[report_id] = (operation_date, operation_date)
+        bounds[report_id] = (sale_date, sale_date)
         return
-    bounds[report_id] = (min(period_start, operation_date), max(period_end, operation_date))
+    bounds[report_id] = (min(period_start, sale_date), max(period_end, sale_date))
 
 
 def build_period_bounds_from_row_samples(
     rows: Iterable[tuple[UUID, date, object]],
 ) -> dict[UUID, tuple[date | None, date | None]]:
     bounds: dict[UUID, tuple[date | None, date | None]] = {}
-    for report_id, operation_date, operation_label in rows:
-        merge_report_period_bounds(
-            bounds,
-            report_id=report_id,
-            operation_date=operation_date,
-            operation_label=operation_label,
-        )
+    for report_id, sale_date, operation_label in rows:
+        if not is_wb_sale_payment_justification(operation_label):
+            continue
+        merge_report_period_bounds(bounds, report_id=report_id, sale_date=sale_date)
     return bounds
 
 
@@ -60,11 +56,11 @@ def period_bounds_for_wb_rows(
     """Sale period for one in-memory WB parse result."""
     sale_dates: list[date] = []
     for row in normalized_rows:
-        if row.operation_date is None:
-            continue
         if not is_wb_sale_payment_justification(row.canonical.get("operation_type")):
             continue
-        sale_dates.append(row.operation_date)
+        sale_date = extract_sale_date(canonical=row.canonical, raw_payload=row.raw)
+        if sale_date is not None:
+            sale_dates.append(sale_date)
     if not sale_dates:
         return None, None
     return min(sale_dates), max(sale_dates)

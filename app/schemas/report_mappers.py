@@ -5,6 +5,7 @@ from sqlalchemy import inspect
 from app.models.job import EtlJob
 from app.models.report import Report
 from app.schemas.report import ReportResponse
+from app.domain.reports.report_number import extract_report_number
 from app.schemas.report_errors import is_report_retryable, user_facing_error_hint
 from app.schemas.report_projection import (
     derive_error_message,
@@ -62,8 +63,12 @@ def report_to_response(
         idempotency_key=report.file_checksum or (job.idempotency_key if job else None),
         claimed_at=job.claimed_at if job else None,
         processed_at=derive_processed_at(report, job),
-        period_start=period_start or raw_start,
-        period_end=period_end or raw_end,
+        period_start=period_start,
+        period_end=period_end,
+        report_number=extract_report_number(
+            filename=report.original_filename,
+            marketplace=report.marketplace,
+        ),
         created_at=report.created_at,
         updated_at=report.updated_at,
     )

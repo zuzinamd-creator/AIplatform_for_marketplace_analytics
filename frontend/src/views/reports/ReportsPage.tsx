@@ -130,7 +130,7 @@ export function ReportsPage() {
 
       <Card className="overflow-hidden">
         <div className="grid grid-cols-12 gap-0 border-b border-surface-subtle bg-surface-inset px-4 py-3 text-xs font-medium uppercase tracking-wide text-ink-muted">
-          <div className="col-span-3">Файл</div>
+          <div className="col-span-3">№ отчёта</div>
           <div className="col-span-2">Маркетплейс</div>
           <div className="col-span-2">Период</div>
           <div className="col-span-2">Статус</div>
@@ -148,8 +148,12 @@ export function ReportsPage() {
                 key={r.id}
                 className="grid grid-cols-12 gap-0 border-b border-surface-subtle px-4 py-3 text-sm transition hover:bg-surface-inset"
               >
-                <Link to={`/app/reports/${r.id}`} className="col-span-3 truncate font-medium text-ink-secondary hover:underline">
-                  {r.original_filename}
+                <Link
+                  to={`/app/reports/${r.id}`}
+                  className="col-span-3 truncate font-medium text-ink-secondary hover:underline"
+                  title={r.original_filename}
+                >
+                  {r.report_number ?? "—"}
                 </Link>
                 <div className="col-span-2 truncate text-ink-muted">{r.marketplace}</div>
                 <div className="col-span-2 truncate text-ink-secondary">{fmtPeriod(r.period_start, r.period_end)}</div>

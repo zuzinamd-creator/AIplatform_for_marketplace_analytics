@@ -27,6 +27,7 @@ class ReportResponse(BaseModel):
     processed_at: datetime | None
     period_start: date | None = None
     period_end: date | None = None
+    report_number: str | None = Field(default=None, min_length=1, max_length=32)
     created_at: datetime
     updated_at: datetime
 

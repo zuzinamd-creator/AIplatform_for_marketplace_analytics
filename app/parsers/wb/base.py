@@ -40,13 +40,18 @@ def _column_match_score(field: str, column: str) -> int:
             score = 100 + len(alias_norm)
             if field == "operation_date":
                 if "заказ" in column_norm and "продаж" not in column_norm:
-                    score -= 50
+                    score -= 120
                 if "фиксац" in column_norm:
                     score -= 80
                 if "продаж" in column_norm:
                     score += 40
                 if "операц" in column_norm:
                     score += 30
+            if field == "sale_date":
+                if "продаж" in column_norm:
+                    score += 80
+                if "заказ" in column_norm or "операц" in column_norm:
+                    score -= 200
             if field == "retail_amount":
                 if "скид" in column_norm or "withdisc" in column_norm or "disc" in column_norm:
                     score -= 60
@@ -119,6 +124,8 @@ class WbReportParserStrategy(ABC):
                 continue
             value = row.get(column)
             if field == "operation_date":
+                canonical[field] = parse_date(value)
+            elif field == "sale_date":
                 canonical[field] = parse_date(value)
             elif field == "quantity":
                 dec = parse_decimal(value)

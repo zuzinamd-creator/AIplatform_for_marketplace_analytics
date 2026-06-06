@@ -27,6 +27,8 @@ def canonical_from_raw_payload(raw: dict[str, str]) -> dict[str, object]:
         value = raw.get(column, "")
         if field == "operation_date":
             canonical[field] = parse_date(value)
+        elif field == "sale_date":
+            canonical[field] = parse_date(value)
         elif field == "quantity":
             dec = parse_decimal(value)
             canonical[field] = int(dec) if dec is not None else None

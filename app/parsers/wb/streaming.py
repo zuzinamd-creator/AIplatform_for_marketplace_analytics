@@ -83,6 +83,8 @@ def _row_from_values(
         value = row_map.get(column)
         if field == "operation_date":
             canonical[field] = _parse_date_value(value)
+        elif field == "sale_date":
+            canonical[field] = _parse_date_value(value)
         elif field == "quantity":
             dec = parse_decimal(value)
             canonical[field] = int(dec) if dec is not None else None
