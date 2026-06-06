@@ -153,7 +153,10 @@ class ETLPipeline:
                 "batch_first_dates": result.wb_batch_first_dates,
             }
             if in_transaction:
-                loss_analytics = await persist_service.persist(**persist_kwargs)
+                loss_analytics = await persist_service.persist(
+                    **persist_kwargs,
+                    in_transaction=True,
+                )
             else:
                 loss_analytics = await persist_service.persist(**persist_kwargs)
             analytics_payload = extend_analytics_payload(

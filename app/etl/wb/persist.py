@@ -48,6 +48,7 @@ class WbFinancialPersistService(WbPersistLayersMixin, WbPersistAggregatesMixin):
         job_id: UUID | None = None,
         opening_movements: list[InventoryMovementDraft] | None = None,
         batch_first_dates: dict[tuple[str | None, str | None], date] | None = None,
+        in_transaction: bool = False,
     ) -> InventoryLossAnalytics | None:
         """
         Persist in isolated phases (separate commits) to avoid one long DB transaction.
@@ -62,12 +63,14 @@ class WbFinancialPersistService(WbPersistLayersMixin, WbPersistAggregatesMixin):
                 opening_movements=opening_movements or [],
                 batch_first_dates=batch_first_dates or {},
                 job_id=job_id,
+                in_transaction=in_transaction,
             )
             return await self._persist_phases_2_3(
                 report=report,
                 result=result,
                 costs_by_sku=costs_by_sku,
                 job_id=job_id,
+                in_transaction=in_transaction,
             )
 
         return await self._persist_phased(
@@ -136,6 +139,7 @@ class WbFinancialPersistService(WbPersistLayersMixin, WbPersistAggregatesMixin):
         opening_movements: list[InventoryMovementDraft],
         batch_first_dates: dict[tuple[str | None, str | None], date],
         job_id: UUID | None,
+        in_transaction: bool = False,
     ) -> None:
         norm_count, _, _ = await count_phase1_rows(
             self.db,
@@ -166,14 +170,22 @@ class WbFinancialPersistService(WbPersistLayersMixin, WbPersistAggregatesMixin):
             },
         )
 
-        await self.db.commit()
+        if not in_transaction:
+            await self.db.commit()
         snapshot_service = InventorySnapshotRebuildService(self.db, self.user_id)
-        async with TenantSession.transaction(self.db, self.user_id):
+        if in_transaction:
             await snapshot_service.validate_opening_balances_streamed(
                 opening_movements,
                 batch_first_dates,
                 exclude_report_id=report.id,
             )
+        else:
+            async with TenantSession.transaction(self.db, self.user_id):
+                await snapshot_service.validate_opening_balances_streamed(
+                    opening_movements,
+                    batch_first_dates,
+                    exclude_report_id=report.id,
+                )
 
     async def _persist_phased(
         self,
@@ -227,6 +239,7 @@ class WbFinancialPersistService(WbPersistLayersMixin, WbPersistAggregatesMixin):
         result: WbFinancialProcessResult,
         costs_by_sku: dict[str, list[SkuCostSnapshot]] | None = None,
         job_id: UUID | None = None,
+        in_transaction: bool = False,
     ) -> InventoryLossAnalytics | None:
         snapshot_service = InventorySnapshotRebuildService(self.db, self.user_id)
         earliest_affected = _earliest_movement_date(result)
@@ -235,10 +248,18 @@ class WbFinancialPersistService(WbPersistLayersMixin, WbPersistAggregatesMixin):
             raise WorkerShutdownRequested(phase="persist_phase2")
 
         loss_analytics: InventoryLossAnalytics | None = None
-        async with TenantSession.transaction(self.db, self.user_id):
+
+        async def _phase2() -> None:
+            nonlocal loss_analytics
             loss_analytics = await snapshot_service.rebuild(earliest_affected_date=earliest_affected)
             await self._persist_reconciliation(report_id=report.id, result=result)
             await self.db.flush()
+
+        if in_transaction:
+            await _phase2()
+        else:
+            async with TenantSession.transaction(self.db, self.user_id):
+                await _phase2()
         await self._assert_phase1_counts(report=report, result=result, job_id=job_id, phase_label=2)
         logger.info(
             "wb_persist_phase_committed",
@@ -252,7 +273,7 @@ class WbFinancialPersistService(WbPersistLayersMixin, WbPersistAggregatesMixin):
         if is_shutdown(default_shutdown_check()):
             raise WorkerShutdownRequested(phase="persist_phase3")
 
-        async with TenantSession.transaction(self.db, self.user_id):
+        async def _phase3() -> None:
             await set_local_lock_timeout(
                 self.db,
                 timeout_ms=settings.etl_aggregate_lock_timeout_ms,
@@ -276,6 +297,12 @@ class WbFinancialPersistService(WbPersistLayersMixin, WbPersistAggregatesMixin):
                     ) from exc
                 raise
             await self.db.flush()
+
+        if in_transaction:
+            await _phase3()
+        else:
+            async with TenantSession.transaction(self.db, self.user_id):
+                await _phase3()
         await self._assert_phase1_counts(report=report, result=result, job_id=job_id, phase_label=3)
         logger.info(
             "wb_persist_phase_committed",
