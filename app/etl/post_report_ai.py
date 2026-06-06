@@ -46,8 +46,7 @@ async def maybe_generate_recommendation_after_report(
         report_id=report_id,
     )
     try:
-        async with TenantSession.transaction(db, user_id):
-            await AIService(db, user_id).run_intelligence(request)
+        await AIService(db, user_id).run_intelligence(request)
         logger.info(
             "post_report_ai_recommendation_ok",
             extra={"user_id": str(user_id), "report_id": str(report_id)},

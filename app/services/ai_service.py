@@ -579,42 +579,42 @@ class AIService:
                 )
             ).scalar_one()
 
-        cov = await CostCoverageService(self.db, self.user_id).analyze(
-            marketplace=marketplace,
-            period=CoveragePeriod(start=period_start, end=period_end),
-            limit=1,
-        )
-        trust = classify_profit_trust(cov.sku_cost_coverage_pct)
-        profit_out, margin, top_skus = apply_profit_trust_to_ai_metrics(
-            trust=trust,
-            total_profit=total_profit_d if total_profit_d != 0 else None,
-            margin_pct=margin,
-            top_skus=top_skus,
-        )
-        if trust != "full":
-            anomalies.append(
-                AnomalyDTO(
-                    type="data_quality",
-                    severity="medium",
-                    confidence=Decimal("0.95"),
-                    message=(
-                        "Себестоимость не покрывает продажи полностью; "
-                        "прибыль и маржа в ответе ИИ не интерпретировать как факт."
-                    ),
-                )
+            cov = await CostCoverageService(self.db, self.user_id).analyze(
+                marketplace=marketplace,
+                period=CoveragePeriod(start=period_start, end=period_end),
+                limit=1,
             )
+            trust = classify_profit_trust(cov.sku_cost_coverage_pct)
+            profit_out, margin, top_skus = apply_profit_trust_to_ai_metrics(
+                trust=trust,
+                total_profit=total_profit_d if total_profit_d != 0 else None,
+                margin_pct=margin,
+                top_skus=top_skus,
+            )
+            if trust != "full":
+                anomalies.append(
+                    AnomalyDTO(
+                        type="data_quality",
+                        severity="medium",
+                        confidence=Decimal("0.95"),
+                        message=(
+                            "Себестоимость не покрывает продажи полностью; "
+                            "прибыль и маржа в ответе ИИ не интерпретировать как факт."
+                        ),
+                    )
+                )
 
-        return AnalyticsProcessor.prepare_ai_insight(
-            report_id=report.id,
-            report_date=period_end,
-            marketplace_type=marketplace.value,
-            sku_count=int(sku_count or 0),
-            total_revenue=total_revenue_d if total_revenue_d > 0 else None,
-            total_profit=profit_out if profit_out is not None and profit_out != 0 else None,
-            margin=margin,
-            top_skus_summary=top_skus,
-            anomalies=anomalies,
-        )
+            return AnalyticsProcessor.prepare_ai_insight(
+                report_id=report.id,
+                report_date=period_end,
+                marketplace_type=marketplace.value,
+                sku_count=int(sku_count or 0),
+                total_revenue=total_revenue_d if total_revenue_d > 0 else None,
+                total_profit=profit_out if profit_out is not None and profit_out != 0 else None,
+                margin=margin,
+                top_skus_summary=top_skus,
+                anomalies=anomalies,
+            )
 
     async def _insight_input_for_period(
         self,

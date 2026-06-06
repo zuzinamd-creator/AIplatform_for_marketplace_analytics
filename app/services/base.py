@@ -19,9 +19,14 @@ class TenantScopedService:
     async def _rls_transaction(self) -> AsyncIterator[None]:
         if self.user_id is None:
             raise ValueError("user_id is required for tenant-scoped transactions")
+        if self.db.in_transaction():
+            yield
+            return
         async with TenantSession.transaction(self.db, self.user_id):
             yield
 
     async def execute_with_rls(self, statement: Select):
+        if self.db.in_transaction():
+            return await self.db.execute(statement)
         async with self._rls_transaction():
             return await self.db.execute(statement)
