@@ -21,6 +21,8 @@ export type IntegrityWarning = {
 export type AnalyticsIntegrityMeta = {
   warnings: IntegrityWarning[];
   financial_completeness_score?: string | null;
+  sku_cost_coverage_pct?: string | null;
+  profit_metrics_trust?: "full" | "partial" | "insufficient" | string | null;
 };
 
 export type RevenueKpiSummaryResponse = {
@@ -29,7 +31,7 @@ export type RevenueKpiSummaryResponse = {
   period_end: string;
   kpis: {
     total_revenue: string;
-    total_profit: string;
+    total_profit: string | null;
     margin_pct?: string | null;
     units_sold: number;
     average_check?: string | null;

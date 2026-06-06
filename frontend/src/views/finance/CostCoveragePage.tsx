@@ -35,9 +35,9 @@ export function CostCoveragePage() {
     <div className="page-shell">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="page-title">Покрытие себестоимостью (COGS)</h1>
+          <h1 className="page-title">На сколько товаров указана себестоимость</h1>
           <p className="page-subtitle">
-            Доля SKU с загруженной себестоимостью среди продаваемых позиций. Без COGS маржа на dashboard завышена.
+            Показывает, для какой доли продаваемых SKU загружена себестоимость. Без неё прибыль и маржа на dashboard скрываются или помечаются как неточные.
           </p>
         </div>
         <StatusBadge tone={stale ? "warn" : "info"}>{stale ? "данные устарели" : "актуально"}</StatusBadge>
@@ -46,8 +46,8 @@ export function CostCoveragePage() {
       <PeriodSelector onChange={(s) => setRange(s.range)} />
 
       <div className="kpi-row md:grid-cols-2">
-        <KpiCard variant="hero" label="Полнота затрат (score)" value={formatPct(score)} sub="Эвристика на основе покрытия SKU и предупреждений" />
-        <KpiCard label="Покрытие SKU себестоимостью" value={formatPct(covPct)} sub="COGS > 0 при наличии продаж" />
+        <KpiCard variant="hero" label="Готовность расчёта прибыли" value={formatPct(score)} sub="С учётом заполненности себестоимости и предупреждений" />
+        <KpiCard label="Товаров с себестоимостью" value={covPct !== null && coverage.data ? `${coverage.data.covered_skus} из ${coverage.data.total_skus} (${formatPct(covPct)})` : formatPct(covPct)} sub="Среди SKU с продажами в периоде" />
       </div>
 
       <Card className="p-5">

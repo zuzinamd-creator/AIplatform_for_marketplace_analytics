@@ -76,6 +76,9 @@ export function DashboardPage() {
   const integrityWarnings = data?.revenue_summary.integrity?.warnings ?? [];
   const completeness = data?.revenue_summary.integrity?.financial_completeness_score ?? null;
   const costCoveragePct = data?.cost_coverage?.sku_cost_coverage_pct ?? null;
+  const coveredSkus = data?.cost_coverage?.covered_skus ?? null;
+  const totalSkusCov = data?.cost_coverage?.total_skus ?? null;
+  const profitTrust = data?.revenue_summary.integrity?.profit_metrics_trust;
   const uncoveredSkus = (data?.cost_coverage?.items ?? []).filter(
     (row) => row.units_sold > 0 && Number(row.cogs ?? "0") === 0,
   ).length;
@@ -151,17 +154,19 @@ export function DashboardPage() {
             </Link>
           </Card>
           <Card className="p-4">
-            <div className="text-xs font-medium text-ink-muted">Доверие к марже</div>
+            <div className="text-xs font-medium text-ink-muted">Себестоимость по товарам</div>
             <div className="mt-2 text-sm text-ink-secondary">
-              {costCoveragePct !== null
-                ? `Покрытие себестоимостью: ${formatPct(costCoveragePct)}`
-                : completeness
-                  ? `Полнота аналитики: ${formatPct(completeness)}`
-                  : "Полнота неизвестна"}
+              {totalSkusCov && coveredSkus !== null
+                ? `${coveredSkus} из ${totalSkusCov} товаров с себестоимостью (${formatPct(costCoveragePct)})`
+                : costCoveragePct !== null
+                  ? formatPct(costCoveragePct)
+                  : completeness
+                    ? `Полнота аналитики: ${formatPct(completeness)}`
+                    : "Укажите себестоимость для точной прибыли"}
               {(data?.ai_ops as Record<string, unknown>)?.degraded_intelligence_mode ? " · ИИ осторожен" : ""}
             </div>
             <Link to="/app/finance/costs" className="link-muted mt-3 inline-block text-xs">
-              Покрытие себестоимостью →
+              Себестоимость по товарам →
             </Link>
           </Card>
         </div>
@@ -176,8 +181,9 @@ export function DashboardPage() {
             value={isLoading ? "…" : formatRub(data?.revenue_summary.kpis.total_revenue)}
             sub={
               <span>
-                Чистая прибыль: {formatRub(data?.revenue_summary.kpis.total_profit)} · Маржинальность:{" "}
-                {formatPct(data?.revenue_summary.kpis.margin_pct)} {stale ? "· данные устарели" : ""}
+                Чистая прибыль: {formatRub(data?.revenue_summary.kpis.total_profit)}
+                {profitTrust && profitTrust !== "full" ? " (неточно — не у всех товаров указана себестоимость)" : ""}
+                {" · "}Маржинальность: {formatPct(data?.revenue_summary.kpis.margin_pct)}
                 {compare && deltaRevenue !== null ? (
                   <>
                     {" "}

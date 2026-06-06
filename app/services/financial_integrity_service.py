@@ -9,10 +9,12 @@ from decimal import Decimal
 from sqlalchemy import func, select
 
 from app.models.cost_history import CostHistory
+from app.models.economics.sku_unit_economics import SkuUnitEconomicsDaily
 from app.models.finance.aggregates import DailyAggregate
 from app.models.finance.reconciliation import ReportReconciliation
 from app.models.report import Marketplace
 from app.schemas.analytics import AnalyticsIntegrityMeta, IntegrityWarning
+from app.domain.analytics.profit_trust import classify_profit_trust
 from app.services.base import TenantScopedService
 
 
@@ -116,6 +118,36 @@ class FinancialIntegrityService(TenantScopedService):
                 )
             )
 
+        sku_cost_coverage_pct = await self._sku_cost_coverage_pct(
+            marketplace=marketplace,
+            period=period,
+        )
+        profit_metrics_trust = classify_profit_trust(sku_cost_coverage_pct)
+        if profit_metrics_trust == "insufficient" and revenue != 0:
+            warnings.append(
+                IntegrityWarning(
+                    code="profit_kpi_suppressed",
+                    severity="warning",
+                    message="Прибыль и маржа скрыты: у проданных товаров не указана себестоимость (или покрытие 0%).",
+                    context={
+                        "sku_cost_coverage_pct": str(sku_cost_coverage_pct or 0),
+                        "profit_metrics_trust": profit_metrics_trust,
+                    },
+                )
+            )
+        elif profit_metrics_trust == "partial":
+            warnings.append(
+                IntegrityWarning(
+                    code="partial_cost_coverage",
+                    severity="warning",
+                    message="Маржа скрыта: себестоимость указана не для всех проданных SKU — прибыль может быть неточной.",
+                    context={
+                        "sku_cost_coverage_pct": str(sku_cost_coverage_pct or 0),
+                        "profit_metrics_trust": profit_metrics_trust,
+                    },
+                )
+            )
+
         # Payout reconciliation drift (report-level, best-effort).
         # This is not period-filtered (reconciliation is per report), but it signals normalization integrity issues.
         rec_stmt = select(
@@ -149,5 +181,30 @@ class FinancialIntegrityService(TenantScopedService):
         return AnalyticsIntegrityMeta(
             warnings=warnings,
             financial_completeness_score=completeness,
+            sku_cost_coverage_pct=sku_cost_coverage_pct,
+            profit_metrics_trust=profit_metrics_trust,
         )
+
+    async def _sku_cost_coverage_pct(
+        self,
+        *,
+        marketplace: Marketplace,
+        period: IntegrityPeriod,
+    ) -> Decimal | None:
+        filters = [
+            SkuUnitEconomicsDaily.marketplace == marketplace,
+            SkuUnitEconomicsDaily.metric_date >= period.start,
+            SkuUnitEconomicsDaily.metric_date <= period.end,
+        ]
+        total_stmt = select(func.count(func.distinct(SkuUnitEconomicsDaily.sku))).where(*filters)
+        covered_stmt = (
+            select(func.count(func.distinct(SkuUnitEconomicsDaily.sku)))
+            .where(*filters)
+            .where(SkuUnitEconomicsDaily.cogs > 0)
+        )
+        total_skus = int((await self.execute_with_rls(total_stmt)).scalar_one() or 0)
+        if total_skus == 0:
+            return None
+        covered_skus = int((await self.execute_with_rls(covered_stmt)).scalar_one() or 0)
+        return (Decimal(covered_skus) / Decimal(total_skus) * Decimal("100")).quantize(Decimal("0.01"))
 

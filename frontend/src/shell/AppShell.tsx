@@ -41,7 +41,7 @@ const allNav: NavItem[] = [
   { to: "/app/reports", label: "Отчёты", icon: Database, maturity: "stable" },
   { to: "/app/reports/upload", label: "Загрузка", icon: Upload, maturity: "stable" },
   { to: "/app/costs", label: "Себестоимость", icon: Database, maturity: "stable" },
-  { to: "/app/finance/costs", label: "Покрытие себестоимостью", icon: Database, maturity: "stable" },
+  { to: "/app/finance/costs", label: "Себестоимость по товарам", icon: Database, maturity: "stable" },
   { to: "/app/finance/reconciliation", label: "Сверка выплат", icon: Shield, maturity: "stable" },
   { to: "/app/economics", label: "Экономика SKU", icon: LineChart, maturity: "stable" },
   { to: "/app/economics/inventory", label: "Склад и оборот", icon: Package, maturity: "stable" },

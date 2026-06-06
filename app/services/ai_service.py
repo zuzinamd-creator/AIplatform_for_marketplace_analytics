@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.ai.analytics.engine import AIAnalyticsEngine
 from app.core.security_context import TenantSession
 from app.domain.analytics.processor import AnalyticsProcessor
+from app.domain.analytics.profit_trust import apply_profit_trust_to_kpis, classify_profit_trust
 from app.dto.ai_analytics_dto import AIRunRequestDTO, ValidatedInsightDTO
 from app.dto.analytics_dto import AIInsightInputDTO, AnomalyDTO, TopSKUSummaryDTO
 from app.models.ai_execution import AIExecutionRun
@@ -593,8 +594,14 @@ class AIService:
         period_start: date,
         period_end: date,
     ) -> AIInsightInputDTO | None:
+        report: Report | None = None
+        total_revenue_d = Decimal("0")
+        total_profit_d = Decimal("0")
+        margin: Decimal | None = None
+        top_skus: list[TopSKUSummaryDTO] = []
+        sku_count = 0
+
         async with TenantSession.transaction(self.db, self.user_id):
-            # Use latest report only for context.report_id audit linkage.
             report = await self._resolve_report_for_ai(None)
             if report is None:
                 return None
@@ -653,6 +660,18 @@ class AIService:
                 )
             ).scalar_one()
 
+        cov = await CostCoverageService(self.db, self.user_id).analyze(
+            marketplace=marketplace,
+            period=CoveragePeriod(start=period_start, end=period_end),
+            limit=1,
+        )
+        trust = classify_profit_trust(cov.sku_cost_coverage_pct)
+        profit_out, margin = apply_profit_trust_to_kpis(
+            trust=trust,
+            total_profit=total_profit_d,
+            margin_pct=margin,
+        )
+
         # Add deterministic trust / confidence signals as anomalies (visible to prompts via metrics_snapshot.anomalies).
         anomalies: list[AnomalyDTO] = []
         try:
@@ -695,7 +714,7 @@ class AIService:
             marketplace_type=marketplace.value,
             sku_count=int(sku_count or 0),
             total_revenue=total_revenue_d if total_revenue_d > 0 else None,
-            total_profit=total_profit_d if total_profit_d != 0 else None,
+            total_profit=profit_out if profit_out is not None and profit_out != 0 else None,
             margin=margin,
             top_skus_summary=top_skus,
             anomalies=anomalies,

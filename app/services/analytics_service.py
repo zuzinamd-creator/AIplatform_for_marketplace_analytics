@@ -10,6 +10,7 @@ from typing import cast
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.analytics.profit_trust import apply_profit_trust_to_kpis
 from app.domain.economics.inventory_math import compute_turnover, days_since, stock_risk_label
 from app.models.cost_history import CostHistory
 from app.models.economics.sku_unit_economics import SkuUnitEconomicsDaily
@@ -278,14 +279,20 @@ class AnalyticsService(TenantScopedService):
             margin = (Decimal(total_profit) / Decimal(total_revenue)) * Decimal("100")
         freshness = await self._freshness()
         integrity = await self._integrity(marketplace=marketplace, period=period, semantics_version=freshness.semantics_version)
+        trust = integrity.profit_metrics_trust if integrity else "insufficient"
+        profit_value, margin_value = apply_profit_trust_to_kpis(
+            trust=trust or "insufficient",
+            total_profit=Decimal(total_profit),
+            margin_pct=margin,
+        )
         return RevenueKpiSummaryResponse(
             marketplace=marketplace,
             period_start=period.start,
             period_end=period.end,
             kpis=RevenueKpiSummary(
                 total_revenue=Decimal(total_revenue),
-                total_profit=Decimal(total_profit),
-                margin_pct=margin,
+                total_profit=profit_value,
+                margin_pct=margin_value,
                 units_sold=int(units_sold or 0),
                 average_check=avg_check,
             ),
@@ -335,6 +342,12 @@ class AnalyticsService(TenantScopedService):
         return_rate = (returns / revenue * Decimal("100")) if revenue > 0 else None
 
         integrity = await self._integrity(marketplace=marketplace, period=period, semantics_version=freshness.semantics_version)
+        trust = integrity.profit_metrics_trust if integrity else "insufficient"
+        profit_value, margin_value = apply_profit_trust_to_kpis(
+            trust=trust or "insufficient",
+            total_profit=profit,
+            margin_pct=margin,
+        )
         return FinancialKpiSummaryResponse(
             marketplace=marketplace,
             period_start=period.start,
@@ -351,8 +364,8 @@ class AnalyticsService(TenantScopedService):
                 penalties=penalties,
                 deductions=deductions,
                 compensation=compensation,
-                gross_profit=profit,
-                margin_pct=margin,
+                gross_profit=profit_value,
+                margin_pct=margin_value,
                 return_rate_pct=return_rate,
                 total_to_pay=payout,
             ),

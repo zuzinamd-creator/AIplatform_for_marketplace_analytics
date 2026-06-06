@@ -46,13 +46,15 @@ class AnalyticsIntegrityMeta(BaseModel):
 
     warnings: list[IntegrityWarning] = Field(default_factory=list)
     financial_completeness_score: Decimal | None = None  # 0..100 (best-effort heuristic)
+    sku_cost_coverage_pct: Decimal | None = None
+    profit_metrics_trust: str | None = None  # full | partial | insufficient
 
 
 class RevenueKpiSummary(BaseModel):
     model_config = ConfigDict(strict=True)
 
     total_revenue: Decimal = Field(default=Decimal("0"))
-    total_profit: Decimal = Field(default=Decimal("0"))
+    total_profit: Decimal | None = None
     margin_pct: Decimal | None = None
     units_sold: int = 0
     average_check: Decimal | None = None
@@ -243,7 +245,7 @@ class FinancialKpiSummary(BaseModel):
     deductions: Decimal = Decimal("0")
     compensation: Decimal = Decimal("0")
 
-    gross_profit: Decimal = Decimal("0")
+    gross_profit: Decimal | None = None
     margin_pct: Decimal | None = None
     return_rate_pct: Decimal | None = None
     total_to_pay: Decimal = Decimal("0")
