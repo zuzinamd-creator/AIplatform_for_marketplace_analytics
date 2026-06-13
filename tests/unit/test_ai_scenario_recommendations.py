@@ -49,8 +49,13 @@ def _insight(
     )
 
 
-def _finding_ids(insight: AIInsightInputDTO) -> set[str]:
-    pkg = build_analytical_package(grounded=_grounded(), insight=insight)
+def _finding_ids(insight: AIInsightInputDTO, *, snap: dict | None = None) -> set[str]:
+    grounded = _grounded()
+    if snap:
+        grounded = grounded.model_copy(
+            update={"metrics_snapshot": {**grounded.metrics_snapshot, **snap}}
+        )
+    pkg = build_analytical_package(grounded=grounded, insight=insight)
     outputs = run_domain_analysts(pkg)
     return {f.finding_id for o in outputs for f in o.findings}
 
@@ -113,10 +118,51 @@ def test_scenario_funnel_concentration() -> None:
     assert "funnel_concentration" in ids
 
 
-def test_scenario_high_logistics_no_dedicated_rule() -> None:
-    """MVP gap: no domain-analyst rule for logistics share; only LLM narrative if triggered."""
-    ids = _finding_ids(_insight())
-    assert not any("logistics" in fid for fid in ids)
+def test_scenario_high_logistics_rule() -> None:
+    ids = _finding_ids(
+        _insight(),
+        snap={
+            "logistics_share_pct": "18.5",
+            "logistics_high_burden_skus": [
+                {"sku": "SKU-X", "share_pct": "30", "amount": "5000"}
+            ],
+        },
+    )
+    assert "logistics_high_share" in ids
+    assert any("logistics_sku_anomaly" in fid for fid in ids)
+
+
+def test_scenario_high_returns_rule() -> None:
+    ids = _finding_ids(
+        _insight(),
+        snap={"return_rate_pct": "12.5", "return_top_skus": [{"sku": "SKU-R", "share_pct": "15", "amount": "900"}]},
+    )
+    assert "returns_high_rate" in ids
+
+
+def test_scenario_concentration_analyst() -> None:
+    ids = _finding_ids(
+        _insight(
+            total_revenue=Decimal("100000"),
+            top_skus_summary=[
+                TopSKUSummaryDTO(internal_sku="SKU-A", revenue=Decimal("70000"), units_sold=100),
+            ],
+        ),
+        snap={"top1_share_pct": "70", "top3_share_pct": "70", "concentration_top_skus": ["SKU-A"]},
+    )
+    assert "concentration_top1_risk" in ids
+
+
+def test_scenario_revenue_drop_rule() -> None:
+    ids = _finding_ids(
+        _insight(),
+        snap={
+            "compare_available": True,
+            "revenue_change_pct": "-25",
+            "sku_revenue_drivers": [{"sku": "SKU-A", "share_pct": "-40", "amount": "-10000"}],
+        },
+    )
+    assert "revenue_drop" in ids
 
 
 def test_scenario_high_commission_no_dedicated_rule() -> None:

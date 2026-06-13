@@ -23,6 +23,10 @@ class DomainAnalystId(StrEnum):
     INVENTORY = "inventory_analyst"
     MARKETPLACE_COMPARISON = "marketplace_comparison_analyst"
     ANOMALY = "anomaly_analyst"
+    LOGISTICS = "logistics_analyst"
+    RETURNS = "returns_analyst"
+    REVENUE_CHANGE = "revenue_change_analyst"
+    CONCENTRATION = "concentration_analyst"
 
 
 class SalesAnalyticsSlice(BaseModel):
@@ -52,11 +56,34 @@ class FunnelAnalyticsSlice(BaseModel):
     top_sku_concentration: Decimal | None = None
 
 
+class InventorySkuRow(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True)
+
+    sku: str
+    stock_units: int = 0
+    frozen_capital: Decimal | None = None
+    days_since_last_sale: int | None = None
+    share_pct: Decimal = Decimal("0")
+
+
 class InventoryAnalyticsSlice(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True)
 
     sku_count: int = 0
+    total_skus: int = 0
     inventory_signals_available: bool = False
+    turnover_available: bool = False
+    frozen_capital_available: bool = False
+    total_frozen_capital: Decimal | None = None
+    frozen_capital_share_pct: Decimal | None = None
+    slow_mover_count: int = 0
+    dead_stock_count: int = 0
+    overstock_count: int = 0
+    stock_concentration_top3_pct: Decimal | None = None
+    inventory_risk_level: str = "low"
+    top_slow_movers: tuple[InventorySkuRow, ...] = ()
+    top_dead_stock: tuple[InventorySkuRow, ...] = ()
+    top_frozen_capital_skus: tuple[InventorySkuRow, ...] = ()
 
 
 class MarketplaceComparisonSlice(BaseModel):
@@ -70,6 +97,47 @@ class AnomalyAnalyticsSlice(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True)
 
     anomalies: tuple[AnomalyDTO, ...] = ()
+
+
+class SkuSignalDTO(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True)
+
+    sku: str
+    share_pct: Decimal = Decimal("0")
+    amount: Decimal = Decimal("0")
+
+
+class LogisticsAnalyticsSlice(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True)
+
+    logistics_share_pct: Decimal | None = None
+    logistics_share_delta_pp: Decimal | None = None
+    high_burden_skus: tuple[SkuSignalDTO, ...] = ()
+
+
+class ReturnsAnalyticsSlice(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True)
+
+    return_rate_pct: Decimal | None = None
+    return_rate_delta_pp: Decimal | None = None
+    top_return_skus: tuple[SkuSignalDTO, ...] = ()
+
+
+class RevenueChangeAnalyticsSlice(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True)
+
+    revenue_change_pct: Decimal | None = None
+    profit_change_pct: Decimal | None = None
+    compare_available: bool = False
+    sku_revenue_drivers: tuple[SkuSignalDTO, ...] = ()
+
+
+class ConcentrationAnalyticsSlice(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True)
+
+    top1_share_pct: Decimal | None = None
+    top3_share_pct: Decimal | None = None
+    top_skus: tuple[str, ...] = ()
 
 
 class AnalyticalIntelligencePackage(BaseModel):
@@ -88,6 +156,10 @@ class AnalyticalIntelligencePackage(BaseModel):
     inventory: InventoryAnalyticsSlice = Field(default_factory=InventoryAnalyticsSlice)
     marketplace: MarketplaceComparisonSlice = Field(default_factory=MarketplaceComparisonSlice)
     anomaly: AnomalyAnalyticsSlice = Field(default_factory=AnomalyAnalyticsSlice)
+    logistics: LogisticsAnalyticsSlice = Field(default_factory=LogisticsAnalyticsSlice)
+    returns: ReturnsAnalyticsSlice = Field(default_factory=ReturnsAnalyticsSlice)
+    revenue_change: RevenueChangeAnalyticsSlice = Field(default_factory=RevenueChangeAnalyticsSlice)
+    concentration: ConcentrationAnalyticsSlice = Field(default_factory=ConcentrationAnalyticsSlice)
     evidence_refs: tuple[EvidenceRefDTO, ...] = ()
 
 

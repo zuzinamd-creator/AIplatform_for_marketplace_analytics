@@ -1,0 +1,266 @@
+{
+  "version": "1.0",
+  "schema": "seller_archetype_v1",
+  "updated": "2026-06-07",
+  "description": "P0 seller archetypes for AI quality validation (Phase 6.5.2). Threshold bands reference docs/ai/threshold_catalog.md.",
+  "pilot_reference": {
+    "archetype_id": "high_inventory_seller",
+    "user_id": "caefecb3-5789-4878-a9d4-929be573fbcc",
+    "reports_count": 4,
+    "validation_status": "validated",
+    "reference_metrics": {
+      "seller_usefulness": 80.3,
+      "ai_readiness": 86.1,
+      "dashboard_echo_pct": 0.0,
+      "actionable_rate_pct": 100.0,
+      "inventory_insight_rate_pct": 100.0
+    }
+  },
+  "archetypes": [
+    {
+      "id": "small_seller",
+      "name": "Small Seller",
+      "priority": "P0",
+      "validation_status": "pending_dataset",
+      "user_id": null,
+      "reports_min": 2,
+      "dataset_notes": "≤20 SKU, low revenue, 2+ WB finance periods; optional minimal warehouse snapshots",
+      "business_profile": {
+        "sku_count_max": 20,
+        "monthly_revenue_band_rub": "0-500000",
+        "ads_spend": "none_or_minimal",
+        "inventory_snapshots": "optional",
+        "cost_coverage": "partial_or_full",
+        "history_periods": 2
+      },
+      "kpi_expectations": {
+        "primary_insight_domain": ["revenue", "margin"],
+        "business_coverage_pct_band": [35, 50],
+        "inventory_noise_risk": "low",
+        "notes": "Inventory must not dominate primary on trivial catalog"
+      },
+      "metric_bands": {
+        "seller_usefulness": { "minimum": 65.0, "target": 74.0, "stretch": 82.0 },
+        "ai_readiness": { "minimum": 75.0, "target": 86.0, "stretch": 90.0 },
+        "actionable_rate_pct": { "minimum": 100.0, "target": 100.0, "stretch": 100.0 },
+        "inventory_insight_rate_pct": { "minimum": 0.0, "target": 25.0, "stretch": 50.0 },
+        "dashboard_echo_pct": { "minimum": 0.0, "target": 0.0, "stretch": 0.0, "maximum": 0.0 }
+      },
+      "expected_insights": {
+        "finding_ids": ["sales_top_sku", "sales_revenue_present"],
+        "primary_domains": ["revenue", "margin"],
+        "text_patterns": ["sku", "выручк", "маржа"]
+      },
+      "optional_insights": {
+        "finding_ids": ["sales_low_margin", "inventory_slow_movers", "inventory_limited_signals"],
+        "primary_domains": ["logistics", "returns"],
+        "text_patterns": []
+      },
+      "forbidden_insights": {
+        "finding_ids": [],
+        "primary_domains": ["inventory"],
+        "text_patterns": ["реклам", "ads_spend", "продвижен"],
+        "rules": [
+          "Inventory must not be sole primary when revenue IQ is higher (revenue protection +8 pp rule)",
+          "No false advertising spend recommendations when ads block unavailable"
+        ]
+      }
+    },
+    {
+      "id": "seasonal_seller",
+      "name": "Seasonal Seller",
+      "priority": "P0",
+      "validation_status": "pending_dataset",
+      "user_id": null,
+      "reports_min": 4,
+      "dataset_notes": "Two consecutive periods with ±30% revenue delta; skewed top SKUs in peak period",
+      "business_profile": {
+        "sku_count_band": "20-200",
+        "period_delta_pct_band": [-40, 40],
+        "peak_concentration": "high",
+        "ads_spend": "variable",
+        "cost_coverage": "full_preferred"
+      },
+      "kpi_expectations": {
+        "primary_insight_domain": ["revenue", "concentration"],
+        "business_coverage_pct_band": [45, 55],
+        "notes": "Revenue change analyst must fire on material period delta (±10% threshold)"
+      },
+      "metric_bands": {
+        "seller_usefulness": { "minimum": 70.0, "target": 76.0, "stretch": 85.0 },
+        "ai_readiness": { "minimum": 80.0, "target": 86.0, "stretch": 92.0 },
+        "actionable_rate_pct": { "minimum": 100.0, "target": 100.0, "stretch": 100.0 },
+        "inventory_insight_rate_pct": { "minimum": 0.0, "target": 25.0, "stretch": 75.0 },
+        "dashboard_echo_pct": { "minimum": 0.0, "target": 0.0, "stretch": 0.0, "maximum": 0.0 }
+      },
+      "expected_insights": {
+        "finding_ids": ["revenue_drop", "revenue_growth", "concentration_top1_risk", "concentration_top3_risk"],
+        "primary_domains": ["revenue", "concentration"],
+        "text_patterns": ["упала", "выросла", "период", "драйвер", "концентрац"]
+      },
+      "optional_insights": {
+        "finding_ids": ["sales_top_sku", "revenue_sku_driver", "inventory_frozen_capital"],
+        "primary_domains": ["profit", "inventory"],
+        "text_patterns": []
+      },
+      "forbidden_insights": {
+        "finding_ids": ["funnel_breadth_ok", "anomaly_none"],
+        "primary_domains": [],
+        "text_patterns": [],
+        "rules": [
+          "Generic KPI restatement without period comparison must not be primary (Dashboard Echo = 0%)"
+        ]
+      }
+    },
+    {
+      "id": "unprofitable_seller",
+      "name": "Unprofitable Seller",
+      "priority": "P0",
+      "validation_status": "pending_dataset",
+      "user_id": null,
+      "reports_min": 2,
+      "dataset_notes": "COGS imported; known loss-making SKUs; negative or near-zero period profit",
+      "business_profile": {
+        "period_profit_sign": "negative_or_marginal",
+        "cost_coverage_pct_min": 80,
+        "expense_share": "high",
+        "top_sku_margin": "negative_on_at_least_one"
+      },
+      "kpi_expectations": {
+        "primary_insight_domain": ["profit", "margin"],
+        "business_coverage_pct_band": [50, 60],
+        "notes": "Deep period unprofitable SKU bullets expected when COGS complete"
+      },
+      "metric_bands": {
+        "seller_usefulness": { "minimum": 68.0, "target": 74.0, "stretch": 80.0 },
+        "ai_readiness": { "minimum": 82.0, "target": 86.0, "stretch": 90.0 },
+        "actionable_rate_pct": { "minimum": 100.0, "target": 100.0, "stretch": 100.0 },
+        "inventory_insight_rate_pct": { "minimum": 0.0, "target": 25.0, "stretch": 50.0 },
+        "dashboard_echo_pct": { "minimum": 0.0, "target": 0.0, "stretch": 0.0, "maximum": 0.0 }
+      },
+      "expected_insights": {
+        "finding_ids": ["profit_drop", "sales_low_margin"],
+        "primary_domains": ["profit", "margin"],
+        "text_patterns": ["убыт", "маржа", "себестоим", "убыточ"]
+      },
+      "optional_insights": {
+        "finding_ids": ["logistics_high_share", "returns_high_rate", "inventory_dead_stock"],
+        "primary_domains": ["logistics", "returns"],
+        "text_patterns": ["логистик", "возврат"]
+      },
+      "forbidden_insights": {
+        "finding_ids": ["revenue_growth"],
+        "primary_domains": [],
+        "text_patterns": ["оптимизируйте маркетинг без sku"],
+        "rules": [
+          "Must not recommend growth/marketing without linking to loss-making SKUs",
+          "Must not claim full profit confidence when COGS coverage < 80%"
+        ]
+      }
+    },
+    {
+      "id": "no_ads_seller",
+      "name": "No Advertising Seller",
+      "priority": "P0",
+      "validation_status": "pending_dataset",
+      "user_id": null,
+      "reports_min": 2,
+      "dataset_notes": "WB finance reports with zero ad-spend rows; organic sales only",
+      "business_profile": {
+        "ads_spend": "zero",
+        "advertising_data_coverage": false,
+        "sales_channel": "organic_only",
+        "promotion_block_available": false
+      },
+      "kpi_expectations": {
+        "primary_insight_domain": ["revenue", "margin"],
+        "business_coverage_pct_band": [40, 50],
+        "advertising_warning_expected": true,
+        "notes": "ads_no_governed_spend finding expected; promotion block excluded from coverage"
+      },
+      "metric_bands": {
+        "seller_usefulness": { "minimum": 65.0, "target": 72.0, "stretch": 80.0 },
+        "ai_readiness": { "minimum": 78.0, "target": 84.0, "stretch": 88.0 },
+        "actionable_rate_pct": { "minimum": 100.0, "target": 100.0, "stretch": 100.0 },
+        "inventory_insight_rate_pct": { "minimum": 0.0, "target": 25.0, "stretch": 50.0 },
+        "dashboard_echo_pct": { "minimum": 0.0, "target": 0.0, "stretch": 0.0, "maximum": 0.0 }
+      },
+      "expected_insights": {
+        "finding_ids": ["ads_no_governed_spend"],
+        "primary_domains": ["revenue"],
+        "text_patterns": ["реклам", "продвижен", "данные по продвижению"]
+      },
+      "optional_insights": {
+        "finding_ids": ["sales_top_sku", "sales_low_margin", "inventory_limited_signals"],
+        "primary_domains": ["margin", "inventory"],
+        "text_patterns": []
+      },
+      "forbidden_insights": {
+        "finding_ids": [],
+        "primary_domains": ["ads"],
+        "text_patterns": ["увеличьте рекламный бюджет", "оптимизируйте кампанию", "ctr", "cpc"],
+        "rules": [
+          "Advertising must not be primary insight when ads_no_governed_spend",
+          "No fabricated ad performance metrics",
+          "advertising_data_coverage must remain false"
+        ]
+      }
+    },
+    {
+      "id": "high_inventory_seller",
+      "name": "High Inventory Seller",
+      "priority": "P0",
+      "validation_status": "validated",
+      "user_id": "caefecb3-5789-4878-a9d4-929be573fbcc",
+      "reports_min": 4,
+      "dataset_notes": "Pilot user — warehouse snapshots, dead stock ≥3 SKU, frozen capital ≥20% revenue",
+      "business_profile": {
+        "inventory_snapshots": "required",
+        "dead_stock_count_min": 3,
+        "frozen_capital_share_pct_min": 20,
+        "slow_mover_threshold_days": 30,
+        "dead_stock_threshold_days": 60,
+        "inventory_sub_coverage_pct_min": 66
+      },
+      "kpi_expectations": {
+        "primary_insight_domain": ["revenue", "inventory"],
+        "business_coverage_pct_band": [45, 55],
+        "inventory_escalation": "L1 only when IQ > revenue + 8 pp or critical dead stock",
+        "notes": "Revenue protection must hold unless inventory critically escalated"
+      },
+      "metric_bands": {
+        "seller_usefulness": { "minimum": 74.0, "target": 80.0, "stretch": 88.0 },
+        "ai_readiness": { "minimum": 86.0, "target": 86.0, "stretch": 92.0 },
+        "actionable_rate_pct": { "minimum": 100.0, "target": 100.0, "stretch": 100.0 },
+        "inventory_insight_rate_pct": { "minimum": 50.0, "target": 100.0, "stretch": 100.0 },
+        "dashboard_echo_pct": { "minimum": 0.0, "target": 0.0, "stretch": 0.0, "maximum": 0.0 }
+      },
+      "expected_insights": {
+        "finding_ids": [
+          "inventory_dead_stock",
+          "inventory_frozen_capital",
+          "inventory_slow_movers",
+          "inventory_stock_concentration",
+          "inventory_risk_high"
+        ],
+        "primary_domains": ["inventory", "revenue"],
+        "text_patterns": ["мёртв", "мертв", "заморож", "остатк", "оборачиваем", "неликвид"]
+      },
+      "optional_insights": {
+        "finding_ids": ["sales_top_sku", "logistics_high_share", "returns_high_rate"],
+        "primary_domains": ["logistics", "returns", "profit"],
+        "text_patterns": []
+      },
+      "forbidden_insights": {
+        "finding_ids": [],
+        "primary_domains": ["ads"],
+        "text_patterns": [],
+        "rules": [
+          "When inventory risk is critical (dead stock high severity), ads must not be primary",
+          "Inventory must not occupy all 3 executive lead slots (max 1 inventory block)",
+          "Duplicate inventory semantic buckets in lead forbidden (dedupe rule)"
+        ]
+      }
+    }
+  ]
+}

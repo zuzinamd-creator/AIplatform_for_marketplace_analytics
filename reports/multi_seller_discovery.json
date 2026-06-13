@@ -1,0 +1,101 @@
+{
+  "phase": "6.5.3",
+  "discovery": {
+    "sellers_found": 2,
+    "profiles": [
+      {
+        "user_id": "caefecb3-5789-4878-a9d4-929be573fbcc",
+        "email": "margarita.zuzina@mail.ru",
+        "finance_reports": 4,
+        "ai_recommendations": 4,
+        "distinct_skus": 48,
+        "period_start": "2026-03-12",
+        "period_end": "2026-05-31",
+        "total_revenue": "1496676.5800",
+        "total_profit": "651112.1241",
+        "inventory_snapshot_rows": 2353,
+        "inventory_distinct_skus": 49,
+        "revenue_period_delta_pct": 18.2,
+        "inferred_archetypes": [
+          "high_inventory_seller"
+        ]
+      },
+      {
+        "user_id": "1267cd81-ca57-4773-8f5c-0febe84488f4",
+        "email": "upload-test@example.com",
+        "finance_reports": 1,
+        "ai_recommendations": 0,
+        "distinct_skus": 42,
+        "period_start": "2026-03-10",
+        "period_end": "2026-05-24",
+        "total_revenue": "2982663.4800",
+        "total_profit": "2451617.1609",
+        "inventory_snapshot_rows": 4003,
+        "inventory_distinct_skus": 43,
+        "revenue_period_delta_pct": -23.1,
+        "inferred_archetypes": [
+          "high_inventory_seller"
+        ]
+      }
+    ]
+  },
+  "archetype_mapping": {
+    "small_seller": {
+      "archetype_id": "small_seller",
+      "user_id": null,
+      "gap": true,
+      "gap_reason": "No seller in database matches archetype criteria"
+    },
+    "seasonal_seller": {
+      "archetype_id": "seasonal_seller",
+      "user_id": null,
+      "gap": true,
+      "gap_reason": "No seller in database matches archetype criteria"
+    },
+    "unprofitable_seller": {
+      "archetype_id": "unprofitable_seller",
+      "user_id": null,
+      "gap": true,
+      "gap_reason": "No seller in database matches archetype criteria"
+    },
+    "no_ads_seller": {
+      "archetype_id": "no_ads_seller",
+      "user_id": null,
+      "gap": true,
+      "gap_reason": "No seller in database matches archetype criteria"
+    },
+    "high_inventory_seller": {
+      "archetype_id": "high_inventory_seller",
+      "user_id": "caefecb3-5789-4878-a9d4-929be573fbcc",
+      "email": "margarita.zuzina@mail.ru",
+      "finance_reports": 4,
+      "distinct_skus": 48,
+      "period_start": "2026-03-12",
+      "period_end": "2026-05-31",
+      "inferred_archetypes": [
+        "high_inventory_seller"
+      ],
+      "mapping_source": "manifest",
+      "gap": false
+    }
+  },
+  "gaps": [
+    "small_seller",
+    "seasonal_seller",
+    "unprofitable_seller",
+    "no_ads_seller"
+  ],
+  "pilot_reference": {
+    "archetype_id": "high_inventory_seller",
+    "user_id": "caefecb3-5789-4878-a9d4-929be573fbcc",
+    "reports_count": 4,
+    "validation_status": "validated",
+    "reference_metrics": {
+      "seller_usefulness": 80.3,
+      "ai_readiness": 86.1,
+      "dashboard_echo_pct": 0.0,
+      "actionable_rate_pct": 100.0,
+      "inventory_insight_rate_pct": 100.0
+    }
+  }
+}

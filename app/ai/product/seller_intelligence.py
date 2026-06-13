@@ -9,6 +9,11 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.coverage.business_coverage import (
+    assess_business_coverage,
+    coverage_to_dict,
+    format_executive_summary_v2_text,
+)
 from app.ai.product.impact_estimation import build_measurable_impact
 from app.ai.product.prioritization import (
     PRIORITY_INFORMATIONAL,
@@ -87,6 +92,28 @@ def build_actionable_payload(
     if wf == "anomaly_explanation":
         effort = "30–45 min (data fix before other actions)"
 
+    snap = dict(grounded.metrics_snapshot or {})
+    coverage = assess_business_coverage(
+        snap,
+        deep_insights=list(snap.get("deep_insights") or []),
+        causal_headline=snap.get("causal_headline"),
+    )
+    coverage_dict = coverage_to_dict(coverage)
+    exec_v2_text = format_executive_summary_v2_text(coverage)
+    insight_engine = snap.get("insight_engine") or {}
+    insight_quality = insight_engine.get("insight_quality") or {}
+    insight_audit = insight_engine.get("insight_audit") or {}
+    if insight_quality.get("overall") is not None:
+        boosted = max(
+            float(coverage_dict["seller_usefulness_score"]),
+            float(insight_quality["overall"]) * 0.88,
+        )
+        coverage_dict["seller_usefulness_score"] = round(min(100.0, boosted), 1)
+    limitations = list(usefulness.limitations)
+    limitations.append(coverage.analysis_limitations)
+    if coverage.advertising_warning:
+        limitations.append(coverage.advertising_warning)
+
     return {
         "why_this_matters": usefulness.why_this_matters,
         "expected_business_impact": usefulness.expected_business_impact,
@@ -98,12 +125,36 @@ def build_actionable_payload(
         "recommended_action": usefulness.concrete_next_action,
         "data_gaps": usefulness.data_gaps,
         "report_id": grounded.metrics_snapshot.get("report_id"),
+        "source_period_start": grounded.metrics_snapshot.get("source_period_start"),
+        "source_period_end": grounded.metrics_snapshot.get("source_period_end"),
+        "compare_period_start": grounded.metrics_snapshot.get("compare_period_start"),
+        "compare_period_end": grounded.metrics_snapshot.get("compare_period_end"),
+        "requested_compare_period_start": grounded.metrics_snapshot.get(
+            "requested_compare_period_start"
+        ),
+        "requested_compare_period_end": grounded.metrics_snapshot.get(
+            "requested_compare_period_end"
+        ),
+        "compare_mode": grounded.metrics_snapshot.get("compare_mode"),
+        "causal_headline": grounded.metrics_snapshot.get("causal_headline"),
+        "deep_insights": grounded.metrics_snapshot.get("deep_insights"),
         "estimated_effort": effort,
         "expected_outcome": usefulness.estimated_upside,
         "estimated_upside": usefulness.estimated_upside,
         "estimated_downside": usefulness.estimated_downside,
         "confidence_explanation": usefulness.confidence_explanation,
-        "limitations": usefulness.limitations,
+        "limitations": limitations,
+        "business_coverage": coverage_dict,
+        "executive_summary_v2": coverage_dict["executive_summary_v2"],
+        "executive_summary_v2_text": exec_v2_text,
+        "analysis_limitations": coverage.analysis_limitations,
+        "root_cause_confidence": coverage_dict["root_cause_confidence"],
+        "advertising_warning": coverage.advertising_warning,
+        "insight_engine": insight_engine,
+        "insight_quality": insight_quality,
+        "insight_audit": insight_audit,
+        "structured_insights": insight_engine.get("structured_insights") or [],
+        "primary_insight": insight_engine.get("primary_insight"),
         "measurable_impact": {
             "summary": impact.summary,
             "estimates": [

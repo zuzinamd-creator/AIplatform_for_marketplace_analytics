@@ -1,0 +1,71 @@
+{
+  "phase": "6.5.2",
+  "archetypes_tested": 5,
+  "pass": 0,
+  "fail": 0,
+  "skip": 5,
+  "results": [
+    {
+      "phase": "6.5.2",
+      "archetype_id": "small_seller",
+      "warnings": [
+        "Archetype 'small_seller' has no user_id — assign tenant or load dataset (status: pending_dataset)"
+      ],
+      "overall_decision": "SKIP",
+      "reason": "no_user_id",
+      "archetype": {
+        "name": "Small Seller",
+        "validation_status": "pending_dataset",
+        "dataset_notes": "≤20 SKU, low revenue, 2+ WB finance periods; optional minimal warehouse snapshots"
+      }
+    },
+    {
+      "phase": "6.5.2",
+      "archetype_id": "seasonal_seller",
+      "warnings": [
+        "Archetype 'seasonal_seller' has no user_id — assign tenant or load dataset (status: pending_dataset)"
+      ],
+      "overall_decision": "SKIP",
+      "reason": "no_user_id",
+      "archetype": {
+        "name": "Seasonal Seller",
+        "validation_status": "pending_dataset",
+        "dataset_notes": "Two consecutive periods with ±30% revenue delta; skewed top SKUs in peak period"
+      }
+    },
+    {
+      "phase": "6.5.2",
+      "archetype_id": "unprofitable_seller",
+      "warnings": [
+        "Archetype 'unprofitable_seller' has no user_id — assign tenant or load dataset (status: pending_dataset)"
+      ],
+      "overall_decision": "SKIP",
+      "reason": "no_user_id",
+      "archetype": {
+        "name": "Unprofitable Seller",
+        "validation_status": "pending_dataset",
+        "dataset_notes": "COGS imported; known loss-making SKUs; negative or near-zero period profit"
+      }
+    },
+    {
+      "phase": "6.5.2",
+      "archetype_id": "no_ads_seller",
+      "warnings": [
+        "Archetype 'no_ads_seller' has no user_id — assign tenant or load dataset (status: pending_dataset)"
+      ],
+      "overall_decision": "SKIP",
+      "reason": "no_user_id",
+      "archetype": {
+        "name": "No Advertising Seller",
+        "validation_status": "pending_dataset",
+        "dataset_notes": "WB finance reports with zero ad-spend rows; organic sales only"
+      }
+    },
+    {
+      "archetype_id": "high_inventory_seller",
+      "overall_decision": "SKIP",
+      "reason": "audit_error",
+      "error": "[Errno -3] Temporary failure in name resolution"
+    }
+  ]
+}

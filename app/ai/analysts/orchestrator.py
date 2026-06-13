@@ -4,9 +4,13 @@ from __future__ import annotations
 
 from app.ai.analysts.ads import AdsAnalyst
 from app.ai.analysts.anomaly import AnomalyAnalyst
+from app.ai.analysts.concentration import ConcentrationAnalyst
 from app.ai.analysts.funnel import FunnelAnalyst
 from app.ai.analysts.inventory import InventoryAnalyst
+from app.ai.analysts.logistics import LogisticsAnalyst
 from app.ai.analysts.marketplace import MarketplaceComparisonAnalyst
+from app.ai.analysts.returns import ReturnsAnalyst
+from app.ai.analysts.revenue_change import RevenueChangeAnalyst
 from app.ai.analysts.sales import SalesAnalyst
 from app.dto.domain_analyst_dto import AnalyticalIntelligencePackage, DomainAnalystOutputDTO
 
@@ -19,5 +23,9 @@ def run_domain_analysts(package: AnalyticalIntelligencePackage) -> list[DomainAn
         InventoryAnalyst(),
         MarketplaceComparisonAnalyst(),
         AnomalyAnalyst(),
+        LogisticsAnalyst(),
+        ReturnsAnalyst(),
+        RevenueChangeAnalyst(),
+        ConcentrationAnalyst(),
     )
     return [a.analyze(package) for a in analysts]

@@ -26,7 +26,19 @@ _ANALYST_LABELS = {
     "inventory_analyst": "Inventory Analyst",
     "marketplace_comparison_analyst": "Marketplace Comparison Analyst",
     "anomaly_analyst": "Anomaly Analyst",
+    "logistics_analyst": "Logistics Analyst",
+    "returns_analyst": "Returns Analyst",
+    "revenue_change_analyst": "Revenue Change Analyst",
+    "concentration_analyst": "Concentration Analyst",
 }
+
+_SKIP_FINDING_IDS = frozenset(
+    {
+        "sales_revenue_present",
+        "funnel_breadth_ok",
+        "anomaly_none",
+    }
+)
 
 
 class ExecutiveIntelligenceAggregator:
@@ -81,6 +93,8 @@ class ExecutiveIntelligenceAggregator:
         suppressed: set[str] = set()
         by_evidence: dict[str, list[tuple[DomainAnalystOutputDTO, DomainFindingDTO]]] = {}
         for out, f in items:
+            if f.finding_id in _SKIP_FINDING_IDS:
+                continue
             key = "|".join(sorted(f.evidence_refs)) or f.finding_id
             by_evidence.setdefault(key, []).append((out, f))
 
@@ -122,6 +136,8 @@ class ExecutiveIntelligenceAggregator:
     ) -> list[ExecutiveInsightDTO]:
         scored: list[tuple[Decimal, DomainAnalystOutputDTO, DomainFindingDTO]] = []
         for out, f in items:
+            if f.finding_id in _SKIP_FINDING_IDS:
+                continue
             score = _SEVERITY_WEIGHT.get(f.severity, Decimal("10")) * f.confidence
             scored.append((score, out, f))
         scored.sort(key=lambda x: x[0], reverse=True)
@@ -146,6 +162,11 @@ class ExecutiveIntelligenceAggregator:
                     reasoning_summary=(
                         f"{_ANALYST_LABELS.get(out.analyst_id.value, out.analyst_id.value)} "
                         f"assigned severity {f.severity} with confidence {f.confidence}."
+                        + (
+                            " Inventory signals derived from warehouse_stock_snapshots."
+                            if out.analyst_id.value == "inventory_analyst"
+                            else ""
+                        )
                     ),
                 )
             )

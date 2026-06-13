@@ -74,21 +74,40 @@ class AIIntelligenceEngine:
             multi_trace=multi_trace,
         )
 
-        deep = list(grounded.metrics_snapshot.get("deep_insights") or [])
+        from app.ai.insights.composer import compose_insight_driven_output
+
+        snap = dict(grounded.metrics_snapshot or {})
+        insight_output = compose_insight_driven_output(
+            snap=snap,
+            multi_trace=multi_trace,
+            llm_title=result.recommendation.title,
+            llm_summary=result.recommendation.summary,
+        )
+        snap["insight_engine"] = insight_output.to_snapshot_payload()
+        grounded = grounded.model_copy(update={"metrics_snapshot": snap})
+
+        deep = list(snap.get("deep_insights") or [])
+        rec = result.recommendation
         if deep:
-            rec = result.recommendation
-            merged_bullets = deep + [b for b in rec.bullets if b not in deep]
-            result = result.model_copy(
-                update={
-                    "recommendation": rec.model_copy(
-                        update={
-                            "title": deep[0][:255],
-                            "summary": "\n".join(deep[:4]),
-                            "bullets": merged_bullets[:12],
-                        }
-                    )
-                }
-            )
+            filtered = [
+                b
+                for b in rec.bullets
+                if b not in deep and not str(b).startswith("Top priority")
+            ]
+            merged_bullets = list(insight_output.bullets) + filtered
+        else:
+            merged_bullets = list(insight_output.bullets)
+        result = result.model_copy(
+            update={
+                "recommendation": rec.model_copy(
+                    update={
+                        "title": insight_output.title,
+                        "summary": insight_output.summary,
+                        "bullets": merged_bullets[:12],
+                    }
+                )
+            }
+        )
 
         gated = classify_and_gate(result.recommendation)
         rec = gated.recommendation
@@ -105,13 +124,44 @@ class AIIntelligenceEngine:
             metrics_snapshot=dict(grounded.metrics_snapshot),
         )
         fatigue = await assess_fatigue(self.db, self.user_id, fp_preview)
+        analyst_actions: list[str] = []
+        if multi_trace and multi_trace.executive:
+            analyst_actions = list(multi_trace.executive.final_recommendations[:5])
+        grounded_for_quality = grounded
+        if analyst_actions:
+            grounded_for_quality = grounded.model_copy(
+                update={
+                    "metrics_snapshot": {
+                        **dict(grounded.metrics_snapshot),
+                        "analyst_actions": analyst_actions,
+                    }
+                }
+            )
         quality = apply_quality(
-            scored=rec, validated=validated, grounded=grounded, fatigue=fatigue
+            scored=rec, validated=validated, grounded=grounded_for_quality, fatigue=fatigue
         )
+        su = quality.seller_usefulness
+        summary_parts: list[str] = []
+        snap_for_summary = dict(grounded.metrics_snapshot or {})
+        insight_lead = (snap_for_summary.get("insight_engine") or {}).get("executive_lead")
+        if insight_lead:
+            summary_parts.append(str(insight_lead))
+        exec_v2 = su.get("executive_summary_v2_text")
+        if exec_v2:
+            summary_parts.append(str(exec_v2))
+        if not insight_lead:
+            summary_parts.append(rec.summary)
+        limitations = su.get("analysis_limitations")
+        if limitations:
+            summary_parts.append(str(limitations))
+        ad_warn = su.get("advertising_warning")
+        if ad_warn:
+            summary_parts.append(str(ad_warn))
         rec = rec.model_copy(
             update={
                 "confidence": quality.confidence,
                 "priority_score": quality.priority_score,
+                "summary": "\n\n".join(summary_parts)[:4000],
                 "contradictions": list(rec.contradictions) + ([f"quality:{f}" for f in quality.flags]),
             }
         )
@@ -154,7 +204,6 @@ class AIIntelligenceEngine:
         quality: QualityResult,
         multi_trace=None,
     ) -> UUID | None:
-        from app.ai.pipeline.multi_layer import reasoning_trace_payload
         from app.dto.domain_analyst_dto import MultiLayerReasoningTraceDTO
 
         trace_dto: MultiLayerReasoningTraceDTO | None = multi_trace
@@ -164,7 +213,99 @@ class AIIntelligenceEngine:
             if rec.requires_human_approval
             else RecommendationStatus.DRAFT
         )
-        row = AIRecommendation(
+        row = self._build_recommendation_row(
+            run_id=run_id,
+            insight_id=insight_id,
+            result=result,
+            rec=rec,
+            quality=quality,
+            fingerprint=fingerprint,
+            status=status,
+            trace_dto=trace_dto,
+        )
+        async with TenantSession.transaction(self.db, self.user_id):
+            report_id = quality.seller_usefulness.get("report_id")
+            has_compare = bool(
+                quality.seller_usefulness.get("requested_compare_period_start")
+                or quality.seller_usefulness.get("compare_mode") not in (None, "", "no_compare_data")
+            )
+            if report_id and not has_compare:
+                by_report = (
+                    await self.db.execute(
+                        select(AIRecommendation)
+                        .where(AIRecommendation.user_id == self.user_id)
+                        .where(AIRecommendation.lineage["report_id"].astext == str(report_id))  # type: ignore[attr-defined]
+                        .limit(1)
+                    )
+                ).scalars().first()
+                if by_report is not None:
+                    self._refresh_recommendation(by_report, row)
+                    await self.db.flush()
+                    return by_report.id
+            if quality.fatigue and quality.fatigue.should_suppress_duplicate:
+                existing = (
+                    await self.db.execute(
+                        select(AIRecommendation)
+                        .where(AIRecommendation.user_id == self.user_id)
+                        .where(AIRecommendation.lineage["fingerprint"].astext == fingerprint)  # type: ignore[attr-defined]
+                        .order_by(AIRecommendation.created_at.desc())
+                        .limit(1)
+                    )
+                ).scalars().first()
+                if existing is not None:
+                    self._refresh_recommendation(existing, row)
+                    await self.db.flush()
+                    return existing.id
+            existing = (
+                await self.db.execute(
+                    select(AIRecommendation)
+                    .where(AIRecommendation.user_id == self.user_id)
+                    .where(AIRecommendation.lineage["fingerprint"].astext == fingerprint)  # type: ignore[attr-defined]
+                    .order_by(AIRecommendation.created_at.desc())
+                    .limit(1)
+                )
+            ).scalars().first()
+            if existing is not None:
+                self._refresh_recommendation(existing, row)
+                await self.db.flush()
+                return existing.id
+            self.db.add(row)
+            await self.db.flush()
+            return row.id
+
+    @staticmethod
+    def _refresh_recommendation(existing: AIRecommendation, fresh: AIRecommendation) -> None:
+        """Re-run with the same fingerprint should refresh stored text, not return stale copy."""
+        existing.run_id = fresh.run_id
+        existing.insight_id = fresh.insight_id
+        existing.workflow_type = fresh.workflow_type
+        existing.status = fresh.status
+        existing.risk_class = fresh.risk_class
+        existing.title = fresh.title
+        existing.summary = fresh.summary
+        existing.confidence_score = fresh.confidence_score
+        existing.priority_score = fresh.priority_score
+        existing.requires_human_approval = fresh.requires_human_approval
+        existing.action_plan = fresh.action_plan
+        existing.evidence_graph = fresh.evidence_graph
+        existing.reasoning_trace = fresh.reasoning_trace
+        existing.lineage = fresh.lineage
+
+    def _build_recommendation_row(
+        self,
+        *,
+        run_id: UUID,
+        insight_id: UUID | None,
+        result: IntelligenceRunResultDTO,
+        rec,
+        quality: QualityResult,
+        fingerprint: str,
+        status: RecommendationStatus,
+        trace_dto,
+    ) -> AIRecommendation:
+        from app.ai.pipeline.multi_layer import reasoning_trace_payload
+
+        return AIRecommendation(
             user_id=self.user_id,
             run_id=run_id,
             insight_id=insight_id,
@@ -203,45 +344,14 @@ class AIIntelligenceEngine:
                 "fatigue_suppressed": (
                     quality.fatigue.should_suppress_duplicate if quality.fatigue else False
                 ),
+                "compare_period_start": quality.seller_usefulness.get("compare_period_start"),
+                "compare_period_end": quality.seller_usefulness.get("compare_period_end"),
+                "compare_mode": quality.seller_usefulness.get("compare_mode"),
+                "insight_engine_version": "insight_v1",
+                "business_coverage_score": (quality.seller_usefulness.get("business_coverage") or {}).get(
+                    "business_coverage_score"
+                ),
+                "insight_quality_score": (quality.seller_usefulness.get("insight_quality") or {}).get("overall"),
+                "echo_detected": (quality.seller_usefulness.get("insight_audit") or {}).get("echo_detected"),
             },
         )
-        async with TenantSession.transaction(self.db, self.user_id):
-            report_id = quality.seller_usefulness.get("report_id")
-            if report_id:
-                by_report = (
-                    await self.db.execute(
-                        select(AIRecommendation)
-                        .where(AIRecommendation.user_id == self.user_id)
-                        .where(AIRecommendation.lineage["report_id"].astext == str(report_id))  # type: ignore[attr-defined]
-                        .limit(1)
-                    )
-                ).scalars().first()
-                if by_report is not None:
-                    return by_report.id
-            if quality.fatigue and quality.fatigue.should_suppress_duplicate:
-                existing = (
-                    await self.db.execute(
-                        select(AIRecommendation)
-                        .where(AIRecommendation.user_id == self.user_id)
-                        .where(AIRecommendation.lineage["fingerprint"].astext == fingerprint)  # type: ignore[attr-defined]
-                        .order_by(AIRecommendation.created_at.desc())
-                        .limit(1)
-                    )
-                ).scalars().first()
-                if existing is not None:
-                    return existing.id
-            # Duplicate suppression: if a recent recommendation has the same fingerprint, reuse it.
-            existing = (
-                await self.db.execute(
-                    select(AIRecommendation)
-                    .where(AIRecommendation.user_id == self.user_id)
-                    .where(AIRecommendation.lineage["fingerprint"].astext == fingerprint)  # type: ignore[attr-defined]
-                    .order_by(AIRecommendation.created_at.desc())
-                    .limit(1)
-                )
-            ).scalars().first()
-            if existing is not None:
-                return existing.id
-            self.db.add(row)
-            await self.db.flush()
-            return row.id

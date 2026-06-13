@@ -61,6 +61,47 @@ See also `docs/ai/provider_setup.md`.
 
 ---
 
+## Windows
+
+<a id="windows"></a>
+
+Daily local startup on Windows (PowerShell):
+
+**Backend:**
+
+```powershell
+Set-Location "C:\path\to\AIplatform_for_marketplace_analytics"
+.\.venv\Scripts\activate
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+**ETL worker** (separate terminal):
+
+```powershell
+.\.venv\Scripts\activate
+python -m app.etl.worker
+```
+
+**Orchestrator** (optional):
+
+```powershell
+.\.venv\Scripts\activate
+python -m app.runtime.orchestration_worker
+```
+
+**Frontend:**
+
+```powershell
+Set-Location frontend
+npm install
+npm run dev
+```
+
+Use `.venv\Scripts\python` for pytest if `python` is not the venv interpreter.
+
+---
+
 ## 2. Startup sequence
 
 ### Option A — Full stack (recommended)

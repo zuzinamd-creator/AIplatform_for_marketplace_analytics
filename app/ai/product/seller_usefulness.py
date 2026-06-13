@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -87,7 +88,7 @@ def build_seller_usefulness(
         anomalies=[str(a) for a in (snap.get("anomaly_messages") or [])],
     )
 
-    action = _pick_action(scored=scored, validated=validated, data_gaps=data_gaps)
+    action = _pick_action(scored=scored, validated=validated, data_gaps=data_gaps, snap=snap)
 
     conf_parts = [f"Уверенность модели {scored.confidence:.0%} после проверки данных."]
     if flags:
@@ -117,7 +118,13 @@ def _pick_why(
 ) -> str:
     snap = grounded.metrics_snapshot or {}
     deep = snap.get("deep_insights") or []
+    causal = snap.get("causal_headline")
+    if causal:
+        return str(causal)[:400]
     if deep:
+        for line in deep:
+            if _is_causal_insight(str(line)):
+                return str(line)[:400]
         return str(deep[0])[:400]
 
     if validated.workflow.value == "anomaly_explanation":
@@ -140,11 +147,32 @@ def _pick_why(
 def _is_dashboard_echo(text: str, snap: dict) -> bool:
     """Skip generic revenue/profit restatements when deep insights exist."""
     low = text.lower()
+    if _is_causal_insight(text):
+        return False
     if "общий доход" in low or "общая прибыль" in low:
         rev = str(snap.get("total_revenue") or "")
         if rev and rev[:4] in text.replace(" ", "").replace(",", ""):
             return True
+    if "сравнение периодов:" in low and "выручка" in low and "→" in text:
+        return True
     return False
+
+
+def _is_causal_insight(text: str) -> bool:
+    low = text.lower()
+    markers = (
+        "главный фактор",
+        "из‑за",
+        "из-за",
+        "микса sku",
+        "маржа",
+        "драйвер",
+        "компенсировали",
+        "просадкой прибыли",
+        "п.п.",
+        "эффект",
+    )
+    return any(m in low for m in markers)
 
 
 def _pick_action(
@@ -152,12 +180,30 @@ def _pick_action(
     scored: ScoredRecommendationDTO,
     validated: ValidatedInsightDTO,
     data_gaps: list[str],
+    snap: dict | None = None,
 ) -> str:
+    snap = snap or {}
+    action_verbs = ("проверьте", "сверьте", "рассмотрите", "добавьте", "импортируйте", "загрузите", "оцените", "продвигайте")
+    for line in snap.get("analyst_actions") or []:
+        if line and any(v in str(line).lower() for v in action_verbs):
+            return str(line)[:500]
+    for line in snap.get("deep_insights") or []:
+        low = str(line).lower()
+        if any(v in low for v in action_verbs):
+            return str(line)[:500]
+
     for bullet in scored.bullets[1:]:
         if bullet and len(bullet) > 15:
-            return bullet[:500]
+            low = bullet.lower()
+            if any(v in low for v in action_verbs) or re.search(r"sku|артикул", low):
+                return bullet[:500]
     if scored.bullets:
-        return scored.bullets[0][:500]
+        first = scored.bullets[0]
+        if first and _is_causal_insight(str(first)):
+            return (
+                f"{first[:220]} — сверьте цены, остатки и рекламу по указанным SKU в кабинете WB."
+            )[:500]
+        return first[:500]
     if data_gaps:
         return data_gaps[0]
     return (

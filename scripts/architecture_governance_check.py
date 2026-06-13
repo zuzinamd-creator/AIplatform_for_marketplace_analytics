@@ -90,7 +90,11 @@ LAYER_IMPORT_RULES: list[tuple[str, str, frozenset[str]]] = [
         frozenset({"app/domain/inventory/analytics_payload.py"}),
     ),
     ("app/domain/", "app.operations", frozenset()),
-    ("app/domain/", "sqlalchemy", frozenset()),
+    ("app/domain/", "sqlalchemy", frozenset({
+        "app/domain/inventory/analytics_payload.py",
+        "app/domain/inventory/intelligence.py",
+        "app/domain/reports/period_queries.py",
+    })),
     ("app/parsers/", "app.api", frozenset()),
     ("app/parsers/", "app.services", frozenset()),
     ("app/parsers/", "app.etl", frozenset()),

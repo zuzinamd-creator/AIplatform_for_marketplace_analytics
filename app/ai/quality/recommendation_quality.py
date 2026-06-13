@@ -60,13 +60,25 @@ def compute_fingerprint(
     snap = metrics_snapshot or {}
     report_id = str(snap.get("report_id") or "")
     period = f"{snap.get('source_period_start', '')}:{snap.get('source_period_end', '')}"
+    compare = (
+        f"{snap.get('requested_compare_period_start') or snap.get('compare_period_start', '')}:"
+        f"{snap.get('requested_compare_period_end') or snap.get('compare_period_end', '')}"
+    )
     revenue = str(snap.get("total_revenue") or "")
+    compare_mode = str(snap.get("compare_mode") or "")
+    deep_hash = hashlib.sha256(
+        "|".join(str(x) for x in (snap.get("deep_insights") or [])[:3]).encode("utf-8")
+    ).hexdigest()[:12]
     base = "|".join(
         [
             _normalize_text(workflow),
             _normalize_text(report_id),
             _normalize_text(period),
+            _normalize_text(compare),
+            _normalize_text(compare_mode),
             _normalize_text(revenue),
+            deep_hash,
+            "causal_v1",
             "|".join(sorted(_normalize_text(e) for e in evidence_ids))[:1200],
         ]
     )

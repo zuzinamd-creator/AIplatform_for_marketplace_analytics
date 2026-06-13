@@ -57,6 +57,7 @@ def test_ledger_builder_emits_decimal_entries() -> None:
         sku="SKU-1",
         nm_id=None,
         canonical={
+            "operation_type": "Продажа",
             "retail_amount": Decimal("1000"),
             "commission": Decimal("100"),
             "payout": Decimal("900"),

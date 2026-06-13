@@ -1,0 +1,2023 @@
+{
+  "user_id": "caefecb3-5789-4878-a9d4-929be573fbcc",
+  "pipeline_inventory_before": {
+    "total_recommendations": 13,
+    "new_pipeline_count": 1,
+    "legacy_pipeline_count": 12,
+    "legacy_share_pct": 92.3,
+    "new_pipeline_share_pct": 7.7,
+    "processed_finance_reports": 4,
+    "recommendations_per_report": 3.25,
+    "new_pipeline_criteria": {
+      "source_period_start": true,
+      "business_coverage_score": true,
+      "executive_summary_v2": true,
+      "root_cause_confidence": true
+    },
+    "samples": [
+      {
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "pipeline": "period_intelligence",
+        "flags": {
+          "source_period": true,
+          "business_coverage": true,
+          "executive_summary_v2": true,
+          "root_cause_confidence": true,
+          "insight_engine_version": "coverage_v1"
+        }
+      },
+      {
+        "recommendation_id": "6a9fe7d6-8ad4-4ea6-b735-b99d61e81c51",
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "pipeline": "legacy",
+        "flags": {
+          "source_period": true,
+          "business_coverage": false,
+          "executive_summary_v2": false,
+          "root_cause_confidence": false,
+          "insight_engine_version": "causal_v1"
+        }
+      },
+      {
+        "recommendation_id": "f1106e72-0b0c-4bc9-917c-97e61619f430",
+        "report_id": "23b940c4-b95a-4e7f-947a-edda25133dfe",
+        "pipeline": "legacy",
+        "flags": {
+          "source_period": true,
+          "business_coverage": false,
+          "executive_summary_v2": false,
+          "root_cause_confidence": false,
+          "insight_engine_version": "causal_v1"
+        }
+      },
+      {
+        "recommendation_id": "041e59b1-ab38-4c91-bf85-e18d2ff41e69",
+        "report_id": "7f7c9344-3f29-4e15-816e-79984440b3cd",
+        "pipeline": "legacy",
+        "flags": {
+          "source_period": true,
+          "business_coverage": false,
+          "executive_summary_v2": false,
+          "root_cause_confidence": false,
+          "insight_engine_version": "causal_v1"
+        }
+      },
+      {
+        "recommendation_id": "c40ecd70-4692-450a-b9ee-9d639d2f1574",
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "pipeline": "legacy",
+        "flags": {
+          "source_period": true,
+          "business_coverage": false,
+          "executive_summary_v2": false,
+          "root_cause_confidence": false,
+          "insight_engine_version": "causal_v1"
+        }
+      },
+      {
+        "recommendation_id": "a81f2263-eb8e-4a4f-a28d-b79182a027f6",
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "pipeline": "legacy",
+        "flags": {
+          "source_period": false,
+          "business_coverage": false,
+          "executive_summary_v2": false,
+          "root_cause_confidence": false,
+          "insight_engine_version": "causal_v1"
+        }
+      },
+      {
+        "recommendation_id": "17f84c90-f9a2-43b9-a5f6-c51e03278c5a",
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "pipeline": "legacy",
+        "flags": {
+          "source_period": false,
+          "business_coverage": false,
+          "executive_summary_v2": false,
+          "root_cause_confidence": false,
+          "insight_engine_version": null
+        }
+      },
+      {
+        "recommendation_id": "84626c45-56c7-4613-9a37-b14da2424462",
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "pipeline": "legacy",
+        "flags": {
+          "source_period": true,
+          "business_coverage": false,
+          "executive_summary_v2": false,
+          "root_cause_confidence": false,
+          "insight_engine_version": "causal_v1"
+        }
+      },
+      {
+        "recommendation_id": "91e87e7c-c50e-46b4-b912-c61cbf91feaf",
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "pipeline": "legacy",
+        "flags": {
+          "source_period": false,
+          "business_coverage": false,
+          "executive_summary_v2": false,
+          "root_cause_confidence": false,
+          "insight_engine_version": null
+        }
+      },
+      {
+        "recommendation_id": "869f2793-e288-45f6-b5b7-315ce46f47bc",
+        "report_id": null,
+        "pipeline": "legacy",
+        "flags": {
+          "source_period": false,
+          "business_coverage": false,
+          "executive_summary_v2": false,
+          "root_cause_confidence": false,
+          "insight_engine_version": null
+        }
+      },
+      {
+        "recommendation_id": "0de07d2e-f19d-47f3-8f3c-5e080c97b45a",
+        "report_id": null,
+        "pipeline": "legacy",
+        "flags": {
+          "source_period": false,
+          "business_coverage": false,
+          "executive_summary_v2": false,
+          "root_cause_confidence": false,
+          "insight_engine_version": null
+        }
+      },
+      {
+        "recommendation_id": "684bd2ce-a29a-4f9d-8d68-4ea10ffa634a",
+        "report_id": null,
+        "pipeline": "legacy",
+        "flags": {
+          "source_period": false,
+          "business_coverage": false,
+          "executive_summary_v2": false,
+          "root_cause_confidence": false,
+          "insight_engine_version": null
+        }
+      },
+      {
+        "recommendation_id": "8cdea9a0-7c00-48e2-9a6c-f59beeefbbaa",
+        "report_id": null,
+        "pipeline": "legacy",
+        "flags": {
+          "source_period": false,
+          "business_coverage": false,
+          "executive_summary_v2": false,
+          "root_cause_confidence": false,
+          "insight_engine_version": null
+        }
+      }
+    ]
+  },
+  "pipeline_inventory_after": {
+    "total_recommendations": 4,
+    "new_pipeline_count": 4,
+    "legacy_pipeline_count": 0,
+    "legacy_share_pct": 0.0,
+    "new_pipeline_share_pct": 100.0,
+    "processed_finance_reports": 4,
+    "recommendations_per_report": 1.0,
+    "new_pipeline_criteria": {
+      "source_period_start": true,
+      "business_coverage_score": true,
+      "executive_summary_v2": true,
+      "root_cause_confidence": true
+    },
+    "samples": [
+      {
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "pipeline": "period_intelligence",
+        "flags": {
+          "source_period": true,
+          "business_coverage": true,
+          "executive_summary_v2": true,
+          "root_cause_confidence": true,
+          "insight_engine_version": "coverage_v1"
+        }
+      },
+      {
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "pipeline": "period_intelligence",
+        "flags": {
+          "source_period": true,
+          "business_coverage": true,
+          "executive_summary_v2": true,
+          "root_cause_confidence": true,
+          "insight_engine_version": "coverage_v1"
+        }
+      },
+      {
+        "recommendation_id": "4a499e29-eef1-4a91-b98f-89aad7df6ae0",
+        "report_id": "7f7c9344-3f29-4e15-816e-79984440b3cd",
+        "pipeline": "period_intelligence",
+        "flags": {
+          "source_period": true,
+          "business_coverage": true,
+          "executive_summary_v2": true,
+          "root_cause_confidence": true,
+          "insight_engine_version": "coverage_v1"
+        }
+      },
+      {
+        "recommendation_id": "f1b01f5f-1ed2-447f-88c2-74ce274956a9",
+        "report_id": "23b940c4-b95a-4e7f-947a-edda25133dfe",
+        "pipeline": "period_intelligence",
+        "flags": {
+          "source_period": true,
+          "business_coverage": true,
+          "executive_summary_v2": true,
+          "root_cause_confidence": true,
+          "insight_engine_version": "coverage_v1"
+        }
+      }
+    ]
+  },
+  "audit_before": {
+    "production_url": "https://321997.fornex.cloud",
+    "commit_hash": "a59d2b30f44f7b7c4631aec2a4c9297c78419443",
+    "analyses_count": 10,
+    "block1_samples": [
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "### Что мы знаем точно\n• снижение/рост объёма продаж — 0.91\n• изменение среднего чека — 0.85\n• уровень возвратов — 0.76\n• структура продаж по SKU — 0.84\n\n### Что мы не можем оценить\n• влияние рекламы — неизвестно (данные отсутствуют)\n• налоговая нагрузка — данные отсутствуют\n• операционные расходы — данные отсутствуют\n\n### Что желательно загрузить\n1. Реклама маркетплейса (WB/Ozon)\n2. Налоги (УСН, ",
+        "recommended_action": "SKU j-16-184a: изменение выручки +20204 ₽ — оцените цену, остатки и рекламу по этой позиции.",
+        "classification": "Insight",
+        "echo_kpis": [
+          "total_profit"
+        ],
+        "beyond_dashboard": true,
+        "actionable": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "### Что мы знаем точно\n• снижение/рост объёма продаж — 0.91\n• изменение среднего чека — 0.85\n• уровень возвратов — 0.76\n• структура продаж по SKU — 0.84\n\n### Что мы не можем оценить\n• влияние рекламы — неизвестно (данные отсутствуют)\n• налоговая нагрузка — данные отсутствуют\n• операционные расходы —",
+        "classification": "Insight",
+        "echo_kpis": [
+          "margin",
+          "total_profit",
+          "logistics",
+          "returns"
+        ],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "SKU j-16-184a: изменение выручки +20204 ₽ — оцените цену, остатки и рекламу по этой позиции.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "### Что мы знаем точно",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "• снижение/рост объёма продаж — 0.91",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "• изменение среднего чека — 0.85",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "• уровень возвратов — 0.76",
+        "classification": "Insight",
+        "echo_kpis": [
+          "returns"
+        ],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "• структура продаж по SKU — 0.84",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "### Что мы не можем оценить",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "• влияние рекламы — неизвестно (данные отсутствуют)",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "• налоговая нагрузка — данные отсутствуют",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "• операционные расходы — данные отсутствуют",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "### Что желательно загрузить",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "1. Реклама маркетплейса (WB/Ozon)",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "2. Налоги (УСН, НДС, взносы)",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "3. Операционные расходы (ФОТ, аренда, подрядчики)",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "Прибыль +35281 ₽ (+18.1%) при выручке +6.5%.",
+        "classification": "Insight",
+        "echo_kpis": [
+          "total_profit"
+        ],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "SKU с наибольшей просадкой прибыли: j-16-022 - cosm: -5891 ₽, выручка 20331 → 9384 ₽; sd-0007-05_j-16-022-cosm: -4445 ₽, выручка 37201 → 29016 ₽; j-31-239: -4011 ₽, выручка 88730 → 77658 ₽.",
+        "classification": "Insight",
+        "echo_kpis": [
+          "total_profit"
+        ],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "Частично компенсировали: j-16-184a (+10543 ₽), j-22-020 (+6414 ₽).",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "Топ по росту выручки (j-16-184a, +20204 ₽) не компенсирует просадку по j-16-022 - cosm (-5891 ₽) — смотрите маржу по SKU, а не только оборот.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "### Ограничения анализа",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "В анализ включены: выручка, продажи (шт), средний чек, возвраты, комиссия, логистика, хранение, cost_history, прибыль, маржа, остатки.",
+        "classification": "Insight",
+        "echo_kpis": [
+          "margin",
+          "total_profit",
+          "logistics",
+          "returns"
+        ],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "В анализ НЕ включены: расходы на продвижение маркетплейса, внешняя реклама, налоги, зарплаты и прочие операционные расходы, кредиты и финансовые расходы.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "Поэтому рекомендации относятся только к данным, доступным системе.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "При добавлении отсутствующих данных выводы AI могут измениться.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "Данные по продвижению не загружены.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "AI не может определить:",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "• влияние рекламы на рост продаж;",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "• эффективность рекламных кампаний;",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "• долю рекламного трафика;",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "• окупаемость продвижения.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "Добавление рекламных данных повысит точность анализа.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "Прибыль +35281 ₽ (+18.1%) при выручке +6.5%.",
+        "classification": "Insight",
+        "echo_kpis": [
+          "total_profit"
+        ],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "SKU с наибольшей просадкой прибыли: j-16-022 - cosm: -5891 ₽, выручка 20331 → 9384 ₽; sd-0007-05_j-16-022-cosm: -4445 ₽, выручка 37201 → 29016 ₽; j-31-239: -4011 ₽, выручка 88730 → 77658 ₽.",
+        "classification": "Insight",
+        "echo_kpis": [
+          "total_profit"
+        ],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "Частично компенсировали: j-16-184a (+10543 ₽), j-22-020 (+6414 ₽).",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.6253",
+        "priority": "79.3900",
+        "text": "Топ по росту выручки (j-16-184a, +20204 ₽) не компенсирует просадку по j-16-022 - cosm (-5891 ₽) — смотрите маржу по SKU, а не только оборот.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-11 — 2026-05-24",
+        "recommendation_id": "6a9fe7d6-8ad4-4ea6-b735-b99d61e81c51",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8400",
+        "priority": "98.1600",
+        "text": "Выручка выросла на 106.5% (+505245 ₽). Главный фактор — объём: +827 шт (+113.3%, вырос с 730 до 1557); эффект ≈ +537580 ₽.\nПрибыль +229830 ₽ (+118.1%) при выручке +106.5%.",
+        "recommended_action": "Топ-5 SKU составляют значительную часть дохода, что подчеркивает важность их мониторинга.",
+        "classification": "Insight",
+        "echo_kpis": [
+          "total_profit"
+        ],
+        "beyond_dashboard": true,
+        "actionable": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-11 — 2026-05-24",
+        "recommendation_id": "6a9fe7d6-8ad4-4ea6-b735-b99d61e81c51",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8400",
+        "priority": "98.1600",
+        "text": "Выручка выросла на 106.5% (+505245 ₽). Главный фактор — объём: +827 шт (+113.3%, вырос с 730 до 1557); эффект ≈ +537580 ₽.\nПрибыль +229830 ₽ (+118.1%) при выручке +106.5%.",
+        "classification": "Insight",
+        "echo_kpis": [
+          "total_profit"
+        ],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-11 — 2026-05-24",
+        "recommendation_id": "6a9fe7d6-8ad4-4ea6-b735-b99d61e81c51",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8400",
+        "priority": "98.1600",
+        "text": "Топ-5 SKU составляют значительную часть дохода, что подчеркивает важность их мониторинга.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": true,
+        "actionable": false,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-11 — 2026-05-24",
+        "recommendation_id": "6a9fe7d6-8ad4-4ea6-b735-b99d61e81c51",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8400",
+        "priority": "98.1600",
+        "text": "Прибыль +229830 ₽ (+118.1%) при выручке +106.5%.",
+        "classification": "Insight",
+        "echo_kpis": [
+          "total_profit"
+        ],
+        "beyond_dashboard": false,
+        "actionable": false,
+        "detail_line": true
+      }
+    ],
+    "classification_stats": {
+      "Insight": 7,
+      "Dashboard Echo": 3
+    },
+    "dashboard_echo": {
+      "echo_rate_pct": 30.0,
+      "beyond_dashboard_rate_pct": 70.0,
+      "total_lines": 10
+    },
+    "actionable": {
+      "rate_pct": 40.0,
+      "mvp_target_pct": 80,
+      "meets_mvp": false,
+      "total_lines": 10
+    },
+    "business_value_catalog": [
+      {
+        "case": "Высокая логистика",
+        "implemented": true,
+        "rule": "logistics_analyst.logistics_high_share",
+        "example": "Логистика составляет X% выручки…"
+      },
+      {
+        "case": "Высокая комиссия",
+        "implemented": true,
+        "rule": "deep_period_insights.commission_heavy_sku",
+        "example": "Высокая комиссия WB на SKU…"
+      },
+      {
+        "case": "Высокие возвраты",
+        "implemented": true,
+        "rule": "returns_analyst.returns_high_rate",
+        "example": "Возвраты X% от выручки…"
+      },
+      {
+        "case": "Концентрация на одном SKU",
+        "implemented": true,
+        "rule": "concentration_analyst.concentration_top1_risk",
+        "example": "X% выручки приходится на один SKU…"
+      },
+      {
+        "case": "Резкое падение продаж",
+        "implemented": true,
+        "rule": "revenue_change_analyst.revenue_drop",
+        "example": "Выручка упала на X%…"
+      },
+      {
+        "case": "Резкое падение прибыли",
+        "implemented": true,
+        "rule": "revenue_change_analyst.profit_drop",
+        "example": "Прибыль упала на X%…"
+      },
+      {
+        "case": "Отсутствие себестоимости",
+        "implemented": true,
+        "rule": "data_gap_advisor + cost_coverage anomaly",
+        "example": "Импортируйте себестоимость…"
+      },
+      {
+        "case": "Частичное покрытие себестоимостью",
+        "implemented": true,
+        "rule": "deep_period_insights.missing_cost_skus",
+        "example": "Себестоимость не указана для N SKU…"
+      },
+      {
+        "case": "Проблемные SKU",
+        "implemented": true,
+        "rule": "deep_period_insights.unprofitable_sku / low_margin",
+        "example": "Убыточный SKU… / Низкая маржа…"
+      },
+      {
+        "case": "Аномалии периода",
+        "implemented": true,
+        "rule": "anomaly_analyst + period_causes",
+        "example": "Anomaly message / causal comparison"
+      }
+    ],
+    "analyst_rule_catalog": {
+      "logistics_analyst": [
+        "logistics_high_share",
+        "logistics_share_growth",
+        "logistics_sku_anomaly_*"
+      ],
+      "returns_analyst": [
+        "returns_high_rate",
+        "returns_rate_growth",
+        "returns_sku_leader_*"
+      ],
+      "revenue_change_analyst": [
+        "revenue_drop",
+        "revenue_growth",
+        "profit_drop",
+        "revenue_sku_driver_*"
+      ],
+      "concentration_analyst": [
+        "concentration_top1_risk",
+        "concentration_top3_risk"
+      ],
+      "deep_period_insights": [
+        "unprofitable_sku",
+        "logistics_heavy_sku",
+        "commission_heavy_sku",
+        "low_margin_sku",
+        "missing_cost_skus",
+        "period_comparison"
+      ],
+      "sales_analyst": [
+        "sales_low_margin",
+        "sales_top_sku",
+        "sales_revenue_present"
+      ],
+      "funnel_analyst": [
+        "funnel_concentration",
+        "funnel_breadth_ok"
+      ],
+      "anomaly_analyst": [
+        "anomaly_*"
+      ]
+    },
+    "period_consistency": [
+      {
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "fields": {
+          "ui": "2026-05-18 — 2026-05-24",
+          "ai_request": "2026-05-18 — 2026-05-24",
+          "kpi_snapshot": "2026-05-18 — 2026-05-24"
+        },
+        "consistent": true
+      },
+      {
+        "recommendation_id": "6a9fe7d6-8ad4-4ea6-b735-b99d61e81c51",
+        "fields": {
+          "ui": "2026-05-11 — 2026-05-24",
+          "ai_request": "2026-05-11 — 2026-05-24",
+          "kpi_snapshot": "2026-05-11 — 2026-05-24"
+        },
+        "consistent": true
+      },
+      {
+        "recommendation_id": "f1106e72-0b0c-4bc9-917c-97e61619f430",
+        "fields": {
+          "ui": "2026-05-11 — 2026-05-17",
+          "ai_request": "2026-05-11 — 2026-05-17",
+          "kpi_snapshot": "2026-05-11 — 2026-05-17"
+        },
+        "consistent": true
+      },
+      {
+        "recommendation_id": "041e59b1-ab38-4c91-bf85-e18d2ff41e69",
+        "fields": {
+          "ui": "2026-05-11 — 2026-05-17",
+          "ai_request": "2026-05-11 — 2026-05-17",
+          "kpi_snapshot": "2026-05-11 — 2026-05-17"
+        },
+        "consistent": true
+      },
+      {
+        "recommendation_id": "c40ecd70-4692-450a-b9ee-9d639d2f1574",
+        "fields": {
+          "ui": "2026-05-18 — 2026-05-24",
+          "ai_request": "2026-05-18 — 2026-05-24",
+          "kpi_snapshot": "2026-05-18 — 2026-05-24"
+        },
+        "consistent": true
+      },
+      {
+        "recommendation_id": "a81f2263-eb8e-4a4f-a28d-b79182a027f6",
+        "fields": {
+          "ui": "None — None",
+          "ai_request": "None — None",
+          "kpi_snapshot": "None — None"
+        },
+        "consistent": false
+      },
+      {
+        "recommendation_id": "17f84c90-f9a2-43b9-a5f6-c51e03278c5a",
+        "fields": {
+          "ui": "None — None",
+          "ai_request": "None — None",
+          "kpi_snapshot": "None — None"
+        },
+        "consistent": false
+      },
+      {
+        "recommendation_id": "84626c45-56c7-4613-9a37-b14da2424462",
+        "fields": {
+          "ui": "2026-05-25 — 2026-05-31",
+          "ai_request": "2026-05-25 — 2026-05-31",
+          "kpi_snapshot": "2026-05-25 — 2026-05-31"
+        },
+        "consistent": true
+      },
+      {
+        "recommendation_id": "91e87e7c-c50e-46b4-b912-c61cbf91feaf",
+        "fields": {
+          "ui": "None — None",
+          "ai_request": "None — None",
+          "kpi_snapshot": "None — None"
+        },
+        "consistent": false
+      },
+      {
+        "recommendation_id": "869f2793-e288-45f6-b5b7-315ce46f47bc",
+        "fields": {
+          "ui": "None — None",
+          "ai_request": "None — None",
+          "kpi_snapshot": "None — None"
+        },
+        "consistent": false
+      }
+    ],
+    "business_coverage_report": {
+      "average_score_pct": 50.0,
+      "average_missing_data_score_pct": 50.0,
+      "coverage_formula": "Business Coverage = Σ(weight доступных блоков) / Σ(all weights) × 100%",
+      "samples_with_coverage": 1
+    },
+    "root_cause_confidence_samples": [
+      {
+        "recommendation_id": "e63f9f61-5d7a-4d92-b5b8-98ef056a4245",
+        "root_cause_confidence": [
+          {
+            "cause": "снижение/рост объёма продаж",
+            "status": "confirmed",
+            "reason_confidence": 0.91
+          },
+          {
+            "cause": "изменение среднего чека",
+            "status": "confirmed",
+            "reason_confidence": 0.85
+          },
+          {
+            "cause": "уровень возвратов",
+            "status": "confirmed",
+            "reason_confidence": 0.76
+          },
+          {
+            "cause": "структура продаж по SKU",
+            "status": "confirmed",
+            "reason_confidence": 0.84
+          },
+          {
+            "note": "неизвестно (данные отсутствуют)",
+            "cause": "влияние рекламы",
+            "status": "unknown",
+            "reason_confidence": null
+          }
+        ]
+      }
+    ],
+    "advertising_data_coverage": {
+      "rate_pct": 0.0,
+      "recommendations_with_ad_data": 0,
+      "total_measured": 1
+    },
+    "seller_usefulness": {
+      "average_score": 57.5,
+      "mvp_target": 80,
+      "meets_mvp": false
+    },
+    "mvp_ai_score": {
+      "Accuracy": 70.0,
+      "Explainability": 70.0,
+      "Actionability": 40.0,
+      "Trustworthiness": 77.0,
+      "Seller Value": 53.1,
+      "Business Coverage": 50.0,
+      "Seller Usefulness": 57.5,
+      "AI Readiness Score": 59.0
+    },
+    "go_no_go": {
+      "decision": "NO-GO",
+      "checks": {
+        "actionable_rate_gte_80": false,
+        "seller_usefulness_gte_80": false,
+        "dashboard_echo_lte_10": false,
+        "ai_readiness_gte_80": false
+      }
+    }
+  },
+  "audit_after": {
+    "production_url": "https://321997.fornex.cloud",
+    "commit_hash": "a59d2b30f44f7b7c4631aec2a4c9297c78419443",
+    "analyses_count": 4,
+    "block1_samples": [
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "### Что мы знаем точно\n• уровень возвратов — 0.76\n\n### Что мы не можем оценить\n• влияние рекламы — неизвестно (данные отсутствуют)\n• налоговая нагрузка — данные отсутствуют\n• операционные расходы — данные отсутствуют\n\n### Что желательно загрузить\n1. Реклама маркетплейса (WB/Ozon)\n2. Налоги (УСН, НДС, взносы)\n3. Операционные расходы (ФОТ, аренда, подрядчики)\n\nTop priority (Marketplace Comparison An",
+        "recommended_action": "Загрузите отчёты других маркетплейсов для сравнительного анализа.",
+        "classification": "Data Quality Warning",
+        "echo_kpis": [
+          "total_profit"
+        ],
+        "beyond_dashboard": false,
+        "actionable": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "### Что мы знаем точно\n• уровень возвратов — 0.76\n\n### Что мы не можем оценить\n• влияние рекламы — неизвестно (данные отсутствуют)\n• налоговая нагрузка — данные отсутствуют\n• операционные расходы — данные отсутствуют\n\n### Что желательно загрузить\n1. Реклама маркетплейса (WB/Ozon)\n2. Налоги (УСН, НДС",
+        "classification": "Insight",
+        "echo_kpis": [
+          "margin",
+          "total_profit",
+          "logistics",
+          "returns"
+        ],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "Загрузите отчёты других маркетплейсов для сравнительного анализа.",
+        "classification": "Data Quality Warning",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "### Что мы знаем точно",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "• уровень возвратов — 0.76",
+        "classification": "Insight",
+        "echo_kpis": [
+          "returns"
+        ],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "### Что мы не можем оценить",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "• влияние рекламы — неизвестно (данные отсутствуют)",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "• налоговая нагрузка — данные отсутствуют",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "• операционные расходы — данные отсутствуют",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "### Что желательно загрузить",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "1. Реклама маркетплейса (WB/Ozon)",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "2. Налоги (УСН, НДС, взносы)",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "3. Операционные расходы (ФОТ, аренда, подрядчики)",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "Top priority (Marketplace Comparison Analyst): Current report is scoped to marketplace 'wildberries' (single_report=True). Top priority (Sales Analyst): Leading SKU j-31-239 in governed top-SKU list.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "### Ограничения анализа",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "В анализ включены: выручка, продажи (шт), средний чек, возвраты, комиссия, логистика, хранение, штрафы, cost_history, прибыль, маржа, остатки.",
+        "classification": "Insight",
+        "echo_kpis": [
+          "margin",
+          "total_profit",
+          "logistics",
+          "returns"
+        ],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "В анализ НЕ включены: расходы на продвижение маркетплейса, внешняя реклама, налоги, зарплаты и прочие операционные расходы, кредиты и финансовые расходы.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "Поэтому рекомендации относятся только к данным, доступным системе.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "При добавлении отсутствующих данных выводы AI могут измениться.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "Данные по продвижению не загружены.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "AI не может определить:",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "• влияние рекламы на рост продаж;",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "• эффективность рекламных кампаний;",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "• долю рекламного трафика;",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "• окупаемость продвижения.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "period": "2026-05-25 — 2026-05-31",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "93.1800",
+        "text": "Добавление рекламных данных повысит точность анализа.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "92.9400",
+        "text": "### Что мы знаем точно\n• уровень возвратов — 0.76\n\n### Что мы не можем оценить\n• влияние рекламы — неизвестно (данные отсутствуют)\n• налоговая нагрузка — данные отсутствуют\n• операционные расходы — данные отсутствуют\n\n### Что желательно загрузить\n1. Реклама маркетплейса (WB/Ozon)\n2. Налоги (УСН, НДС, взносы)\n3. Операционные расходы (ФОТ, аренда, подрядчики)\n\nTop priority (Marketplace Comparison An",
+        "recommended_action": "Загрузите отчёты других маркетплейсов для сравнительного анализа.",
+        "classification": "Data Quality Warning",
+        "echo_kpis": [
+          "total_profit"
+        ],
+        "beyond_dashboard": true,
+        "actionable": true
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "92.9400",
+        "text": "### Что мы знаем точно\n• уровень возвратов — 0.76\n\n### Что мы не можем оценить\n• влияние рекламы — неизвестно (данные отсутствуют)\n• налоговая нагрузка — данные отсутствуют\n• операционные расходы — данные отсутствуют\n\n### Что желательно загрузить\n1. Реклама маркетплейса (WB/Ozon)\n2. Налоги (УСН, НДС",
+        "classification": "Insight",
+        "echo_kpis": [
+          "margin",
+          "total_profit",
+          "logistics",
+          "returns"
+        ],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "92.9400",
+        "text": "Загрузите отчёты других маркетплейсов для сравнительного анализа.",
+        "classification": "Data Quality Warning",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "92.9400",
+        "text": "### Что мы знаем точно",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "92.9400",
+        "text": "• уровень возвратов — 0.76",
+        "classification": "Insight",
+        "echo_kpis": [
+          "returns"
+        ],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "92.9400",
+        "text": "### Что мы не можем оценить",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "92.9400",
+        "text": "• влияние рекламы — неизвестно (данные отсутствуют)",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "92.9400",
+        "text": "• налоговая нагрузка — данные отсутствуют",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "92.9400",
+        "text": "• операционные расходы — данные отсутствуют",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "92.9400",
+        "text": "### Что желательно загрузить",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "92.9400",
+        "text": "1. Реклама маркетплейса (WB/Ozon)",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "92.9400",
+        "text": "2. Налоги (УСН, НДС, взносы)",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "92.9400",
+        "text": "3. Операционные расходы (ФОТ, аренда, подрядчики)",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": false,
+        "actionable": true,
+        "detail_line": true
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "period": "2026-05-18 — 2026-05-24",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "recommendation_type": "revenue_insight",
+        "confidence": "0.8375",
+        "priority": "92.9400",
+        "text": "Top priority (Marketplace Comparison Analyst): Current report is scoped to marketplace 'wildberries' (single_report=True). Top priority (Sales Analyst): Leading SKU j-31-239 in governed top-SKU list.",
+        "classification": "Insight",
+        "echo_kpis": [],
+        "beyond_dashboard": true,
+        "actionable": true,
+        "detail_line": true
+      }
+    ],
+    "classification_stats": {
+      "Data Quality Warning": 4
+    },
+    "dashboard_echo": {
+      "echo_rate_pct": 25.0,
+      "beyond_dashboard_rate_pct": 75.0,
+      "total_lines": 4
+    },
+    "actionable": {
+      "rate_pct": 100.0,
+      "mvp_target_pct": 80,
+      "meets_mvp": true,
+      "total_lines": 4
+    },
+    "business_value_catalog": [
+      {
+        "case": "Высокая логистика",
+        "implemented": true,
+        "rule": "logistics_analyst.logistics_high_share",
+        "example": "Логистика составляет X% выручки…"
+      },
+      {
+        "case": "Высокая комиссия",
+        "implemented": true,
+        "rule": "deep_period_insights.commission_heavy_sku",
+        "example": "Высокая комиссия WB на SKU…"
+      },
+      {
+        "case": "Высокие возвраты",
+        "implemented": true,
+        "rule": "returns_analyst.returns_high_rate",
+        "example": "Возвраты X% от выручки…"
+      },
+      {
+        "case": "Концентрация на одном SKU",
+        "implemented": true,
+        "rule": "concentration_analyst.concentration_top1_risk",
+        "example": "X% выручки приходится на один SKU…"
+      },
+      {
+        "case": "Резкое падение продаж",
+        "implemented": true,
+        "rule": "revenue_change_analyst.revenue_drop",
+        "example": "Выручка упала на X%…"
+      },
+      {
+        "case": "Резкое падение прибыли",
+        "implemented": true,
+        "rule": "revenue_change_analyst.profit_drop",
+        "example": "Прибыль упала на X%…"
+      },
+      {
+        "case": "Отсутствие себестоимости",
+        "implemented": true,
+        "rule": "data_gap_advisor + cost_coverage anomaly",
+        "example": "Импортируйте себестоимость…"
+      },
+      {
+        "case": "Частичное покрытие себестоимостью",
+        "implemented": true,
+        "rule": "deep_period_insights.missing_cost_skus",
+        "example": "Себестоимость не указана для N SKU…"
+      },
+      {
+        "case": "Проблемные SKU",
+        "implemented": true,
+        "rule": "deep_period_insights.unprofitable_sku / low_margin",
+        "example": "Убыточный SKU… / Низкая маржа…"
+      },
+      {
+        "case": "Аномалии периода",
+        "implemented": true,
+        "rule": "anomaly_analyst + period_causes",
+        "example": "Anomaly message / causal comparison"
+      }
+    ],
+    "analyst_rule_catalog": {
+      "logistics_analyst": [
+        "logistics_high_share",
+        "logistics_share_growth",
+        "logistics_sku_anomaly_*"
+      ],
+      "returns_analyst": [
+        "returns_high_rate",
+        "returns_rate_growth",
+        "returns_sku_leader_*"
+      ],
+      "revenue_change_analyst": [
+        "revenue_drop",
+        "revenue_growth",
+        "profit_drop",
+        "revenue_sku_driver_*"
+      ],
+      "concentration_analyst": [
+        "concentration_top1_risk",
+        "concentration_top3_risk"
+      ],
+      "deep_period_insights": [
+        "unprofitable_sku",
+        "logistics_heavy_sku",
+        "commission_heavy_sku",
+        "low_margin_sku",
+        "missing_cost_skus",
+        "period_comparison"
+      ],
+      "sales_analyst": [
+        "sales_low_margin",
+        "sales_top_sku",
+        "sales_revenue_present"
+      ],
+      "funnel_analyst": [
+        "funnel_concentration",
+        "funnel_breadth_ok"
+      ],
+      "anomaly_analyst": [
+        "anomaly_*"
+      ]
+    },
+    "period_consistency": [
+      {
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "fields": {
+          "ui": "2026-05-25 — 2026-05-31",
+          "ai_request": "2026-05-25 — 2026-05-31",
+          "kpi_snapshot": "2026-05-25 — 2026-05-31"
+        },
+        "consistent": true
+      },
+      {
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "fields": {
+          "ui": "2026-05-18 — 2026-05-24",
+          "ai_request": "2026-05-18 — 2026-05-24",
+          "kpi_snapshot": "2026-05-18 — 2026-05-24"
+        },
+        "consistent": true
+      },
+      {
+        "recommendation_id": "4a499e29-eef1-4a91-b98f-89aad7df6ae0",
+        "fields": {
+          "ui": "2026-05-11 — 2026-05-17",
+          "ai_request": "2026-05-11 — 2026-05-17",
+          "kpi_snapshot": "2026-05-11 — 2026-05-17"
+        },
+        "consistent": true
+      },
+      {
+        "recommendation_id": "f1b01f5f-1ed2-447f-88c2-74ce274956a9",
+        "fields": {
+          "ui": "2026-05-11 — 2026-05-17",
+          "ai_request": "2026-05-11 — 2026-05-17",
+          "kpi_snapshot": "2026-05-11 — 2026-05-17"
+        },
+        "consistent": true
+      }
+    ],
+    "business_coverage_report": {
+      "average_score_pct": 50.0,
+      "average_missing_data_score_pct": 50.0,
+      "coverage_formula": "Business Coverage = Σ(weight доступных блоков) / Σ(all weights) × 100%",
+      "samples_with_coverage": 4
+    },
+    "root_cause_confidence_samples": [
+      {
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348",
+        "root_cause_confidence": [
+          {
+            "cause": "уровень возвратов",
+            "status": "confirmed",
+            "reason_confidence": 0.76
+          },
+          {
+            "note": "неизвестно (данные отсутствуют)",
+            "cause": "влияние рекламы",
+            "status": "unknown",
+            "reason_confidence": null
+          }
+        ]
+      },
+      {
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e",
+        "root_cause_confidence": [
+          {
+            "cause": "уровень возвратов",
+            "status": "confirmed",
+            "reason_confidence": 0.76
+          },
+          {
+            "note": "неизвестно (данные отсутствуют)",
+            "cause": "влияние рекламы",
+            "status": "unknown",
+            "reason_confidence": null
+          }
+        ]
+      },
+      {
+        "recommendation_id": "4a499e29-eef1-4a91-b98f-89aad7df6ae0",
+        "root_cause_confidence": [
+          {
+            "cause": "уровень возвратов",
+            "status": "confirmed",
+            "reason_confidence": 0.76
+          },
+          {
+            "note": "неизвестно (данные отсутствуют)",
+            "cause": "влияние рекламы",
+            "status": "unknown",
+            "reason_confidence": null
+          }
+        ]
+      },
+      {
+        "recommendation_id": "f1b01f5f-1ed2-447f-88c2-74ce274956a9",
+        "root_cause_confidence": [
+          {
+            "cause": "уровень возвратов",
+            "status": "confirmed",
+            "reason_confidence": 0.76
+          },
+          {
+            "note": "неизвестно (данные отсутствуют)",
+            "cause": "влияние рекламы",
+            "status": "unknown",
+            "reason_confidence": null
+          }
+        ]
+      }
+    ],
+    "advertising_data_coverage": {
+      "rate_pct": 0.0,
+      "recommendations_with_ad_data": 0,
+      "total_measured": 4
+    },
+    "seller_usefulness": {
+      "average_score": 42.5,
+      "mvp_target": 80,
+      "meets_mvp": false
+    },
+    "mvp_ai_score": {
+      "Accuracy": 52.5,
+      "Explainability": 0.0,
+      "Actionability": 100.0,
+      "Trustworthiness": 78.8,
+      "Seller Value": 52.4,
+      "Business Coverage": 50.0,
+      "Seller Usefulness": 42.5,
+      "AI Readiness Score": 61.6
+    },
+    "go_no_go": {
+      "decision": "NO-GO",
+      "checks": {
+        "actionable_rate_gte_80": true,
+        "seller_usefulness_gte_80": false,
+        "dashboard_echo_lte_10": false,
+        "ai_readiness_gte_80": false
+      }
+    }
+  },
+  "metrics_before": {
+    "actionable_rate_pct": 40.0,
+    "seller_usefulness": 57.5,
+    "dashboard_echo_pct": 30.0,
+    "coverage_score_pct": 50.0,
+    "trustworthiness": 77.0,
+    "ai_readiness": 59.0,
+    "go_no_go": "NO-GO",
+    "analyses_count": 10,
+    "samples_with_coverage": 1
+  },
+  "metrics_after": {
+    "actionable_rate_pct": 100.0,
+    "seller_usefulness": 42.5,
+    "dashboard_echo_pct": 25.0,
+    "coverage_score_pct": 50.0,
+    "trustworthiness": 78.8,
+    "ai_readiness": 61.6,
+    "go_no_go": "NO-GO",
+    "analyses_count": 4,
+    "samples_with_coverage": 4
+  },
+  "delta": {
+    "actionable_rate_pct": 60.0,
+    "seller_usefulness": -15.0,
+    "dashboard_echo_pct": -5.0,
+    "coverage_score_pct": 0.0,
+    "trustworthiness": 1.8,
+    "ai_readiness": 2.6,
+    "go_no_go": "NO-GO → NO-GO",
+    "analyses_count": -6.0,
+    "samples_with_coverage": 3.0
+  },
+  "migration": {
+    "reset_deleted_count": 13,
+    "reports_migrated": 4,
+    "runs": [
+      {
+        "report_id": "23b940c4-b95a-4e7f-947a-edda25133dfe",
+        "status": "ok",
+        "recommendation_id": "f1b01f5f-1ed2-447f-88c2-74ce274956a9"
+      },
+      {
+        "report_id": "7f7c9344-3f29-4e15-816e-79984440b3cd",
+        "status": "ok",
+        "recommendation_id": "4a499e29-eef1-4a91-b98f-89aad7df6ae0"
+      },
+      {
+        "report_id": "11cceb46-bcb3-4e2b-9d93-d2b869e0d172",
+        "status": "ok",
+        "recommendation_id": "6b5a07e7-a8bc-4403-b616-57ebe911261e"
+      },
+      {
+        "report_id": "68e31bbd-4389-4c5c-bcae-0abdbfa47b89",
+        "status": "ok",
+        "recommendation_id": "41616405-139c-4477-994c-16d5abd48348"
+      }
+    ]
+  },
+  "go_no_go_decision": "NO-GO",
+  "go_no_go_basis": "post_migration_only"
+}

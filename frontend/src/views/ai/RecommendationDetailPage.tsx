@@ -101,6 +101,13 @@ export function RecommendationDetailPage() {
   const urgency = String(u.urgency ?? "");
   const confExplain = String(u.confidence_explanation ?? "");
   const fingerprint = String((r?.lineage ?? {})?.fingerprint ?? "");
+  const businessCoverage = (plan.business_coverage ?? u.business_coverage) as
+    | Record<string, unknown>
+    | undefined;
+  const coverageScore =
+    businessCoverage?.business_coverage_score != null
+      ? Number(businessCoverage.business_coverage_score)
+      : null;
 
   const nodes = (e?.evidence_graph?.nodes ?? []) as Array<any>;
   const edges = (e?.evidence_graph?.edges ?? []) as Array<any>;
@@ -188,6 +195,18 @@ export function RecommendationDetailPage() {
                 <div>
                   <div className="font-medium text-ink-secondary">Почему такая уверенность</div>
                   <p className="mt-1">{confExplain}</p>
+                </div>
+              ) : null}
+              {coverageScore != null ? (
+                <div className="rounded border border-amber-900/40 bg-amber-950/20 p-2">
+                  <div className="font-medium text-amber-100/90">
+                    Покрытие бизнес-данных: {coverageScore.toFixed(0)}%
+                  </div>
+                  <p className="mt-1">
+                    AI видит только часть экономики. Рекомендации не учитывают отсутствующие блоки
+                    (реклама, налоги, операционные расходы и др.) — см. блок «Ограничения» в тексте
+                    отчёта.
+                  </p>
                 </div>
               ) : null}
             </div>

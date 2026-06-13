@@ -30,6 +30,8 @@ from app.schemas.ai import PageMeta
 from app.schemas.ai_intelligence import RecommendationStatsResponse
 from app.schemas.ai_usage import AIUsageResponse
 from app.ai.deep.period_insights import build_deep_period_insights
+from app.ai.analysts.governed_signals import build_governed_analyst_signals
+from app.domain.inventory.intelligence import inventory_deep_bullets
 from app.domain.reports.period_queries import fetch_sale_period_bounds_for_reports
 from app.services.cost_coverage_service import CostCoverageService, CoveragePeriod
 from app.services.reconciliation_service import ReconciliationPeriod, ReconciliationService
@@ -688,10 +690,29 @@ class AIService:
             cost_coverage_pct=cov_pct,
             missing_cost_skus=missing_skus,
         )
+        signals = await build_governed_analyst_signals(
+            self.db,
+            self.user_id,
+            marketplace=marketplace,
+            period_start=period_start,
+            period_end=period_end,
+            compare_start=compare_start,
+            compare_end=compare_end,
+            total_revenue=total_revenue_d,
+            top_skus=top_skus,
+        )
         extras = {
             **deep.extras,
-            "deep_insights": list(deep.bullets),
+            **signals,
+            "deep_insights": list(deep.bullets)
+            + inventory_deep_bullets(signals),
             "cost_coverage_pct": str(cov_pct) if cov_pct is not None else None,
+            "source_period_start": period_start.isoformat(),
+            "source_period_end": period_end.isoformat(),
+            "sku_count": int(sku_count or 0),
+            "total_revenue": str(total_revenue_d) if total_revenue_d > 0 else None,
+            "total_profit": str(profit_out) if profit_out is not None else None,
+            "margin": str(margin) if margin is not None else None,
         }
         if cov_pct is not None and cov_pct >= Decimal("100"):
             extras["cost_data_available"] = True

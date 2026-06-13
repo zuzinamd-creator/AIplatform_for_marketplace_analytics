@@ -42,10 +42,10 @@ def _grounded() -> GroundedContextDTO:
     )
 
 
-def test_six_domain_analysts_run() -> None:
+def test_ten_domain_analysts_run() -> None:
     pkg = build_analytical_package(grounded=_grounded(), insight=_insight())
     outputs = run_domain_analysts(pkg)
-    assert len(outputs) == 6
+    assert len(outputs) == 10
     assert all(o.advisory_only for o in outputs)
 
 

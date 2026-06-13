@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.deep.period_causes import build_causal_comparison
 from app.core.security_context import TenantSession
 from app.models.economics.sku_unit_economics import SkuUnitEconomicsDaily
 from app.models.finance.aggregates import DailyAggregate, SkuDailyMetric
@@ -45,27 +46,19 @@ async def build_deep_period_insights(
 
     async with TenantSession.transaction(db, user_id):
         if compare_start and compare_end:
-            a_rev, a_profit = await _period_totals(
-                db, user_id, marketplace, period_start, period_end
+            extras["requested_compare_period_start"] = compare_start.isoformat()
+            extras["requested_compare_period_end"] = compare_end.isoformat()
+            await _append_period_comparison(
+                bullets,
+                extras,
+                db,
+                user_id,
+                marketplace,
+                period_start,
+                period_end,
+                compare_start,
+                compare_end,
             )
-            b_rev, b_profit = await _period_totals(
-                db, user_id, marketplace, compare_start, compare_end
-            )
-            extras["compare_period_start"] = compare_start.isoformat()
-            extras["compare_period_end"] = compare_end.isoformat()
-            if b_rev > 0:
-                pct = ((a_rev - b_rev) / b_rev * Decimal("100")).quantize(Decimal("0.1"))
-                direction = "выросла" if pct >= 0 else "упала"
-                bullets.append(
-                    f"Выручка {direction} на {abs(pct)}% vs сравниваемый период "
-                    f"({b_rev:.0f} ₽ → {a_rev:.0f} ₽)."
-                )
-            if b_profit != 0 and a_profit is not None and b_profit is not None:
-                delta = a_profit - b_profit
-                bullets.append(
-                    f"Прибыль изменилась на {delta:+.0f} ₽ "
-                    f"({b_profit:.0f} ₽ → {a_profit:.0f} ₽) за тот же интервал."
-                )
 
         unprofitable = await _worst_margin_skus(
             db, user_id, marketplace, period_start, period_end, negative_only=True, limit=3
@@ -118,7 +111,121 @@ async def build_deep_period_insights(
         elif cost_coverage_pct is not None and cost_coverage_pct >= Decimal("100"):
             extras["cost_data_available"] = True
 
-    return DeepPeriodInsights(bullets=tuple(bullets[:8]), extras=extras)
+    return DeepPeriodInsights(bullets=tuple(bullets[:10]), extras=extras)
+
+
+async def _append_period_comparison(
+    bullets: list[str],
+    extras: dict,
+    db: AsyncSession,
+    user_id: UUID,
+    marketplace: Marketplace,
+    period_start: date,
+    period_end: date,
+    compare_start: date,
+    compare_end: date,
+) -> None:
+    a_rev, a_profit = await _period_totals(db, user_id, marketplace, period_start, period_end)
+    b_rev, b_profit = await _period_totals(db, user_id, marketplace, compare_start, compare_end)
+
+    if b_rev > 0:
+        extras["compare_mode"] = "external"
+        extras["compare_period_start"] = compare_start.isoformat()
+        extras["compare_period_end"] = compare_end.isoformat()
+        causal = await build_causal_comparison(
+            db,
+            user_id,
+            marketplace=marketplace,
+            period_start=period_start,
+            period_end=period_end,
+            compare_start=compare_start,
+            compare_end=compare_end,
+        )
+        if causal:
+            extras["causal_headline"] = causal.headline
+            bullets.extend(causal.bullets)
+        return
+
+    first_sale = await _first_sale_date(db, user_id, marketplace)
+    note = (
+        f"Период сравнения {_fmt_date(compare_start)}—{_fmt_date(compare_end)} не содержит продаж"
+    )
+    if first_sale:
+        note += f" (первая продажа в данных — {_fmt_date(first_sale)})"
+    note += "."
+    bullets.append(note)
+
+    if a_rev > 0 and (period_end - period_start).days >= 1:
+        extras["compare_mode"] = "split_fallback"
+        await _append_split_period_compare(
+            bullets, extras, db, user_id, marketplace, period_start, period_end
+        )
+    else:
+        extras["compare_mode"] = "no_compare_data"
+        bullets.append(
+            "Для сравнения выберите два интервала с продажами, например первая и вторая половина мая."
+        )
+
+
+async def _append_split_period_compare(
+    bullets: list[str],
+    extras: dict,
+    db: AsyncSession,
+    user_id: UUID,
+    marketplace: Marketplace,
+    period_start: date,
+    period_end: date,
+) -> None:
+    days = (period_end - period_start).days + 1
+    half = max(1, days // 2)
+    split_a_end = period_start + timedelta(days=half - 1)
+    split_b_start = split_a_end + timedelta(days=1)
+    if split_b_start > period_end:
+        split_b_start = split_a_end
+
+    rev_a, prof_a = await _period_totals(db, user_id, marketplace, period_start, split_a_end)
+    rev_b, prof_b = await _period_totals(db, user_id, marketplace, split_b_start, period_end)
+
+    extras["compare_period_start"] = split_b_start.isoformat()
+    extras["compare_period_end"] = period_end.isoformat()
+    extras["split_period_a_start"] = period_start.isoformat()
+    extras["split_period_a_end"] = split_a_end.isoformat()
+
+    if rev_a <= 0 and rev_b <= 0:
+        return
+
+    causal = await build_causal_comparison(
+        db,
+        user_id,
+        marketplace=marketplace,
+        period_start=split_b_start,
+        period_end=period_end,
+        compare_start=period_start,
+        compare_end=split_a_end,
+        context_prefix="Внутреннее сравнение",
+    )
+    if causal:
+        extras["causal_headline"] = causal.headline
+        bullets.extend(causal.bullets)
+
+
+async def _first_sale_date(
+    db: AsyncSession, user_id: UUID, marketplace: Marketplace
+) -> date | None:
+    row = (
+        await db.execute(
+            select(func.min(DailyAggregate.aggregate_date)).where(
+                DailyAggregate.user_id == user_id,
+                DailyAggregate.marketplace == marketplace,
+                DailyAggregate.revenue > 0,
+            )
+        )
+    ).scalar_one_or_none()
+    return row
+
+
+def _fmt_date(d: date) -> str:
+    return d.strftime("%d.%m.%Y")
 
 
 async def _period_totals(

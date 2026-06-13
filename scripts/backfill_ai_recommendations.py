@@ -5,7 +5,13 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import sys
+from pathlib import Path
 from uuid import UUID
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from sqlalchemy import select
 
@@ -16,6 +22,24 @@ from app.models.ai_insights import AIInsight
 from app.models.ai_intelligence import AIRecommendation
 from app.models.report import Report, ReportStatus, ReportType
 from app.services.ai_service import AIService
+
+
+async def _finance_reports(user_id: UUID) -> list[Report]:
+    async with SessionLocal() as db:
+        async with TenantSession.transaction(db, user_id):
+            return list(
+                (
+                    await db.scalars(
+                        select(Report)
+                        .where(
+                            Report.user_id == user_id,
+                            Report.report_type == ReportType.FINANCE,
+                            Report.status == ReportStatus.PROCESSED,
+                        )
+                        .order_by(Report.created_at)
+                    )
+                ).all()
+            )
 
 
 async def _reports_pending_backfill(user_id: UUID) -> tuple[list[Report], int]:
@@ -52,11 +76,16 @@ async def _reports_pending_backfill(user_id: UUID) -> tuple[list[Report], int]:
     return pending, len(existing_report_ids)
 
 
-async def backfill(*, user_id: UUID, dry_run: bool = False) -> None:
-    pending, with_recs = await _reports_pending_backfill(user_id)
-    print(f"user={user_id} with_recs={with_recs} pending={len(pending)}")
+async def backfill(*, user_id: UUID, dry_run: bool = False, all_reports: bool = False) -> None:
+    if all_reports:
+        targets = await _finance_reports(user_id)
+        print(f"user={user_id} all_reports={len(targets)} (force regenerate)")
+    else:
+        pending, with_recs = await _reports_pending_backfill(user_id)
+        targets = pending
+        print(f"user={user_id} with_recs={with_recs} pending={len(pending)}")
 
-    for report in pending:
+    for report in targets:
         print(f"  report {report.id}")
         if dry_run:
             continue
@@ -75,8 +104,15 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--user-id", required=True, help="Seller UUID")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--all-reports",
+        action="store_true",
+        help="Regenerate all processed finance reports (not only pending)",
+    )
     args = parser.parse_args()
-    asyncio.run(backfill(user_id=UUID(args.user_id), dry_run=args.dry_run))
+    asyncio.run(
+        backfill(user_id=UUID(args.user_id), dry_run=args.dry_run, all_reports=args.all_reports)
+    )
 
 
 if __name__ == "__main__":

@@ -30,10 +30,13 @@ function asInsight(data: unknown): InsightShape | null {
   if (o.summary || o.bullets) return o as InsightShape;
   const plan = o.action_plan as Record<string, unknown> | undefined;
   const u = plan?.seller_usefulness as Record<string, unknown> | undefined;
+  const deepInsights = (u?.deep_insights ?? plan?.deep_insights) as string[] | undefined;
   if (!o.title && !o.summary && !u) return null;
+  const bulletsFromDeep = Array.isArray(deepInsights) ? deepInsights : undefined;
   return {
     title: String(o.title ?? ""),
     summary: String(o.summary ?? ""),
+    bullets: bulletsFromDeep ?? (Array.isArray(o.bullets) ? (o.bullets as string[]) : undefined),
     why: String(u?.why_this_matters ?? plan?.why_this_matters ?? ""),
     expected_impact: String(u?.expected_business_impact ?? ""),
     urgency: String(u?.urgency ?? ""),

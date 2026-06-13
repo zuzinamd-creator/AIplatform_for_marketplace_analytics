@@ -66,7 +66,7 @@ def eval_prompt_contracts_registered() -> bool:
 def eval_domain_analysts_produce_schema() -> bool:
     pkg = build_analytical_package(grounded=_grounded(), insight=_sample_insight())
     outputs = run_domain_analysts(pkg)
-    if len(outputs) != 6:
+    if len(outputs) != 10:
         return False
     for out in outputs:
         if out.advisory_only is not True:
