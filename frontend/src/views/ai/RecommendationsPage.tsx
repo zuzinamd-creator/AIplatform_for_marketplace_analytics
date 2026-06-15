@@ -11,6 +11,7 @@ import { Button } from "../../ui/button";
 import { AiTrustNotice } from "../../ui/trust-banners";
 import { InsightPreview, parseInsightJson } from "../../ui/insight-preview";
 import { toast } from "../../ui/toast";
+import { confidenceLabelRu, priorityTierLabelRu, workflowStateLabelRu } from "../../ui/seller-display";
 import { PeriodSelector } from "../../ui/period-selector";
 import { loadPeriodSelection, previousPeriod, savePeriodSelection, type PeriodSelection } from "../../state/period";
 import { loadWorkspaceProfile } from "../../state/onboarding";
@@ -358,11 +359,11 @@ function RecommendationRow(props: { r: any; onWorkflow: (action: string) => void
   })();
   const subtitle =
     String(u.recommended_action ?? plan.recommended_action ?? u.why_this_matters ?? r.summary ?? "");
-  const conf =
-    r.confidence_score != null ? `${Math.round(Number(r.confidence_score) * 100)}%` : "n/a";
+  const conf = confidenceLabelRu(r.confidence_score);
   const tier =
     (r.lineage as { priority_tier?: string } | undefined)?.priority_tier ??
     (u.prioritization as { priority_tier?: string } | undefined)?.priority_tier;
+  const tierLabel = tier ? priorityTierLabelRu(tier) : null;
 
   return (
     <Card className="p-4">
@@ -382,10 +383,10 @@ function RecommendationRow(props: { r: any; onWorkflow: (action: string) => void
           ) : null}
         </Link>
         <div className="flex flex-wrap gap-1">
-          {tier ? <StatusBadge tone={tier === "today" ? "warn" : "info"}>{tier}</StatusBadge> : null}
-          <StatusBadge tone="info">{conf}</StatusBadge>
+          {tierLabel ? <StatusBadge tone={tier === "today" ? "warn" : "info"}>{tierLabel}</StatusBadge> : null}
+          <StatusBadge tone="info">Уверенность: {conf}</StatusBadge>
           {urgency ? <StatusBadge tone="warn">{urgency}</StatusBadge> : null}
-          <StatusBadge tone="info">{String(r.seller_workflow_state ?? "active")}</StatusBadge>
+          <StatusBadge tone="info">{workflowStateLabelRu(String(r.seller_workflow_state ?? "active"))}</StatusBadge>
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">

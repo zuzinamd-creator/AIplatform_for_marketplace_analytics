@@ -23,7 +23,7 @@ def answer_follow_up(rec: AIRecommendation, *, question: str) -> ConversationRep
     usefulness = plan.get("seller_usefulness") or {}
     domain_insights = trace.get("domain_insights") or []
 
-    if q in ("why", "why?", "why this", "why does this matter"):
+    if q in ("why", "why?", "why this", "why does this matter", "почему"):
         return ConversationReplyDTO(
             question=question,
             answer=str(
@@ -34,51 +34,53 @@ def answer_follow_up(rec: AIRecommendation, *, question: str) -> ConversationRep
             sources=["action_plan.seller_usefulness", "summary"],
         )
 
-    if q in ("impact", "business impact", "what impact"):
+    if q in ("impact", "business impact", "what impact", "эффект"):
         return ConversationReplyDTO(
             question=question,
             answer=str(
                 usefulness.get("expected_business_impact")
                 or plan.get("impact_estimate")
-                or "Impact estimate not stored for this recommendation."
+                or "Оценка эффекта для этой рекомендации не сохранена."
             )[:1500],
             sources=["seller_usefulness.expected_business_impact"],
         )
 
-    if q in ("action", "what should i do", "next step", "what action"):
+    if q in ("action", "what should i do", "next step", "what action", "действие"):
         return ConversationReplyDTO(
             question=question,
             answer=str(
                 usefulness.get("concrete_next_action")
                 or plan.get("recommended_action")
-                or "Review evidence, then apply changes in your marketplace seller account."
+                or "Сверьте KPI на Dashboard и примените изменения в кабинете маркетплейса."
             )[:1500],
             sources=["seller_usefulness.concrete_next_action"],
         )
 
-    if q in ("confidence", "how confident", "why confidence"):
+    if q in ("confidence", "how confident", "why confidence", "уверенность"):
+        from app.ai.presentation.seller_display import confidence_label_ru, risk_label_ru
+
         return ConversationReplyDTO(
             question=question,
             answer=str(
                 usefulness.get("confidence_explanation")
-                or f"Stored confidence {rec.confidence_score}; risk class {rec.risk_class.value}."
+                or f"Уверенность: {confidence_label_ru(rec.confidence_score)}; риск: {risk_label_ru(rec.risk_class.value)}."
             )[:1500],
             sources=["confidence_score", "seller_usefulness.confidence_explanation"],
         )
 
-    if q in ("evidence", "proof", "what evidence"):
+    if q in ("evidence", "proof", "what evidence", "доказательства"):
         graph = rec.evidence_graph or {}
         nodes = graph.get("nodes") or []
         if not nodes:
             return ConversationReplyDTO(
                 question=question,
-                answer="No evidence nodes attached. Upload reports and re-run intelligence when rebuilds are healthy.",
+                answer="Доказательства не приложены. Загрузите отчёты и повторите анализ.",
                 sources=["evidence_graph"],
             )
-        lines = [f"- {n.get('label', 'ref')}: {n.get('source_type')}/{n.get('source_id')}" for n in nodes[:8]]
+        lines = [f"- {n.get('label', 'источник')}" for n in nodes[:8]]
         return ConversationReplyDTO(
             question=question,
-            answer="Evidence references:\n" + "\n".join(lines),
+            answer="Источники данных:\n" + "\n".join(lines),
             sources=["evidence_graph.nodes"],
         )
 
@@ -86,22 +88,24 @@ def answer_follow_up(rec: AIRecommendation, *, question: str) -> ConversationRep
         if not domain_insights:
             return ConversationReplyDTO(
                 question=question,
-                answer="No domain analyst breakdown on this recommendation (pre–REAL-AI-2 or empty package).",
+                answer="Для этой рекомендации нет разбивки по бизнес-областям.",
                 sources=["reasoning_trace.domain_insights"],
             )
-        top = domain_insights[0]
+        from app.ai.presentation.seller_display import sanitize_domain_insight_for_seller
+
+        top = sanitize_domain_insight_for_seller(domain_insights[0])
         return ConversationReplyDTO(
             question=question,
             answer=(
-                f"Top domain insight from {top.get('analyst_label', 'analyst')}: "
+                f"Главный сигнал ({top.get('domain', 'данные')}): "
                 f"{top.get('statement', '')}"
             )[:2000],
             sources=["reasoning_trace.domain_insights"],
         )
 
-    if "limitation" in q or "can ai" in q:
+    if "limitation" in q or "can ai" in q or "ограничен" in q:
         lim = usefulness.get("limitations") or [
-            "Advisory only; does not execute marketplace changes.",
+            "Рекомендация носит advisory-характер и не меняет карточки автоматически.",
         ]
         return ConversationReplyDTO(
             question=question,
@@ -112,8 +116,8 @@ def answer_follow_up(rec: AIRecommendation, *, question: str) -> ConversationRep
     return ConversationReplyDTO(
         question=question,
         answer=(
-            "Try: why · impact · action · confidence · evidence · analyst · limitations. "
-            "Answers are generated from stored recommendation data, not autonomous decisions."
+            "Спросите: «почему», «эффект», «действие», «уверенность», «доказательства», «ограничения». "
+            "Ответы формируются из сохранённых данных рекомендации."
         ),
         sources=["conversation.help"],
     )

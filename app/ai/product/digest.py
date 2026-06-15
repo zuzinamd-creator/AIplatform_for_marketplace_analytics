@@ -75,9 +75,9 @@ class AIDigestService:
                 )
             )
         headline = (
-            f"{len(rows)} active recommendation(s) in the last 24h"
+            f"{len(rows)} активных рекомендаций за последние 24 ч"
             if rows
-            else "No new active recommendations in the last 24h"
+            else "Нет новых активных рекомендаций за последние 24 ч"
         )
         return AIDigestDTO(
             digest_type="daily",
@@ -97,7 +97,7 @@ class AIDigestService:
             plan = top.action_plan or {}
             sections.append(
                 DigestSectionDTO(
-                    title="Top priority this week",
+                    title="Главный приоритет недели",
                     body=str(plan.get("expected_business_impact") or top.summary)[:500],
                     priority="high",
                 )
@@ -110,7 +110,7 @@ class AIDigestService:
                     priority=_priority_band(r.priority_score),
                 )
             )
-        headline = f"Weekly executive summary — {len(rows)} open item(s)"
+        headline = f"Итоги недели — {len(rows)} открытых рекомендаций"
         return AIDigestDTO(
             digest_type="weekly",
             generated_at=datetime.now(UTC),
@@ -143,7 +143,7 @@ class AIDigestService:
             )
             for r in rows
         ]
-        headline = f"Anomaly alert summary — {len(rows)} item(s) in 7 days"
+        headline = f"Сводка по аномалиям — {len(rows)} за 7 дней"
         return AIDigestDTO(
             digest_type="anomaly",
             generated_at=datetime.now(UTC),
@@ -166,6 +166,6 @@ def _priority_band(score: float | None) -> str:
 
 def _advisory_notice() -> str:
     return (
-        "All digests are advisory summaries over governed analytics. "
-        "Verify evidence on each recommendation before marketplace changes."
+        "Сводки носят рекомендательный характер и основаны на загруженных отчётах. "
+        "Перед изменениями в кабинете маркетплейса проверьте детали каждой рекомендации."
     )

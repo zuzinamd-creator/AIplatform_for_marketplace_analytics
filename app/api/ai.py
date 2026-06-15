@@ -341,16 +341,25 @@ async def get_recommendation_explainability(
         ml = trace["multi_layer"]
         if isinstance(ml.get("domain_insights"), list):
             trace = {**trace, "domain_insights": ml["domain_insights"]}
+    from app.ai.presentation.seller_display import (
+        confidence_label_ru,
+        risk_label_ru,
+        sanitize_evidence_graph_for_seller,
+        sanitize_reasoning_trace_for_seller,
+    )
+
     plan = row.action_plan or {}
     usefulness = plan.get("seller_usefulness") or {}
+    trace = sanitize_reasoning_trace_for_seller(trace)
+    graph = sanitize_evidence_graph_for_seller(graph)
     trust_context = {
         "confidence_explanation": usefulness.get("confidence_explanation"),
         "limitations": usefulness.get("limitations", []),
         "urgency": usefulness.get("urgency"),
         "stale_data_note": (
-            "Verify KPI freshness in analytics before acting."
+            "Перед действием проверьте актуальность KPI в аналитике."
             if usefulness.get("limitations")
-            and any("stale" in str(x).lower() for x in usefulness.get("limitations", []))
+            and any("устарев" in str(x).lower() for x in usefulness.get("limitations", []))
             else None
         ),
         "advisory_only": True,
@@ -358,7 +367,7 @@ async def get_recommendation_explainability(
     }
     rationale = str(
         usefulness.get("confidence_explanation")
-        or f"Stored confidence {row.confidence_score}; risk {row.risk_class.value}"
+        or f"Уверенность: {confidence_label_ru(row.confidence_score)}; риск: {risk_label_ru(row.risk_class.value)}."
     )
     return ExplainabilityResponse(
         summary_for_operator=row.summary[:500],

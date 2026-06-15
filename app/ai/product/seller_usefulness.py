@@ -90,7 +90,7 @@ def build_seller_usefulness(
 
     action = _pick_action(scored=scored, validated=validated, data_gaps=data_gaps, snap=snap)
 
-    conf_parts = [f"Уверенность модели {scored.confidence:.0%} после проверки данных."]
+    conf_parts = [f"Уверенность в рекомендации: {_confidence_label_ru(scored.confidence)}."]
     if flags:
         conf_parts.append(f"Скорректировано: {', '.join(_flag_label(f) for f in flags)}.")
     if validated.stale_data_warning:
@@ -225,10 +225,22 @@ def _looks_russian(text: str) -> bool:
     return any("\u0400" <= c <= "\u04FF" for c in text)
 
 
+def _confidence_label_ru(value) -> str:
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return "Средняя"
+    if v >= 0.85:
+        return "Высокая"
+    if v >= 0.65:
+        return "Средняя"
+    return "Низкая"
+
+
 def _flag_label(flag: str) -> str:
     labels = {
         "stale_or_degraded_context": "устаревший контекст",
-        "no_evidence": "мало evidence",
+        "no_evidence": "мало подтверждений в данных",
         "generic_wording": "общая формулировка",
         "contradictions": "противоречия",
         "unsupported_claims": "неподтверждённые утверждения",

@@ -1,5 +1,7 @@
 /** Human-readable preview for AI insight JSON or recommendation API objects. */
 
+import { confidenceLabelRu } from "./seller-display";
+
 const IMPACT_RU: Record<string, string> = {
   low: "низкий",
   moderate: "умеренный",
@@ -70,7 +72,7 @@ export function InsightPreview(props: { data: unknown }) {
           {impact ? <span>Эффект: {impact}</span> : null}
           {urgency ? <span>Срочность: {urgency}</span> : null}
           {insight.confidence_hint != null ? (
-            <span>Уверенность: {Math.round(insight.confidence_hint * 100)}%</span>
+            <span>Уверенность: {confidenceLabelRu(insight.confidence_hint)}</span>
           ) : null}
         </div>
       )}

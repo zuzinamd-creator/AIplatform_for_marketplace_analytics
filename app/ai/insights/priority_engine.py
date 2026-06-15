@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass
 
 from app.ai.insights.quality import compute_insight_quality_score
+from app.ai.presentation.seller_display import seller_what_happened, seller_why_text
 from app.dto.domain_analyst_dto import DomainAnalystOutputDTO, DomainFindingDTO, ExecutiveInsightDTO
 
 
@@ -20,14 +21,16 @@ class StructuredInsight:
     source: str
     finding_id: str | None = None
 
-    def format_block(self) -> str:
-        conf_label = _confidence_label(self.confidence)
-        return (
-            f"Что произошло:\n{self.what_happened}\n\n"
-            f"Почему:\n{self.why}\n\n"
-            f"Уверенность:\n{conf_label} ({self.confidence:.2f}).\n\n"
-            f"Действие:\n{self.recommended_action}"
-        )
+    def format_block(self, *, limitations: str | None = None) -> str:
+        parts = [
+            f"Главный вывод:\n{self.headline()}",
+            f"Что произошло:\n{self.what_happened}",
+            f"Что делать:\n{self.recommended_action}",
+            f"Почему это важно:\n{self.why}",
+        ]
+        if limitations:
+            parts.append(f"Ограничения анализа:\n{limitations}")
+        return "\n\n".join(parts)
 
     def headline(self) -> str:
         line = self.what_happened.strip().split("\n")[0]
@@ -161,8 +164,8 @@ def structured_from_finding(
     return StructuredInsight(
         insight_id=f"{analyst_id}:{finding.finding_id}",
         priority_level=level,
-        what_happened=finding.statement.strip(),
-        why=why,
+        what_happened=seller_what_happened(finding),
+        why=seller_why_text(finding_id=finding.finding_id, why=why),
         confidence=float(finding.confidence),
         recommended_action=action.strip(),
         source=source,
@@ -189,7 +192,7 @@ def structured_from_executive(ins: ExecutiveInsightDTO) -> StructuredInsight:
         insight_id=ins.insight_id,
         priority_level=out.priority_level,
         what_happened=out.what_happened,
-        why=ins.reasoning_summary or out.why,
+        why=seller_why_text(finding_id=fid, why=out.why),
         confidence=float(ins.confidence),
         recommended_action=out.recommended_action,
         source="executive_insight",
@@ -473,7 +476,7 @@ def _why_from_finding(finding: DomainFindingDTO) -> str:
     fid = finding.finding_id
     mapping = {
         "revenue_drop": "Изменение объёма продаж и структуры SKU относительно сравниваемого периода.",
-        "revenue_growth": "Рост выручки связан с изменением объёма или mix SKU, а не только с KPI-итогом.",
+        "revenue_growth": "Рост выручки связан с изменением объёма или структуры SKU, а не только с KPI-итогом.",
         "profit_drop": "Прибыль снизилась из-за mix SKU, расходов маркетплейса или себестоимости.",
         "sales_top_sku": "Лидер по выручке задаёт основной риск и потенциал роста периода — важнее общих KPI.",
         "concentration_top1_risk": "Высокая доля одного SKU повышает риск просадки выручки.",
@@ -481,11 +484,11 @@ def _why_from_finding(finding: DomainFindingDTO) -> str:
         "returns_high_rate": "Возвраты съедают маржу и могут указывать на проблемы карточки или качества.",
         "returns_rate_growth": "Рост возвратов ухудшает чистую выручку периода.",
         "logistics_high_share": "Логистика занимает непропорционально высокую долю выручки.",
-        "logistics_share_growth": "Рост логистики ухудшает unit economics без роста цены.",
+        "logistics_share_growth": "Рост логистики ухудшает экономику продаж без роста цены.",
         "sales_low_margin": "Маржа ниже безопасного порога при текущей себестоимости.",
         "inventory_dead_stock": "SKU без продаж блокируют оборотный капитал и занимают склад.",
         "inventory_slow_movers": "Низкая оборачиваемость сигнализирует о переизбытке или слабом спросе.",
-        "inventory_frozen_capital": "Деньги заморожены в остатках — учитывайте как supporting signal, не замену выручки.",
+        "inventory_frozen_capital": "Деньги заморожены в остатках — дополнительный сигнал, не замена анализа выручки.",
         "inventory_stock_concentration": "Капитал в остатках сконцентрирован на нескольких SKU — риск неликвида.",
         "inventory_risk_high": "Комбинация складских сигналов повышает операционный риск.",
     }
@@ -493,8 +496,8 @@ def _why_from_finding(finding: DomainFindingDTO) -> str:
         if fid.startswith(prefix):
             return reason
     if finding.evidence_refs:
-        return f"Подтверждено governed-метриками: {', '.join(finding.evidence_refs[:3])}."
-    return "Вывод основан на governed KPI snapshot и deterministic analysts."
+        return "Подтверждено данными отчётов за выбранный период."
+    return "Вывод основан на KPI из загруженных отчётов."
 
 
 def _why_from_deep(text: str) -> str:

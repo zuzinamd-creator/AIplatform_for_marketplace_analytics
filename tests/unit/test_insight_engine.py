@@ -112,7 +112,7 @@ def test_collect_structured_insights_from_domain_analyst() -> None:
     )
     assert items
     assert items[0].priority_level == 1
-    assert "Что произошло:" in items[0].format_block()
+    assert "Главный вывод:" in items[0].format_block()
 
 
 def test_compose_insight_driven_output_replaces_kpi_title() -> None:
@@ -130,7 +130,7 @@ def test_compose_insight_driven_output_replaces_kpi_title() -> None:
     )
     assert "505 245" not in out.title
     assert out.insight_audit["echo_detected"] is False or out.title != "Общий доход за период составил 505 245 ₽"
-    assert "Что произошло:" in out.executive_lead
+    assert "Главный вывод:" in out.executive_lead
     assert out.insight_quality["overall"] >= 50.0
 
 
