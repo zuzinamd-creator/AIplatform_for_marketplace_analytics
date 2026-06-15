@@ -15,9 +15,13 @@ import {
   confidenceLabelRu,
   eventTypeLabelRu,
   FOLLOW_UP_CHIPS,
+  formatDriverCardSummary,
   parseSellerSummarySections,
+  pickDriverCards,
+  pickPeriodDecision,
   pickSellerAction,
   riskLabelRu,
+  type DriverCard,
   type SellerDomainInsight,
 } from "../../ui/seller-display";
 
@@ -30,6 +34,8 @@ export function RecommendationDetailPage() {
   const [conversation, setConversation] = useState<Array<{ q: string; a: string }>>([]);
   const [note, setNote] = useState("");
   const [reminderDate, setReminderDate] = useState<string>("");
+  const [showRationale, setShowRationale] = useState(false);
+  const [expandedDrivers, setExpandedDrivers] = useState(false);
 
   const rec = useQuery({
     queryKey: ["ai", "recommendation", recommendationId],
@@ -128,7 +134,6 @@ export function RecommendationDetailPage() {
   const sections = parseSellerSummarySections(summaryText);
   const displayHeadline = sections.headline || String(r?.title ?? "");
   const displayWhat = sections.whatHappened || summaryText;
-  const displayAction = pickSellerAction(sections.action, action);
   const displayWhy = sections.why || why;
   const limitationsFromSummary = sections.limitations;
   const limitationsFromPlan = String(
@@ -139,6 +144,18 @@ export function RecommendationDetailPage() {
   const confLabel = confidenceLabelRu(
     (r?.confidence_score ?? r?.confidence) as string | number | null | undefined,
   );
+
+  const periodDecision = pickPeriodDecision(plan);
+  const driverCards = pickDriverCards(plan);
+  const todayAction =
+    periodDecision?.action ||
+    String(u.what_to_do_today ?? u.concrete_next_action ?? plan.recommended_action ?? "");
+  const isDataFirst = periodDecision?.mode === "data_first";
+  const displayActionResolved = isDataFirst
+    ? todayAction
+    : pickSellerAction(sections.action, todayAction || action);
+  const rationaleCard =
+    driverCards.find((c) => c.card_id === periodDecision?.source_card_id) ?? driverCards[0];
 
   return (
     <div className="space-y-6">
@@ -158,6 +175,50 @@ export function RecommendationDetailPage() {
         <Card className="p-5">Не удалось загрузить рекомендацию.</Card>
       ) : r ? (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <Card className="p-5 md:col-span-2">
+            <div className="text-xs font-semibold uppercase tracking-wide text-brand">
+              {isDataFirst ? "Сначала данные" : "Сделайте сегодня"}
+            </div>
+            <p className="mt-2 text-base font-medium text-ink whitespace-pre-wrap">{displayActionResolved}</p>
+            {periodDecision?.alternative_action ? (
+              <p className="mt-2 text-sm text-ink-secondary">
+                Если не подходит: {periodDecision.alternative_action}
+              </p>
+            ) : null}
+            {periodDecision?.data_request ? (
+              <p className="mt-2 text-sm text-amber-200/90">{periodDecision.data_request}</p>
+            ) : null}
+            {rationaleCard ? (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  className="text-sm text-brand hover:underline"
+                  onClick={() => setShowRationale((v) => !v)}
+                >
+                  {showRationale ? "Скрыть обоснование" : "Показать обоснование"}
+                </button>
+                {showRationale ? (
+                  <div className="mt-2 rounded-lg border border-surface-subtle bg-surface-inset p-3 text-sm text-ink-secondary">
+                    <div>
+                      <span className="font-medium text-ink">SKU:</span> {rationaleCard.sku}
+                    </div>
+                    {rationaleCard.cause ? <div className="mt-1">{rationaleCard.cause}</div> : null}
+                    {rationaleCard.effect_label ? (
+                      <div className="mt-1">Потенциальный эффект: {rationaleCard.effect_label}</div>
+                    ) : null}
+                    {(rationaleCard.checks ?? []).length > 0 ? (
+                      <ul className="mt-2 list-inside list-disc text-xs">
+                        {(rationaleCard.checks ?? []).map((c, i) => (
+                          <li key={i}>{c}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </Card>
+
           <Card className="p-5">
             <div className="text-sm font-semibold">Суть</div>
             {displayHeadline ? (
@@ -171,10 +232,51 @@ export function RecommendationDetailPage() {
                   <p className="mt-1">{displayWhat}</p>
                 </div>
               ) : null}
-              <div className="rounded-lg border border-brand/30 bg-brand/5 p-3">
-                <div className="font-medium text-ink">Что делать</div>
-                <p className="mt-1 whitespace-pre-wrap text-ink">{displayAction}</p>
-              </div>
+              {driverCards.length > 0 ? (
+                <div className="rounded-lg border border-surface-subtle bg-surface-inset p-3">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between text-left text-sm font-medium text-ink"
+                    onClick={() => setExpandedDrivers((v) => !v)}
+                  >
+                    <span>Драйверы ({driverCards.length})</span>
+                    <span className="text-ink-muted">{expandedDrivers ? "▾" : "▸"}</span>
+                  </button>
+                  {!expandedDrivers ? (
+                    <ul className="mt-2 space-y-1 text-xs text-ink-secondary">
+                      {driverCards.map((card: DriverCard) => (
+                        <li key={card.card_id ?? card.sku}>{formatDriverCardSummary(card)}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="mt-3 space-y-3">
+                      {driverCards.map((card: DriverCard) => (
+                        <div
+                          key={card.card_id ?? card.sku}
+                          className="rounded border border-surface-subtle bg-surface-inset p-2 text-xs"
+                        >
+                          <div className="font-medium text-ink">{card.sku}</div>
+                          {card.cause ? <div className="mt-1 text-ink-secondary">{card.cause}</div> : null}
+                          {card.action ? (
+                            <div className="mt-1 text-ink-secondary">
+                              <span className="font-medium text-ink">Действие:</span> {card.action}
+                            </div>
+                          ) : null}
+                          {card.effect_label ? (
+                            <div className="mt-1 text-ink-muted">Эффект: {card.effect_label}</div>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+              {!periodDecision?.action ? (
+                <div className="rounded-lg border border-brand/30 bg-brand/5 p-3">
+                  <div className="font-medium text-ink">Что делать</div>
+                  <p className="mt-1 whitespace-pre-wrap text-ink">{displayActionResolved}</p>
+                </div>
+              ) : null}
               <div>
                 <div className="font-medium text-ink-secondary">Почему это важно</div>
                 <p className="mt-1">{displayWhy || "Перед действием проверьте KPI и качество данных."}</p>

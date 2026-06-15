@@ -85,6 +85,55 @@ export type SellerDomainInsight = {
   priority_rank?: number;
 };
 
+export type DriverCard = {
+  card_id?: string;
+  sku?: string;
+  driver_type?: string;
+  metric_label?: string;
+  metric_value?: string;
+  metric_value_rub?: number;
+  impact_share_pct?: number | null;
+  cause?: string;
+  cause_confidence?: string;
+  checks?: string[];
+  action?: string;
+  effect_low_rub?: number | null;
+  effect_high_rub?: number | null;
+  effect_label?: string | null;
+  rank?: number;
+};
+
+export type PeriodDecision = {
+  mode?: "single" | "alternative" | "data_first";
+  action?: string;
+  sku?: string | null;
+  driver_type?: string | null;
+  alternative_action?: string | null;
+  data_request?: string | null;
+  data_request_cta?: string | null;
+  source_card_id?: string | null;
+  selection_score?: number | null;
+  blocked_reason?: string | null;
+};
+
+export function pickPeriodDecision(plan: Record<string, unknown> | undefined): PeriodDecision | null {
+  const pd = plan?.period_decision;
+  return pd && typeof pd === "object" ? (pd as PeriodDecision) : null;
+}
+
+export function pickDriverCards(plan: Record<string, unknown> | undefined): DriverCard[] {
+  const cards = plan?.driver_cards;
+  if (!Array.isArray(cards)) return [];
+  return cards.filter((c) => c && typeof c === "object") as DriverCard[];
+}
+
+export function formatDriverCardSummary(card: DriverCard): string {
+  const sku = card.sku ?? "SKU";
+  const rub = card.metric_value_rub != null ? `${card.metric_value_rub.toLocaleString("ru-RU")} ₽` : card.metric_value ?? "";
+  const cause = card.cause ?? "";
+  return `${sku} · ${rub}${cause ? ` · ${cause}` : ""}`;
+}
+
 export const DEFAULT_SELLER_ACTION =
   "Сверьте KPI на Dashboard и выберите корректирующее действие по проблемным SKU.";
 

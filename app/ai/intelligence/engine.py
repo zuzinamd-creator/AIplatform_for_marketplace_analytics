@@ -166,6 +166,16 @@ class AIIntelligenceEngine:
         )
         result = result.model_copy(update={"recommendation": rec})
 
+        from app.ai.drivers import build_driver_bundle
+
+        driver_bundle = await build_driver_bundle(
+            self.db,
+            self.user_id,
+            grounded=grounded,
+            validated=validated,
+            insight_input=insight_input,
+        )
+
         rec_id = await self._persist_recommendation(
             run.id,
             insight_id,
@@ -173,6 +183,7 @@ class AIIntelligenceEngine:
             fingerprint=quality.fingerprint,
             quality=quality,
             multi_trace=multi_trace,
+            driver_bundle=driver_bundle,
         )
         result = result.model_copy(update={"recommendation_id": rec_id})
 
@@ -202,6 +213,7 @@ class AIIntelligenceEngine:
         fingerprint: str,
         quality: QualityResult,
         multi_trace=None,
+        driver_bundle: dict | None = None,
     ) -> UUID | None:
         from app.dto.domain_analyst_dto import MultiLayerReasoningTraceDTO
 
@@ -221,6 +233,7 @@ class AIIntelligenceEngine:
             fingerprint=fingerprint,
             status=status,
             trace_dto=trace_dto,
+            driver_bundle=driver_bundle,
         )
         async with TenantSession.transaction(self.db, self.user_id):
             report_id = quality.seller_usefulness.get("report_id")
@@ -301,8 +314,20 @@ class AIIntelligenceEngine:
         fingerprint: str,
         status: RecommendationStatus,
         trace_dto,
+        driver_bundle: dict | None = None,
     ) -> AIRecommendation:
         from app.ai.pipeline.multi_layer import reasoning_trace_payload
+
+        bundle = driver_bundle or {}
+        seller_usefulness = dict(quality.seller_usefulness)
+        period_decision = bundle.get("period_decision")
+        if isinstance(period_decision, dict) and period_decision.get("action"):
+            action_text = str(period_decision["action"])
+            seller_usefulness["concrete_next_action"] = action_text
+            seller_usefulness["what_to_do_today"] = action_text
+            recommended_action = action_text
+        else:
+            recommended_action = quality.recommended_action
 
         return AIRecommendation(
             user_id=self.user_id,
@@ -319,9 +344,12 @@ class AIIntelligenceEngine:
             action_plan={
                 **result.action_plan.model_dump(mode="json"),
                 "why_this_matters": quality.why_this_matters,
-                "recommended_action": quality.recommended_action,
+                "recommended_action": recommended_action,
                 "impact_estimate": quality.impact_estimate,
-                "seller_usefulness": quality.seller_usefulness,
+                "seller_usefulness": seller_usefulness,
+                "driver_cards": bundle.get("driver_cards") or [],
+                "period_decision": bundle.get("period_decision"),
+                "driver_engine_version": bundle.get("driver_engine_version"),
             },
             evidence_graph=result.explainability.evidence_graph.model_dump(mode="json"),
             reasoning_trace=(

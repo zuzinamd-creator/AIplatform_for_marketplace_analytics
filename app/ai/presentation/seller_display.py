@@ -105,6 +105,7 @@ def sanitize_action_plan_for_seller(plan: dict[str, Any] | None) -> dict[str, An
             "analysis_limitations",
             "expected_business_impact",
             "executive_summary_v2_text",
+            "what_to_do_today",
         ):
             if key in su_out and su_out[key]:
                 su_out[key] = sanitize_seller_text(str(su_out[key]))
@@ -120,6 +121,27 @@ def sanitize_action_plan_for_seller(plan: dict[str, Any] | None) -> dict[str, An
         if bc_out.get("advertising_warning"):
             bc_out["advertising_warning"] = sanitize_seller_text(str(bc_out["advertising_warning"]))
         out["business_coverage"] = bc_out
+    pd = out.get("period_decision")
+    if isinstance(pd, dict):
+        pd_out = dict(pd)
+        for key in ("action", "alternative_action", "data_request"):
+            if pd_out.get(key):
+                pd_out[key] = sanitize_seller_text(str(pd_out[key]))
+        out["period_decision"] = pd_out
+    cards = out.get("driver_cards")
+    if isinstance(cards, list):
+        out["driver_cards"] = [sanitize_driver_card_for_seller(c) for c in cards if isinstance(c, dict)]
+    return out
+
+
+def sanitize_driver_card_for_seller(card: dict[str, Any]) -> dict[str, Any]:
+    out = dict(card)
+    for key in ("cause", "action", "effect_label"):
+        if out.get(key):
+            out[key] = sanitize_seller_text(str(out[key]))
+    checks = out.get("checks")
+    if isinstance(checks, list):
+        out["checks"] = [sanitize_seller_text(str(x)) for x in checks]
     return out
 
 
