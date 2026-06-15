@@ -16,6 +16,7 @@
 | Technical debt | [technical_debt_register.md](technical_debt_register.md) | 6.6.0 |
 | v0.6 pilot validated release notes | [v06_pilot_validated_release_notes.md](v06_pilot_validated_release_notes.md) | 6.6.1 |
 | Milestone freeze (6.6.1) | [phase_661_milestone_freeze_report.md](phase_661_milestone_freeze_report.md) | Complete |
+| Production testing baseline (6.8.2) | [production_testing_baseline_6.8.2.md](production_testing_baseline_6.8.2.md) | RC frozen |
 | v0.7 roadmap | [../roadmap/v07_candidate_features.md](../roadmap/v07_candidate_features.md) | Draft |
 | Test stabilization (6.5.1) | [test_stabilization_report.md](test_stabilization_report.md) | Complete |
 | MVP hardening plan | [mvp_hardening_plan.md](mvp_hardening_plan.md) | Complete |
