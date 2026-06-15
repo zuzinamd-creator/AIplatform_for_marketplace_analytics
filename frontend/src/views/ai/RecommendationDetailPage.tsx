@@ -131,9 +131,11 @@ export function RecommendationDetailPage() {
   const displayAction = pickSellerAction(sections.action, action);
   const displayWhy = sections.why || why;
   const limitationsFromSummary = sections.limitations;
-  const limitationsFromPlan = String(u.analysis_limitations ?? plan.analysis_limitations ?? "");
-  const displayLimitations = limitationsFromSummary || limitationsFromPlan;
-  const showTrustLimitations = !displayLimitations;
+  const limitationsFromPlan = String(
+    u.analysis_limitations ?? plan.analysis_limitations ?? businessCoverage?.analysis_limitations ?? "",
+  );
+  const adWarning = String(u.advertising_warning ?? plan.advertising_warning ?? businessCoverage?.advertising_warning ?? "");
+  const displayLimitations = [limitationsFromSummary || limitationsFromPlan, adWarning].filter(Boolean).join("\n\n");
   const confLabel = confidenceLabelRu(
     (r?.confidence_score ?? r?.confidence) as string | number | null | undefined,
   );
@@ -169,19 +171,19 @@ export function RecommendationDetailPage() {
                   <p className="mt-1">{displayWhat}</p>
                 </div>
               ) : null}
-              <div>
-                <div className="font-medium text-ink-secondary">Что делать</div>
-                <p className="mt-1 text-ink">{displayAction || "Сверьте KPI на Dashboard и выберите действие по SKU."}</p>
+              <div className="rounded-lg border border-brand/30 bg-brand/5 p-3">
+                <div className="font-medium text-ink">Что делать</div>
+                <p className="mt-1 whitespace-pre-wrap text-ink">{displayAction}</p>
               </div>
               <div>
                 <div className="font-medium text-ink-secondary">Почему это важно</div>
                 <p className="mt-1">{displayWhy || "Перед действием проверьте KPI и качество данных."}</p>
               </div>
               {displayLimitations ? (
-                <div className="rounded border border-amber-900/40 bg-amber-950/20 p-2 text-xs">
-                  <div className="font-medium text-amber-100/90">Ограничения анализа</div>
-                  <p className="mt-1 whitespace-pre-wrap">{displayLimitations}</p>
-                </div>
+                <details className="rounded border border-amber-900/40 bg-amber-950/20 p-2 text-xs">
+                  <summary className="cursor-pointer font-medium text-amber-100/90">Ограничения анализа</summary>
+                  <p className="mt-2 whitespace-pre-wrap text-ink-secondary">{displayLimitations}</p>
+                </details>
               ) : null}
             </div>
 
@@ -224,22 +226,11 @@ export function RecommendationDetailPage() {
                   ) : null}
                 </div>
               )}
-              {confExplain ? (
-                <div>
-                  <div className="font-medium text-ink-secondary">Пояснение уверенности</div>
-                  <p className="mt-1">{confExplain}</p>
-                </div>
-              ) : null}
               {coverageScore != null ? (
-                <div className="rounded border border-amber-900/40 bg-amber-950/20 p-2">
-                  <div className="font-medium text-amber-100/90">
+                <div className="rounded border border-surface-subtle bg-surface-inset p-2 text-ink-secondary">
+                  <div className="font-medium text-ink-secondary">
                     Покрытие бизнес-данных: {coverageScore.toFixed(0)}%
                   </div>
-                  <p className="mt-1">
-                    AI видит только часть экономики. Рекомендации не учитывают отсутствующие блоки
-                    (реклама, налоги, операционные расходы и др.) — см. блок «Ограничения» в тексте
-                    отчёта.
-                  </p>
                 </div>
               ) : null}
             </div>
@@ -400,9 +391,13 @@ export function RecommendationDetailPage() {
             ) : e ? (
               <>
                 <div className="mt-3">
-                  <AiTrustPanel trust={e.trust_context as Parameters<typeof AiTrustPanel>[0]["trust"]} />
+                  <AiTrustPanel
+                    trust={{
+                      ...(e.trust_context as Parameters<typeof AiTrustPanel>[0]["trust"]),
+                      limitations: [],
+                    }}
+                  />
                 </div>
-                <div className="mt-2 text-xs text-ink-secondary">{String(e.confidence_rationale ?? "")}</div>
                 <div className="mt-4 rounded-lg border border-surface-subtle bg-surface-inset p-3">
                   <div className="text-sm font-semibold">Почему AI может ошибаться</div>
                   <div className="mt-2 text-sm text-ink-secondary">
@@ -412,15 +407,6 @@ export function RecommendationDetailPage() {
                         "ИИ даёт рекомендации на основе загруженных отчётов. При неполных данных уверенность снижается.",
                     )}
                   </div>
-                  {showTrustLimitations &&
-                  Array.isArray(trustContext.limitations) &&
-                  trustContext.limitations.length ? (
-                    <ul className="mt-3 space-y-1 text-xs text-ink-secondary">
-                      {(trustContext.limitations as string[]).slice(0, 10).map((l) => (
-                        <li key={l}>- {l}</li>
-                      ))}
-                    </ul>
-                  ) : null}
                   {trustContext.stale_data_note ? (
                     <div className="mt-3 text-xs text-amber-200">
                       Влияние устаревших данных: {String(trustContext.stale_data_note)}

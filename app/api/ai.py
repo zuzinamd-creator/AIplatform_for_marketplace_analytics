@@ -371,7 +371,7 @@ async def get_recommendation_explainability(
     graph = sanitize_evidence_graph_for_seller(graph)
     trust_context = {
         "confidence_explanation": usefulness.get("confidence_explanation"),
-        "limitations": usefulness.get("limitations", []),
+        "limitations": [],
         "urgency": usefulness.get("urgency"),
         "stale_data_note": (
             "Перед действием проверьте актуальность KPI в аналитике."

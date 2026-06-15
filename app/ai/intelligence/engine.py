@@ -151,12 +151,7 @@ class AIIntelligenceEngine:
             summary_parts.append(str(exec_v2))
         if not insight_lead:
             summary_parts.append(rec.summary)
-        limitations = su.get("analysis_limitations")
-        if limitations:
-            summary_parts.append(str(limitations))
-        ad_warn = su.get("advertising_warning")
-        if ad_warn:
-            summary_parts.append(str(ad_warn))
+        # Limitations live in action_plan only — not duplicated in summary body
         from app.ai.presentation.seller_display import sanitize_seller_text
 
         merged_summary = sanitize_seller_text("\n\n".join(summary_parts)[:4000])

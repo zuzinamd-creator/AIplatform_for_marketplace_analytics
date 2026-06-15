@@ -85,6 +85,15 @@ export type SellerDomainInsight = {
   priority_rank?: number;
 };
 
+export const DEFAULT_SELLER_ACTION =
+  "Сверьте KPI на Dashboard и выберите корректирующее действие по проблемным SKU.";
+
+const ACTION_VERB_RE =
+  /\b(проверьте|снизьте|увеличьте|пересмотрите|загрузите|оцените|проведите|сверьте|рассмотрите|импортируйте|скорректируйте|добавьте|оптимизируйте|остановите|диверсифицируйте|продвигайте)\b/i;
+
+const ANALYTICS_START_RE =
+  /^(выручка|прибыль|маржа|основной|главный|драйвер|концентрация|объём|объем|капитал|sku\s)/i;
+
 /** Parse structured summary blocks for display when API returns legacy text. */
 export function parseSellerSummarySections(summary: string): {
   headline: string;
@@ -107,11 +116,23 @@ export function parseSellerSummarySections(summary: string): {
     return after.slice(0, end).trim();
   };
 
+  const pickMarkdown = (heading: string) => {
+    const start = raw.indexOf(heading);
+    if (start < 0) return "";
+    const after = raw.slice(start + heading.length).replace(/^\s*\n+/, "");
+    const next = after.search(/\n### /);
+    return (next >= 0 ? after.slice(0, next) : after).trim();
+  };
+
   const headline = pick("Главный вывод", ["Что произошло", "Что делать", "Почему это важно", "Ограничения анализа"]);
   const whatHappened = pick("Что произошло", ["Что делать", "Почему это важно", "Ограничения анализа"]);
-  const action = pick("Что делать", ["Почему это важно", "Ограничения анализа"]);
-  const why = pick("Почему это важно", ["Ограничения анализа"]);
-  const limitations = pick("Ограничения анализа", []);
+  const action =
+    pick("Что делать", ["Почему это важно", "Ограничения анализа"]) ||
+    pick("Действие", ["Почему", "Уверенность", "Ограничения"]);
+  const why =
+    pick("Почему это важно", ["Ограничения анализа"]) || pick("Почему", ["Уверенность", "Действие", "Ограничения"]);
+  const limitations =
+    pick("Ограничения анализа", []) || pickMarkdown("### Ограничения анализа");
 
   if (!headline && !whatHappened) {
     return { headline: "", whatHappened: "", action: "", why: "", limitations: "", raw };
@@ -119,27 +140,55 @@ export function parseSellerSummarySections(summary: string): {
   return { headline, whatHappened, action, why, limitations, raw };
 }
 
-const ACTION_VERB_RE =
-  /\b(проверьте|снизьте|увеличьте|пересмотрите|загрузите|оцените|проведите|сверьте|рассмотрите|импортируйте|скорректируйте|добавьте|оптимизируйте)\b/i;
+/** Extract imperative-only sentences; expand combined «наличие, цену и рекламу» checks. */
+export function extractSellerActions(text: string): string {
+  const src = (text ?? "").trim();
+  if (!src) return "";
+
+  const imperativeRe =
+    /\b((?:проверьте|снизьте|увеличьте|пересмотрите|загрузите|оцените|проведите|сверьте|рассмотрите|импортируйте|скорректируйте|добавьте|оптимизируйте|остановите|диверсифицируйте|продвигайте)[^.!?]*[.!?])/gi;
+
+  const found: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = imperativeRe.exec(src)) !== null) {
+    const sentence = m[1].trim();
+    if (sentence && !found.includes(sentence)) found.push(sentence.endsWith(".") ? sentence : `${sentence}.`);
+  }
+
+  const skuMatch = src.match(/SKU\s+(\S+)/i);
+  const sku = skuMatch?.[1];
+  const expanded: string[] = [];
+  for (const sentence of found) {
+    const low = sentence.toLowerCase();
+    if (low.includes("наличие") && low.includes("цен") && low.includes("реклам")) {
+      const suffix = sku ? ` SKU ${sku}.` : ".";
+      expanded.push(`Проверьте остатки${suffix}`, `Проверьте цену относительно конкурентов${suffix}`, `Проверьте рекламную активность товара${suffix}`);
+    } else {
+      expanded.push(sentence);
+    }
+  }
+
+  if (expanded.length === 0) return "";
+  if (expanded.length === 1) return expanded[0];
+  return expanded.map((a, i) => `${i + 1}. ${a}`).join("\n");
+}
 
 /** True when text looks like an imperative seller action, not analytics. */
 export function isSellerAction(text: string): boolean {
+  const extracted = extractSellerActions(text);
+  if (extracted) return true;
   const t = (text ?? "").trim();
   if (!t) return false;
-  if (ACTION_VERB_RE.test(t)) return true;
-  if (/^[+-]?\d|п\.п\.|эффект\s*≈|шт\s*\(|%\)/i.test(t) && !ACTION_VERB_RE.test(t)) return false;
-  return false;
+  const firstLine = t.split("\n")[0].trim();
+  if (ANALYTICS_START_RE.test(firstLine) && !ACTION_VERB_RE.test(firstLine)) return false;
+  return ACTION_VERB_RE.test(t);
 }
 
-/** Prefer the first candidate that reads as an actionable step. */
+/** Prefer imperative actions only; never fall back to analytics copy. */
 export function pickSellerAction(...candidates: Array<string | null | undefined>): string {
   for (const c of candidates) {
-    const t = String(c ?? "").trim();
-    if (t && isSellerAction(t)) return t;
+    const extracted = extractSellerActions(String(c ?? ""));
+    if (extracted) return extracted;
   }
-  for (const c of candidates) {
-    const t = String(c ?? "").trim();
-    if (t) return t;
-  }
-  return "";
+  return DEFAULT_SELLER_ACTION;
 }

@@ -88,7 +88,10 @@ def build_seller_usefulness(
         anomalies=[str(a) for a in (snap.get("anomaly_messages") or [])],
     )
 
-    action = _pick_action(scored=scored, validated=validated, data_gaps=data_gaps, snap=snap)
+    from app.ai.presentation.seller_display import _DEFAULT_SELLER_ACTION, extract_seller_action_text
+
+    raw_action = _pick_action(scored=scored, validated=validated, data_gaps=data_gaps, snap=snap)
+    action = extract_seller_action_text(raw_action) or _DEFAULT_SELLER_ACTION
 
     conf_parts = [f"Уверенность в рекомендации: {_confidence_label_ru(scored.confidence)}."]
     if flags:
@@ -195,20 +198,16 @@ def _pick_action(
     for bullet in scored.bullets[1:]:
         if bullet and len(bullet) > 15:
             low = bullet.lower()
-            if any(v in low for v in action_verbs) or re.search(r"sku|артикул", low):
+            if any(v in low for v in action_verbs):
                 return bullet[:500]
     if scored.bullets:
         first = scored.bullets[0]
         if first and _is_causal_insight(str(first)):
-            return (
-                f"{first[:220]} — сверьте цены, остатки и рекламу по указанным SKU в кабинете WB."
-            )[:500]
-        return first[:500]
+            return "Сверьте цены, остатки и рекламу по указанным SKU в кабинете WB."[:500]
     if data_gaps:
         return data_gaps[0]
     return (
-        "Откройте детали → сверьте KPI на Dashboard → при необходимости загрузите недостающие данные "
-        "→ примените изменение в кабинете WB → отметьте выполненным здесь."
+        "Сверьте KPI на Dashboard и выберите корректирующее действие по проблемным SKU."
     )
 
 

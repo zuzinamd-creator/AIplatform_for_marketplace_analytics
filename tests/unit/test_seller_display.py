@@ -19,7 +19,7 @@ def test_confidence_label_ru_bands() -> None:
     assert confidence_label_ru(0.5) == "Низкая"
 
 
-def test_seller_what_happened_prefers_russian_action() -> None:
+def test_seller_what_happened_uses_statement_fallback_not_action() -> None:
     finding = DomainFindingDTO(
         finding_id="logistics_high_share",
         statement="Logistics burden 18.2% of revenue exceeds 15% benchmark.",
@@ -29,8 +29,52 @@ def test_seller_what_happened_prefers_russian_action() -> None:
         recommended_actions=["Логистика составляет 18.2% выручки — проверьте тарифы WB."],
     )
     text = seller_what_happened(finding)
-    assert "Логистика" in text
+    assert "18.2" in text
     assert "Logistics" not in text
+    assert "проверьте" not in text.lower()
+
+
+def test_extract_seller_action_separates_analytics() -> None:
+    from app.ai.presentation.seller_display import extract_seller_action_text, seller_action_from_finding
+
+    raw = (
+        "Выручка упала на 27.5%. Главный вклад SKU j-16-184a (-63049 ₽). "
+        "Проверьте наличие, цену и рекламу по этому артикулу."
+    )
+    finding = DomainFindingDTO(
+        finding_id="revenue_drop",
+        statement="Revenue declined 27.5% vs comparison period.",
+        confidence=Decimal("0.91"),
+        severity="high",
+        evidence_refs=[],
+        recommended_actions=[raw],
+    )
+    what = seller_what_happened(finding)
+    action = seller_action_from_finding(finding)
+    assert "Выручка" in what
+    assert "проверьте" not in what.lower()
+    assert "1." in action
+    assert "Проверьте остатки" in action
+    assert action != what
+    assert extract_seller_action_text(raw, finding_id="revenue_drop") == action
+
+
+def test_ensure_summary_action_separated() -> None:
+    from app.ai.presentation.seller_display import ensure_summary_action_separated
+
+    dup = (
+        "Что произошло:\nВыручка упала.\n\n"
+        "Что делать:\nВыручка упала.\n\n"
+        "Почему это важно:\nПричина."
+    )
+    plan = {
+        "seller_usefulness": {
+            "concrete_next_action": "Проверьте остатки SKU X.",
+        }
+    }
+    out = ensure_summary_action_separated(dup, plan)
+    assert "Что делать:\nПроверьте остатки SKU X." in out
+    assert "Что делать:\nВыручка" not in out
 
 
 def test_sanitize_domain_insight_strips_internal_fields() -> None:

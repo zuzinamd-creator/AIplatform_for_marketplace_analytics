@@ -110,9 +110,7 @@ def build_actionable_payload(
         )
         coverage_dict["seller_usefulness_score"] = round(min(100.0, boosted), 1)
     limitations = list(usefulness.limitations)
-    limitations.append(coverage.analysis_limitations)
-    if coverage.advertising_warning:
-        limitations.append(coverage.advertising_warning)
+    # analysis_limitations + advertising_warning exposed via dedicated fields only (no list duplication)
 
     return {
         "why_this_matters": usefulness.why_this_matters,

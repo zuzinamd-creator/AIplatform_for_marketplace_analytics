@@ -129,11 +129,52 @@ def sanitize_recommendation_for_seller(
     summary: str,
     action_plan: dict[str, Any] | None,
 ) -> tuple[str, str, dict[str, Any]]:
+    plan = sanitize_action_plan_for_seller(action_plan)
+    cleaned = strip_limitations_from_summary(sanitize_seller_text(summary), plan)
+    fixed_summary = ensure_summary_action_separated(cleaned, plan)
     return (
         sanitize_seller_text(title),
-        sanitize_seller_text(summary),
-        sanitize_action_plan_for_seller(action_plan),
+        fixed_summary,
+        plan,
     )
+
+
+_DEFAULT_SELLER_ACTION = (
+    "Сверьте KPI на Dashboard и выберите корректирующее действие по проблемным SKU."
+)
+
+_ACTION_VERB_STARTS = (
+    "проверьте",
+    "снизьте",
+    "увеличьте",
+    "пересмотрите",
+    "загрузите",
+    "оцените",
+    "проведите",
+    "сверьте",
+    "рассмотрите",
+    "импортируйте",
+    "скорректируйте",
+    "добавьте",
+    "оптимизируйте",
+    "остановите",
+    "диверсифицируйте",
+    "продвигайте",
+)
+
+_ANALYTICS_SENTENCE_STARTS = (
+    "выручка",
+    "прибыль",
+    "маржа",
+    "основной",
+    "главный",
+    "драйвер",
+    "концентрация",
+    "объём",
+    "объем",
+    "капитал",
+    "sku ",
+)
 
 
 def _looks_russian(text: str) -> bool:
@@ -185,15 +226,199 @@ def seller_domain_label(analyst_id: str | None, analyst_label: str | None = None
 
 
 def seller_what_happened(finding: DomainFindingDTO) -> str:
-    """Prefer Russian copy; fall back to recommended action text, then finding_id template."""
+    """Russian narrative of the finding — never copy recommended_actions (often mixed with actions)."""
     stmt = finding.statement.strip()
-    if _looks_russian(stmt):
+    if _looks_russian(stmt) and not _text_is_action_heavy(stmt):
         return stmt
-    for action in finding.recommended_actions:
-        action_text = str(action).strip()
-        if _looks_russian(action_text):
-            return action_text
-    return _statement_fallback_ru(finding.finding_id, stmt)
+    base = _statement_fallback_ru(finding.finding_id, stmt)
+    return _enrich_what_with_driver(base, finding)
+
+
+def seller_action_from_finding(finding: DomainFindingDTO) -> str:
+    """Seller-facing imperative actions only."""
+    for raw in finding.recommended_actions:
+        extracted = extract_seller_action_text(str(raw), finding_id=finding.finding_id)
+        if extracted:
+            return extracted
+    return _action_fallback_ru(finding.finding_id)
+
+
+def extract_seller_action_text(text: str, *, finding_id: str | None = None) -> str:
+    """Pull imperative sentences from mixed analyst copy; return numbered list or empty."""
+    if not text or not str(text).strip():
+        return ""
+    actions = _extract_imperative_sentences(str(text))
+    sku = _extract_sku_reference(str(text))
+    expanded: list[str] = []
+    for sentence in actions:
+        expanded.extend(_expand_combined_check_sentence(sentence, sku))
+    if expanded:
+        return _format_numbered_actions(expanded)
+    if _text_is_action_heavy(str(text)) and not _text_is_analytics_heavy(str(text)):
+        return _format_numbered_actions([str(text).strip().rstrip(".") + "."])
+    return ""
+
+
+def strip_limitations_from_summary(summary: str, action_plan: dict[str, Any]) -> str:
+    """Remove limitations tail from summary when served via action_plan (single UI source)."""
+    if not summary:
+        return summary
+    out = re.sub(r"\n\n### Ограничения анализа[\s\S]*$", "", summary).strip()
+    su = action_plan.get("seller_usefulness") or {}
+    ad = str(su.get("advertising_warning") or action_plan.get("advertising_warning") or "").strip()
+    if ad and out.endswith(ad):
+        out = out[: -len(ad)].rstrip()
+    return out
+
+
+def ensure_summary_action_separated(summary: str, action_plan: dict[str, Any] | None) -> str:
+    """On API read: fix stored summaries where «Что делать» duplicates analytics."""
+    if not summary:
+        return summary
+    plan = action_plan or {}
+    su = plan.get("seller_usefulness") or {}
+    fid = None
+    primary = plan.get("primary_insight") or {}
+    if isinstance(primary, dict):
+        fid = primary.get("finding_id")
+
+    def _resolve_action() -> str:
+        for candidate in (su.get("concrete_next_action"), plan.get("recommended_action")):
+            extracted = extract_seller_action_text(str(candidate or ""), finding_id=fid)
+            if extracted:
+                return extracted
+        for label in ("Действие", "Что делать"):
+            m = re.search(rf"{label}:\n(.*?)(?:\n\n(?:Почему|Уверенность|---|\Z))", summary, re.S)
+            if m:
+                extracted = extract_seller_action_text(m.group(1).strip(), finding_id=fid)
+                if extracted:
+                    return extracted
+        return _action_fallback_ru(str(fid or ""))
+
+    if "Что делать:" in summary:
+        m_what = re.search(r"Что произошло:\n(.*?)\n\nЧто делать:", summary, re.S)
+        m_act = re.search(r"Что делать:\n(.*?)(?:\n\nПочему это важно:|\Z)", summary, re.S)
+        if m_what and m_act:
+            what, act = m_what.group(1).strip(), m_act.group(1).strip()
+            if what == act or _text_is_analytics_heavy(act):
+                new_act = _resolve_action()
+                if new_act != act:
+                    return summary.replace(f"Что делать:\n{act}", f"Что делать:\n{new_act}", 1)
+        return summary
+
+    if "Действие:" in summary and "Что делать:" not in summary:
+        m_act = re.search(r"Действие:\n(.*?)(?:\n\n(?:---|Что произошло:)|\Z)", summary, re.S)
+        if m_act:
+            act = m_act.group(1).strip()
+            new_act = _resolve_action()
+            if new_act and new_act != act:
+                return summary.replace(f"Действие:\n{act}", f"Действие:\n{new_act}", 1)
+    return summary
+
+
+def _text_is_action_heavy(text: str) -> bool:
+    low = text.lower()
+    return any(v in low for v in _ACTION_VERB_STARTS)
+
+
+def _text_is_analytics_heavy(text: str) -> bool:
+    low = text.lower().strip()
+    if any(low.startswith(m) for m in _ANALYTICS_SENTENCE_STARTS):
+        return True
+    if re.search(r"[+-]?\d[\d\s]*%", low) and not _text_is_action_heavy(text):
+        return True
+    return False
+
+
+def _extract_imperative_sentences(text: str) -> list[str]:
+    found: list[str] = []
+    for match in re.finditer(
+        r"(?i)\b((?:проверьте|снизьте|увеличьте|пересмотрите|загрузите|оцените|проведите|"
+        r"сверьте|рассмотрите|импортируйте|скорректируйте|добавьте|оптимизируйте|остановите|"
+        r"диверсифицируйте|продвигайте)[^.!?]*[.!?])",
+        text,
+    ):
+        sentence = match.group(1).strip()
+        if sentence and sentence not in found:
+            found.append(sentence if sentence.endswith(".") else sentence + ".")
+    return found
+
+
+def _extract_sku_reference(text: str) -> str | None:
+    m = re.search(r"SKU\s+([^\s,.;]+)", text, re.I)
+    return m.group(1) if m else None
+
+
+def _expand_combined_check_sentence(sentence: str, sku: str | None) -> list[str]:
+    low = sentence.lower()
+    if "наличие" in low and "цен" in low and "реклам" in low:
+        suffix = f" SKU {sku}." if sku else "."
+        return [
+            f"Проверьте остатки{suffix}",
+            f"Проверьте цену относительно конкурентов{suffix}",
+            f"Проверьте рекламную активность товара{suffix}",
+        ]
+    return [sentence]
+
+
+def _format_numbered_actions(actions: list[str]) -> str:
+    cleaned = [a.strip().rstrip(".") + "." for a in actions if a.strip()]
+    if not cleaned:
+        return ""
+    if len(cleaned) == 1:
+        return cleaned[0]
+    return "\n".join(f"{i + 1}. {a}" for i, a in enumerate(cleaned))
+
+
+def _enrich_what_with_driver(base: str, finding: DomainFindingDTO) -> str:
+    raw = " ".join(str(a) for a in finding.recommended_actions)
+    sku = _extract_sku_reference(raw)
+    if not sku:
+        return base
+    fid = (finding.finding_id or "").lower()
+    amt_m = re.search(r"\(([+-]?\d[\d\s]*)\s*₽\)", raw)
+    if fid.startswith("revenue_drop") or "упала" in raw.lower():
+        extra = f" Наибольший вклад в снижение внёс SKU {sku}"
+        if amt_m:
+            extra += f" ({amt_m.group(1).strip()} ₽)."
+        else:
+            extra += "."
+        return base.rstrip(".") + "." + extra
+    if fid.startswith("revenue_growth") or "выросла" in raw.lower():
+        extra = f" Основной драйвер роста — SKU {sku}"
+        if amt_m:
+            extra += f" ({amt_m.group(1).strip()} ₽)."
+        else:
+            extra += "."
+        return base.rstrip(".") + "." + extra
+    return base
+
+
+def _action_fallback_ru(finding_id: str | None) -> str:
+    fid = (finding_id or "").lower()
+    mapping = {
+        "revenue_drop": (
+            "1. Сверьте остатки и цены по топ-SKU периода.\n"
+            "2. Проверьте рекламную активность по позициям с просадкой.\n"
+            "3. Оцените влияние скидок и акций на выручку."
+        ),
+        "revenue_growth": (
+            "1. Закрепите рост: проверьте остатки лидеров продаж.\n"
+            "2. Пересмотрите цену и продвижение топ-SKU периода."
+        ),
+        "profit_drop": (
+            "1. Проверьте себестоимость и комиссию по SKU с падением маржи.\n"
+            "2. Оцените логистику и скидки по проблемным позициям."
+        ),
+        "logistics_high_share": "1. Проверьте габариты, упаковку и тарифы логистики WB по проблемным SKU.",
+        "returns_high_rate": "1. Проверьте карточку, качество и комплектацию по SKU с высокими возвратами.",
+        "inventory_dead_stock": "1. Снизьте остатки и пересмотрите цену SKU без продаж.",
+        "inventory_slow_movers": "1. Снизьте закупку и проверьте видимость карточки проблемных SKU.",
+    }
+    for prefix, action in mapping.items():
+        if fid.startswith(prefix):
+            return action
+    return _DEFAULT_SELLER_ACTION
 
 
 def seller_why_text(*, finding_id: str | None, why: str) -> str:
@@ -300,7 +525,13 @@ def sanitize_domain_insight_for_seller(insight: dict[str, Any]) -> dict[str, Any
         "insight_id": insight.get("insight_id"),
         "domain": seller_domain_label(analyst_id, insight.get("analyst_label")),
         "statement": what,
-        "recommended_actions": [str(a) for a in actions if _looks_russian(str(a))][:3],
+        "recommended_actions": [
+            a
+            for a in (
+                extract_seller_action_text(str(x), finding_id=finding_id) for x in actions
+            )
+            if a
+        ][:3],
         "priority_rank": insight.get("priority_rank"),
     }
     if why and why != what:

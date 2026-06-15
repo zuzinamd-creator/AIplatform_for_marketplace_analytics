@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 
 from app.ai.insights.quality import compute_insight_quality_score
-from app.ai.presentation.seller_display import seller_what_happened, seller_why_text
+from app.ai.presentation.seller_display import seller_action_from_finding, seller_what_happened, seller_why_text
 from app.dto.domain_analyst_dto import DomainAnalystOutputDTO, DomainFindingDTO, ExecutiveInsightDTO
 
 
@@ -165,7 +165,7 @@ def structured_from_finding(
     source: str = "domain_analyst",
 ) -> StructuredInsight:
     level = priority_level_for_finding(finding.finding_id, finding.severity)
-    action = finding.recommended_actions[0] if finding.recommended_actions else "Сверьте KPI на Dashboard и выберите действие по SKU."
+    action = seller_action_from_finding(finding)
     why = _why_from_finding(finding)
     return StructuredInsight(
         insight_id=f"{analyst_id}:{finding.finding_id}",
