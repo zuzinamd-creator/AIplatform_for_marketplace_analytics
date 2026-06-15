@@ -151,9 +151,14 @@ export function RecommendationDetailPage() {
     periodDecision?.action ||
     String(u.what_to_do_today ?? u.concrete_next_action ?? plan.recommended_action ?? "");
   const isDataFirst = periodDecision?.mode === "data_first";
-  const displayActionResolved = isDataFirst
-    ? todayAction
-    : pickSellerAction(sections.action, todayAction || action);
+  const isSingleOrAlternative =
+    Boolean(periodDecision?.action) &&
+    (periodDecision?.mode === "single" || periodDecision?.mode === "alternative");
+  const displayActionResolved = isSingleOrAlternative
+    ? String(periodDecision!.action)
+    : isDataFirst
+      ? todayAction
+      : pickSellerAction(sections.action, todayAction || action);
   const rationaleCard =
     driverCards.find((c) => c.card_id === periodDecision?.source_card_id) ?? driverCards[0];
 
