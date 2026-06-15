@@ -304,7 +304,16 @@ def ensure_summary_action_separated(summary: str, action_plan: dict[str, Any] | 
     if isinstance(primary, dict):
         fid = primary.get("finding_id")
 
+    pd = plan.get("period_decision")
+    period_action = None
+    if isinstance(pd, dict) and pd.get("action"):
+        period_action = extract_seller_action_text(str(pd["action"]), finding_id=fid) or str(
+            pd["action"]
+        )
+
     def _resolve_action() -> str:
+        if period_action:
+            return period_action
         for candidate in (su.get("concrete_next_action"), plan.get("recommended_action")):
             extracted = extract_seller_action_text(str(candidate or ""), finding_id=fid)
             if extracted:
@@ -322,7 +331,8 @@ def ensure_summary_action_separated(summary: str, action_plan: dict[str, Any] | 
         m_act = re.search(r"Что делать:\n(.*?)(?:\n\nПочему это важно:|\Z)", summary, re.S)
         if m_what and m_act:
             what, act = m_what.group(1).strip(), m_act.group(1).strip()
-            if what == act or _text_is_analytics_heavy(act):
+            dash_fallback = bool(re.search(r"(?i)dashboard", act))
+            if what == act or _text_is_analytics_heavy(act) or dash_fallback:
                 new_act = _resolve_action()
                 if new_act != act:
                     return summary.replace(f"Что делать:\n{act}", f"Что делать:\n{new_act}", 1)
