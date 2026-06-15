@@ -157,11 +157,15 @@ class AIIntelligenceEngine:
         ad_warn = su.get("advertising_warning")
         if ad_warn:
             summary_parts.append(str(ad_warn))
+        from app.ai.presentation.seller_display import sanitize_seller_text
+
+        merged_summary = sanitize_seller_text("\n\n".join(summary_parts)[:4000])
         rec = rec.model_copy(
             update={
                 "confidence": quality.confidence,
                 "priority_score": quality.priority_score,
-                "summary": "\n\n".join(summary_parts)[:4000],
+                "summary": merged_summary,
+                "title": sanitize_seller_text(rec.title),
                 "contradictions": list(rec.contradictions) + ([f"quality:{f}" for f in quality.flags]),
             }
         )

@@ -20,21 +20,27 @@ class StructuredInsight:
     recommended_action: str
     source: str
     finding_id: str | None = None
+    headline_text: str | None = None
 
     def format_block(self, *, limitations: str | None = None) -> str:
-        parts = [
-            f"Главный вывод:\n{self.headline()}",
-            f"Что произошло:\n{self.what_happened}",
-            f"Что делать:\n{self.recommended_action}",
-            f"Почему это важно:\n{self.why}",
-        ]
+        head = self.headline()
+        parts = [f"Главный вывод:\n{head}"]
+        if _normalize_key(head) != _normalize_key(self.what_happened):
+            parts.append(f"Что произошло:\n{self.what_happened}")
+        parts.extend(
+            [
+                f"Что делать:\n{self.recommended_action}",
+                f"Почему это важно:\n{self.why}",
+            ]
+        )
         if limitations:
             parts.append(f"Ограничения анализа:\n{limitations}")
         return "\n\n".join(parts)
 
     def headline(self) -> str:
-        line = self.what_happened.strip().split("\n")[0]
-        return line[:255]
+        if self.headline_text:
+            return self.headline_text.strip()[:255]
+        return _seller_headline(self.what_happened)[:255]
 
     def domain(self) -> str:
         return _insight_domain(self)
@@ -202,11 +208,10 @@ def structured_from_executive(ins: ExecutiveInsightDTO) -> StructuredInsight:
 
 def structured_from_deep_bullet(text: str, *, index: int) -> StructuredInsight:
     level = priority_level_for_text(text)
-    action = _action_from_deep(text)
-    why = _why_from_deep(text)
-    what = text.strip().split("—")[0].split(" - ")[0].strip()
-    if not what:
-        what = text.strip()[:200]
+    full = text.strip()
+    action = _action_from_deep(full)
+    why = _why_from_deep(full)
+    what = full if full else text.strip()[:500]
     fid = None
     low = text.lower()
     if any(m in low for m in _INVENTORY_DEEP_MARKERS):
@@ -227,6 +232,7 @@ def structured_from_deep_bullet(text: str, *, index: int) -> StructuredInsight:
         recommended_action=action,
         source="deep_period_insights",
         finding_id=fid,
+        headline_text=_seller_headline(what),
     )
 
 
@@ -236,15 +242,17 @@ def structured_from_headline(headline: str) -> StructuredInsight | None:
     if priority_level_for_text(headline) >= 3 and "сравнение периодов" not in headline.lower():
         return None
     level = 1 if _has_causal_headline(headline) else 2
+    full = headline.strip()
     return StructuredInsight(
         insight_id="causal_headline",
         priority_level=level,
-        what_happened=headline.strip(),
-        why="Сравнение governed-периодов и структуры продаж по SKU.",
+        what_happened=full,
+        why="Сравнение периодов и структуры продаж по SKU.",
         confidence=0.88 if level == 1 else 0.75,
         recommended_action="Проверьте SKU-драйверы периода и при необходимости скорректируйте цену, остатки или продвижение.",
         source="causal_headline",
         finding_id="revenue_period_driver",
+        headline_text=_seller_headline(full),
     )
 
 
@@ -514,25 +522,80 @@ def _why_from_deep(text: str) -> str:
         return "Без себестоимости прибыль и маржа по SKU недостоверны."
     if any(m in low for m in _INVENTORY_DEEP_MARKERS):
         return "Складской сигнал дополняет картину периода, но не заменяет анализ выручки и маржи."
-    return "Сигнал из deep period insights по governed данным."
+    return "Дополнительный сигнал по данным загруженных отчётов за период."
+
+
+def _seller_headline(text: str) -> str:
+    """Short seller-facing headline — must differ from full what_happened."""
+    t = text.strip()
+    if not t:
+        return ""
+    low = t.lower()
+
+    if "прибыль" in low and "маржа" in low and "→" in t:
+        m_pp = re.search(r"\(-?([\d.,]+)\s*п\.п\.\)", t)
+        if m_pp:
+            return f"Маржа сжалась на {m_pp.group(1)} п.п. при росте выручки за период."
+        m_margin = re.search(r"маржа\s+([\d.,]+)%\s*→\s*([\d.,]+)%", low)
+        if m_margin:
+            return f"Маржа снизилась с {m_margin.group(1)}% до {m_margin.group(2)}% при изменении выручки."
+
+    if "мёртв" in low or "мертв" in low:
+        m_sku = re.search(r"(\d+)\s*sku", low)
+        n = m_sku.group(1) if m_sku else "1"
+        return f"На складе {n} SKU без продаж при наличии остатков."
+
+    if "медленн" in low or "оборачива" in low:
+        m_sku = re.search(r"(\d+)\s*sku", low)
+        n = m_sku.group(1) if m_sku else "1"
+        return f"Медленная оборачиваемость: {n} SKU требуют внимания."
+
+    if "выросла на" in low or "вырос на" in low:
+        m_pct = re.search(r"выросл[аи] на ([\d.,]+%)", low)
+        if m_pct:
+            return f"Выручка выросла на {m_pct.group(1)} за период."
+        return "Выручка выросла за период — см. детали ниже."
+
+    if "упала на" in low or "упал на" in low:
+        m_pct = re.search(r"упал[аи] на ([\d.,]+%)", low)
+        if m_pct:
+            return f"Выручка снизилась на {m_pct.group(1)} за период."
+
+    sentences = re.split(r"(?<=[.!?])\s+", t)
+    first = sentences[0].strip()
+    if len(first) > 140:
+        if ":" in first:
+            first = first.split(":", 1)[0].strip() + "."
+        else:
+            first = first[:137].rstrip(" ,;:") + "…"
+    if first and not first.endswith((".", "!", "?", "…")):
+        first += "."
+    return first[:255]
 
 
 def _action_from_deep(text: str) -> str:
-    if "—" in text:
-        tail = text.split("—", 1)[1].strip()
-        if len(tail) >= 15:
-            return tail.rstrip(".") + "."
     low = text.lower()
     if "убыточ" in low:
         return "Проверьте себестоимость, логистику и цену проблемного SKU."
     if "логистик" in low:
         return "Оцените упаковку, габариты и распределение остатков по SKU."
-    if "остат" in low or "сток" in low or "оборачива" in low or "заморож" in low:
+    if "медленн" in low or ("оборачива" in low and "sku" in low):
+        return "Снизьте закупку по проблемным SKU, проверьте цену и видимость карточки."
+    if "мёртв" in low or "мертв" in low:
+        return "Снизьте остатки и пересмотрите цену или карточку SKU без продаж."
+    if "остат" in low or "сток" in low or "заморож" in low:
         return "Проведите ревизию остатков и скорректируйте закупки по проблемным SKU."
     if "комисс" in low:
         return "Проверьте категорию, акции и цену после СПП."
     if "себестоим" in low:
         return "Загрузите себестоимость для непокрытых SKU."
+    if "выросла на" in low or "главный фактор" in low or "драйвер" in low:
+        return (
+            "Пересмотрите цены и продвижение топ-SKU; "
+            "проверьте, не съели ли маржу скидки и рост расходов WB."
+        )
+    if "маржа" in low:
+        return "Проверьте себестоимость, комиссию и логистику по SKU с просадкой маржи."
     return "Сверьте SKU в Dashboard и выберите корректирующее действие."
 
 

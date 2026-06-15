@@ -7,6 +7,7 @@ from decimal import Decimal
 from app.ai.presentation.seller_display import (
     confidence_label_ru,
     sanitize_domain_insight_for_seller,
+    sanitize_seller_text,
     seller_what_happened,
 )
 from app.dto.domain_analyst_dto import DomainFindingDTO
@@ -51,3 +52,16 @@ def test_sanitize_domain_insight_strips_internal_fields() -> None:
     assert "confidence" not in clean
     assert "reasoning_summary" not in clean
     assert "assigned severity" not in str(clean)
+
+
+def test_sanitize_seller_text_replaces_internal_terms() -> None:
+    raw = (
+        "Сравнение governed-периодов. deep period insights и cost_history. "
+        "Не live-API маркететплейса."
+    )
+    out = sanitize_seller_text(raw)
+    assert "governed" not in out.lower()
+    assert "deep period" not in out.lower()
+    assert "cost_history" not in out
+    assert "live-api" not in out.lower()
+    assert "история себестоимости" in out

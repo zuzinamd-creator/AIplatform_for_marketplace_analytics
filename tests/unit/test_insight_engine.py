@@ -10,6 +10,8 @@ from app.ai.insights.priority_engine import (
     collect_structured_insights,
     pick_executive_lead,
     priority_level_for_finding,
+    structured_from_deep_bullet,
+    structured_from_headline,
 )
 from app.ai.insights.quality import (
     StatementKind,
@@ -113,6 +115,34 @@ def test_collect_structured_insights_from_domain_analyst() -> None:
     assert items
     assert items[0].priority_level == 1
     assert "Главный вывод:" in items[0].format_block()
+
+
+def test_format_block_headline_differs_from_what_happened() -> None:
+    full = (
+        "Прибыль изменилась на +540161 ₽ (+309.4%) при выручке +370.6%: "
+        "маржа 49.2% → 42.8% (-6.4 п.п.). Маржа сжалась из‑за роста доли расходов."
+    )
+    ins = structured_from_headline(full)
+    assert ins is not None
+    block = ins.format_block()
+    head = ins.headline()
+    assert head != ins.what_happened
+    assert head in block
+    assert ins.what_happened in block
+    assert "Главный вывод:" in block
+    assert "Что произошло:" in block
+
+
+def test_deep_bullet_keeps_full_what_happened_and_action_is_imperative() -> None:
+    deep = (
+        "Выручка выросла на 370.6% (+1314294 ₽). Главный фактор — "
+        "объём: +2278 шт (+425.8%, вырос с 535 до 2813); эффект ≈ +1510009 ₽."
+    )
+    ins = structured_from_deep_bullet(deep, index=0)
+    assert "Главный фактор —" in ins.what_happened
+    assert ins.what_happened.endswith("2813); эффект ≈ +1510009 ₽.")
+    assert ins.headline() != ins.what_happened
+    assert ins.recommended_action.lower().startswith("пересмотрите")
 
 
 def test_compose_insight_driven_output_replaces_kpi_title() -> None:

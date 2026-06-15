@@ -61,6 +61,81 @@ _WORKFLOW_STATE_RU: dict[str, str] = {
 }
 
 
+_SELLER_TERM_REPLACEMENTS: tuple[tuple[str, str], ...] = (
+    ("governed-периодов", "сравниваемых периодов"),
+    ("governed-метриками", "данными отчётов"),
+    ("governed KPI snapshot and deterministic analysts", "KPI из загруженных отчётов"),
+    ("governed KPI", "KPI из отчётов"),
+    ("governed данным", "загруженным отчётам"),
+    ("governed метрики", "показатели из отчётов"),
+    ("governed", "загруженных отчётов"),
+    ("deep period insights", "анализа периода"),
+    ("deep period", "анализа периода"),
+    ("cost_history", "история себестоимости"),
+    ("live-API маркететплейса", "данных из кабинета маркетплейса в реальном времени"),
+    ("live-API", "кабинета маркетплейса"),
+    ("live API", "кабинета маркетплейса"),
+)
+
+
+def sanitize_seller_text(text: str) -> str:
+    """Replace internal/English terms with seller-facing Russian."""
+    if not text:
+        return text
+    out = str(text)
+    for old, new in _SELLER_TERM_REPLACEMENTS:
+        out = out.replace(old, new)
+    return out
+
+
+def sanitize_action_plan_for_seller(plan: dict[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(plan, dict):
+        return {}
+    out = dict(plan)
+    for key in ("analysis_limitations", "advertising_warning", "recommended_action", "why_this_matters"):
+        if key in out and out[key]:
+            out[key] = sanitize_seller_text(str(out[key]))
+    su = out.get("seller_usefulness")
+    if isinstance(su, dict):
+        su_out = dict(su)
+        for key in (
+            "why_this_matters",
+            "concrete_next_action",
+            "confidence_explanation",
+            "analysis_limitations",
+            "expected_business_impact",
+            "executive_summary_v2_text",
+        ):
+            if key in su_out and su_out[key]:
+                su_out[key] = sanitize_seller_text(str(su_out[key]))
+        limits = su_out.get("limitations")
+        if isinstance(limits, list):
+            su_out["limitations"] = [sanitize_seller_text(str(x)) for x in limits]
+        out["seller_usefulness"] = su_out
+    bc = out.get("business_coverage")
+    if isinstance(bc, dict):
+        bc_out = dict(bc)
+        if bc_out.get("analysis_limitations"):
+            bc_out["analysis_limitations"] = sanitize_seller_text(str(bc_out["analysis_limitations"]))
+        if bc_out.get("advertising_warning"):
+            bc_out["advertising_warning"] = sanitize_seller_text(str(bc_out["advertising_warning"]))
+        out["business_coverage"] = bc_out
+    return out
+
+
+def sanitize_recommendation_for_seller(
+    *,
+    title: str,
+    summary: str,
+    action_plan: dict[str, Any] | None,
+) -> tuple[str, str, dict[str, Any]]:
+    return (
+        sanitize_seller_text(title),
+        sanitize_seller_text(summary),
+        sanitize_action_plan_for_seller(action_plan),
+    )
+
+
 def _looks_russian(text: str) -> bool:
     return any("\u0400" <= c <= "\u04FF" for c in text)
 

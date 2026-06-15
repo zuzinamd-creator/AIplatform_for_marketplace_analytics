@@ -16,6 +16,7 @@ import {
   eventTypeLabelRu,
   FOLLOW_UP_CHIPS,
   parseSellerSummarySections,
+  pickSellerAction,
   riskLabelRu,
   type SellerDomainInsight,
 } from "../../ui/seller-display";
@@ -97,9 +98,9 @@ export function RecommendationDetailPage() {
     onError: (err) => toast("Не удалось сохранить отзыв", err instanceof Error ? err.message : "Неизвестная ошибка"),
   });
 
-  const r = rec.data as any;
-  const e = explain.data as any;
-  const plan = (r?.action_plan ?? {}) as any;
+  const r = rec.data as Record<string, unknown> | undefined;
+  const e = explain.data as Record<string, unknown> | undefined;
+  const plan = (r?.action_plan ?? {}) as Record<string, unknown>;
   const u = (plan.seller_usefulness ?? {}) as Record<string, unknown>;
   const why = String(u.why_this_matters ?? plan.why_this_matters ?? "");
   const action = String(u.concrete_next_action ?? plan.recommended_action ?? "");
@@ -108,7 +109,7 @@ export function RecommendationDetailPage() {
   const downside = String(u.estimated_downside ?? "");
   const urgency = String(u.urgency ?? "");
   const confExplain = String(u.confidence_explanation ?? "");
-  const fingerprint = String((r?.lineage ?? {})?.fingerprint ?? "");
+  const fingerprint = String((r?.lineage as Record<string, unknown> | undefined)?.fingerprint ?? "");
   const businessCoverage = (plan.business_coverage ?? u.business_coverage) as
     | Record<string, unknown>
     | undefined;
@@ -117,19 +118,25 @@ export function RecommendationDetailPage() {
       ? Number(businessCoverage.business_coverage_score)
       : null;
 
-  const nodes = (e?.evidence_graph?.nodes ?? []) as Array<any>;
-  const edges = (e?.evidence_graph?.edges ?? []) as Array<any>;
-  const domainInsights = (e?.reasoning_trace?.domain_insights ?? []) as SellerDomainInsight[];
-  const summaryText = String(r.summary ?? "");
+  const explainTrace = e?.reasoning_trace as Record<string, unknown> | undefined;
+  const explainGraph = e?.evidence_graph as Record<string, unknown> | undefined;
+  const trustContext = (e?.trust_context ?? {}) as Record<string, unknown>;
+  const nodes = (explainGraph?.nodes ?? []) as Array<Record<string, unknown>>;
+  const edges = (explainGraph?.edges ?? []) as Array<Record<string, unknown>>;
+  const domainInsights = (explainTrace?.domain_insights ?? []) as SellerDomainInsight[];
+  const summaryText = String(r?.summary ?? "");
   const sections = parseSellerSummarySections(summaryText);
-  const displayHeadline = sections.headline || String(r.title ?? "");
+  const displayHeadline = sections.headline || String(r?.title ?? "");
   const displayWhat = sections.whatHappened || summaryText;
-  const displayAction = sections.action || action;
+  const displayAction = pickSellerAction(sections.action, action);
   const displayWhy = sections.why || why;
-  const displayLimitations =
-    sections.limitations ||
-    String(u.analysis_limitations ?? plan.analysis_limitations ?? "");
-  const confLabel = confidenceLabelRu(r.confidence_score ?? r.confidence);
+  const limitationsFromSummary = sections.limitations;
+  const limitationsFromPlan = String(u.analysis_limitations ?? plan.analysis_limitations ?? "");
+  const displayLimitations = limitationsFromSummary || limitationsFromPlan;
+  const showTrustLimitations = !displayLimitations;
+  const confLabel = confidenceLabelRu(
+    (r?.confidence_score ?? r?.confidence) as string | number | null | undefined,
+  );
 
   return (
     <div className="space-y-6">
@@ -145,6 +152,8 @@ export function RecommendationDetailPage() {
 
       {rec.isLoading ? (
         <Card className="p-5">Загрузка…</Card>
+      ) : rec.isError ? (
+        <Card className="p-5">Не удалось загрузить рекомендацию.</Card>
       ) : r ? (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <Card className="p-5">
@@ -391,28 +400,30 @@ export function RecommendationDetailPage() {
             ) : e ? (
               <>
                 <div className="mt-3">
-                  <AiTrustPanel trust={e.trust_context} />
+                  <AiTrustPanel trust={e.trust_context as Parameters<typeof AiTrustPanel>[0]["trust"]} />
                 </div>
                 <div className="mt-2 text-xs text-ink-secondary">{String(e.confidence_rationale ?? "")}</div>
                 <div className="mt-4 rounded-lg border border-surface-subtle bg-surface-inset p-3">
                   <div className="text-sm font-semibold">Почему AI может ошибаться</div>
                   <div className="mt-2 text-sm text-ink-secondary">
                     {String(
-                      e?.trust_context?.confidence_explanation ??
+                      trustContext.confidence_explanation ??
                         confExplain ??
-                        "ИИ — advisory. Он опирается на загруженные отчёты и governed метрики. При неполных данных уверенность снижается.",
+                        "ИИ даёт рекомендации на основе загруженных отчётов. При неполных данных уверенность снижается.",
                     )}
                   </div>
-                  {Array.isArray(e?.trust_context?.limitations) && e.trust_context.limitations.length ? (
+                  {showTrustLimitations &&
+                  Array.isArray(trustContext.limitations) &&
+                  trustContext.limitations.length ? (
                     <ul className="mt-3 space-y-1 text-xs text-ink-secondary">
-                      {e.trust_context.limitations.slice(0, 10).map((l: string) => (
+                      {(trustContext.limitations as string[]).slice(0, 10).map((l) => (
                         <li key={l}>- {l}</li>
                       ))}
                     </ul>
                   ) : null}
-                  {e?.trust_context?.stale_data_note ? (
+                  {trustContext.stale_data_note ? (
                     <div className="mt-3 text-xs text-amber-200">
-                      Влияние устаревших данных: {String(e.trust_context.stale_data_note)}
+                      Влияние устаревших данных: {String(trustContext.stale_data_note)}
                     </div>
                   ) : null}
                 </div>

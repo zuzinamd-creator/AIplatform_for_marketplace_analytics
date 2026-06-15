@@ -68,7 +68,7 @@ def compose_insight_driven_output(
             StructuredInsight(
                 insight_id="fallback:data_review",
                 priority_level=2,
-                what_happened="За период есть governed KPI, но causal-insights ограничены доступными данными.",
+                what_happened="За период есть KPI из отчётов, но детальные сигналы ограничены доступными данными.",
                 why="Недостаточно сигналов уровня 1 для автоматического root cause.",
                 confidence=0.6,
                 recommended_action="Сверьте топ-SKU, возвраты и маржу на Dashboard, затем повторите анализ.",
@@ -77,8 +77,7 @@ def compose_insight_driven_output(
         ]
 
     primary = lead[0]
-    blocks = [ins.format_block() for ins in lead[:3]]
-    executive_lead = "\n\n---\n\n".join(blocks)
+    executive_lead = primary.format_block()
     summary = executive_lead
     title = primary.headline()
 

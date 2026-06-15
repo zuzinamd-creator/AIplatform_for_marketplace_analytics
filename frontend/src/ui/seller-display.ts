@@ -118,3 +118,28 @@ export function parseSellerSummarySections(summary: string): {
   }
   return { headline, whatHappened, action, why, limitations, raw };
 }
+
+const ACTION_VERB_RE =
+  /\b(проверьте|снизьте|увеличьте|пересмотрите|загрузите|оцените|проведите|сверьте|рассмотрите|импортируйте|скорректируйте|добавьте|оптимизируйте)\b/i;
+
+/** True when text looks like an imperative seller action, not analytics. */
+export function isSellerAction(text: string): boolean {
+  const t = (text ?? "").trim();
+  if (!t) return false;
+  if (ACTION_VERB_RE.test(t)) return true;
+  if (/^[+-]?\d|п\.п\.|эффект\s*≈|шт\s*\(|%\)/i.test(t) && !ACTION_VERB_RE.test(t)) return false;
+  return false;
+}
+
+/** Prefer the first candidate that reads as an actionable step. */
+export function pickSellerAction(...candidates: Array<string | null | undefined>): string {
+  for (const c of candidates) {
+    const t = String(c ?? "").trim();
+    if (t && isSellerAction(t)) return t;
+  }
+  for (const c of candidates) {
+    const t = String(c ?? "").trim();
+    if (t) return t;
+  }
+  return "";
+}

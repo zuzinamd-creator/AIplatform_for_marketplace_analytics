@@ -138,9 +138,20 @@ def coverage_to_dict(report: BusinessCoverageReport) -> dict:
 
 
 def format_executive_summary_v2_text(report: BusinessCoverageReport) -> str:
+    from app.ai.presentation.seller_display import confidence_label_ru
+
     v2 = report.executive_summary_v2
     lines = ["### Что мы знаем точно"]
-    lines.extend(f"• {x}" for x in v2.get("what_we_know") or ["—"])
+    for item in v2.get("what_we_know") or ["—"]:
+        text = str(item)
+        if " — " in text:
+            cause, conf = text.rsplit(" — ", 1)
+            try:
+                conf_val = float(conf.strip())
+                text = f"{cause} — уверенность {confidence_label_ru(conf_val)}"
+            except ValueError:
+                pass
+        lines.append(f"• {text}")
     lines.append("")
     lines.append("### Что мы не можем оценить")
     lines.extend(f"• {x}" for x in v2.get("what_we_cannot_assess") or ["—"])
@@ -196,7 +207,7 @@ def _cogs_block(snap: dict) -> CoverageBlock:
     roi = snap.get("roi") is not None
     cost_hist = cov is not None and cov > 0
     subs = (
-        ("cost_history", cost_hist),
+        ("история себестоимости", cost_hist),
         ("прибыль", profit),
         ("маржа", margin and (cov or Decimal("0")) >= Decimal("100")),
         ("ROI", roi),

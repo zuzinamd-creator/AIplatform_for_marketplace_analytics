@@ -50,6 +50,23 @@ from app.services.ai_service import AIService
 router = APIRouter()
 
 
+def _seller_recommendation_response(row) -> RecommendationResponse:
+    """Presentation-layer sanitization for seller-facing recommendation payloads."""
+    base = RecommendationResponse.model_validate(row)
+    from app.ai.presentation.seller_display import (
+        sanitize_action_plan_for_seller,
+        sanitize_seller_text,
+    )
+
+    return base.model_copy(
+        update={
+            "title": sanitize_seller_text(base.title),
+            "summary": sanitize_seller_text(base.summary),
+            "action_plan": sanitize_action_plan_for_seller(base.action_plan),
+        }
+    )
+
+
 @router.post("/runs", response_model=AIExecutionResultResponse, status_code=status.HTTP_201_CREATED)
 async def create_ai_run(
     body: AIRunCreateRequest,
@@ -298,7 +315,7 @@ async def list_recommendations(
         skip=skip, limit=limit, seller_state=seller_state, group=group
     )
     return PaginatedRecommendationsResponse(
-        items=[RecommendationResponse.model_validate(r) for r in rows],
+        items=[_seller_recommendation_response(r) for r in rows],
         page=svc.page_meta(total, skip, limit),
     )
 
@@ -312,7 +329,7 @@ async def get_recommendation(
     row = await AIService(db, current_user.id).get_recommendation(recommendation_id)
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="recommendation not found")
-    return RecommendationResponse.model_validate(row)
+    return _seller_recommendation_response(row)
 
 
 @router.get("/recommendations/stats", response_model=RecommendationStatsResponse)
@@ -478,7 +495,7 @@ async def patch_recommendation_workflow(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="recommendation not found")
-    return RecommendationResponse.model_validate(row)
+    return _seller_recommendation_response(row)
 
 
 @router.post(
