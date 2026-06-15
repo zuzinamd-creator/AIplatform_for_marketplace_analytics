@@ -250,7 +250,7 @@ def sanitize_evidence_graph_for_seller(graph: dict[str, Any]) -> dict[str, Any]:
                 fake = DomainFindingDTO(
                     finding_id="evidence",
                     statement=rest,
-                    confidence=0.5,
+                    confidence=_as_decimal(None, default=Decimal("0.5")),
                     severity="medium",
                     evidence_refs=[],
                     recommended_actions=[rest] if _looks_russian(rest) else [],
