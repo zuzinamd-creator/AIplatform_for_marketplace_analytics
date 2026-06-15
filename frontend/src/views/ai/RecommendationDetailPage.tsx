@@ -10,6 +10,7 @@ import { StatusBadge } from "../../ui/status-badge";
 import { AiTrustNotice } from "../../ui/trust-banners";
 import { AiTrustPanel } from "../../ui/ai-trust-panel";
 import { toast } from "../../ui/toast";
+import { trackUsage } from "../../state/usage";
 import {
   confidenceLabelRu,
   eventTypeLabelRu,
