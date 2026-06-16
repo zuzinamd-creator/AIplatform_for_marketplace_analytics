@@ -10,7 +10,6 @@ from app.core.observability import get_logger
 from app.core.config import settings
 from app.core.queue import EnqueuePayload, get_queue_backend
 from app.core.ttl_cache import TtlCache
-from app.domain.reports.period_queries import fetch_sale_period_bounds_for_reports
 from app.models.job import EtlJob, JobStatus
 from app.models.report import Marketplace, Report, ReportStatus, ReportType
 from app.schemas.report import ReportResponse
@@ -144,7 +143,7 @@ class ReportService(TenantScopedService):
         if cached is not None:
             return cached
 
-        # List view must not load raw_data (~MB per report); period comes from sale rows.
+        # List view must not load raw_data (~MB per report); period comes from columns.
         query = (
             select(Report)
             .options(defer(Report.raw_data))
@@ -160,14 +159,8 @@ class ReportService(TenantScopedService):
                 return []
             report_ids = [r.id for r in reports]
             jobs_by_report = await self._latest_jobs_for_reports(report_ids)
-            period_bounds = await self._period_bounds_for_report_ids(report_ids)
             responses = [
-                report_to_response(
-                    report,
-                    jobs_by_report.get(report.id),
-                    period_start=period_bounds.get(report.id, (None, None))[0],
-                    period_end=period_bounds.get(report.id, (None, None))[1],
-                )
+                report_to_response(report, jobs_by_report.get(report.id))
                 for report in reports
             ]
         _reports_list_cache.set(cache_key, responses)
@@ -175,19 +168,6 @@ class ReportService(TenantScopedService):
 
     def invalidate_list_cache(self) -> None:
         _reports_list_cache.invalidate_prefix(f"{self.user.id}:")
-
-    async def _period_bounds_for_reports(
-        self,
-        report_ids: list[UUID],
-    ) -> dict[UUID, tuple[date | None, date | None]]:
-        async with self._rls_transaction():
-            return await self._period_bounds_for_report_ids(report_ids)
-
-    async def _period_bounds_for_report_ids(
-        self,
-        report_ids: list[UUID],
-    ) -> dict[UUID, tuple[date | None, date | None]]:
-        return await fetch_sale_period_bounds_for_reports(self.db, report_ids)
 
     async def get_report(self, report_id: UUID) -> tuple[Report, EtlJob | None, date | None, date | None]:
         query = select(Report).where(Report.id == report_id, Report.user_id == self.user.id)
@@ -197,10 +177,8 @@ class ReportService(TenantScopedService):
             if not report:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
             jobs_by_report = await self._latest_jobs_for_reports([report.id])
-            period_bounds = await self._period_bounds_for_report_ids([report.id])
         job = jobs_by_report.get(report.id)
-        ps, pe = period_bounds.get(report.id, (None, None))
-        return report, job, ps, pe
+        return report, job, report.period_start, report.period_end
 
     async def _latest_job(self, report_id: UUID) -> EtlJob | None:
         async with self._rls_transaction():
@@ -233,12 +211,16 @@ class ReportService(TenantScopedService):
         *,
         raw_data: dict,
         row_count: int,
+        period_start: date | None = None,
+        period_end: date | None = None,
         in_transaction: bool = False,
     ) -> Report:
         """Update report domain fields only (no processing status)."""
         if in_transaction:
             report.raw_data = raw_data
             report.row_count = row_count
+            report.period_start = period_start
+            report.period_end = period_end
             report.processed_at = datetime.now(UTC)
             self.db.add(report)
             await self.db.flush()
@@ -247,6 +229,8 @@ class ReportService(TenantScopedService):
             async with self._rls_transaction():
                 report.raw_data = raw_data
                 report.row_count = row_count
+                report.period_start = period_start
+                report.period_end = period_end
                 report.processed_at = datetime.now(UTC)
                 self.db.add(report)
                 await self.db.flush()

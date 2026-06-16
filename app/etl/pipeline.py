@@ -188,6 +188,8 @@ class ETLPipeline:
                 report,
                 raw_data=raw_data,
                 row_count=wb_enriched.row_count,
+                period_start=period_start,
+                period_end=period_end,
                 in_transaction=in_transaction,
             )
 

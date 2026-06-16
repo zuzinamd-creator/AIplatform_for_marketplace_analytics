@@ -96,10 +96,12 @@ async def main() -> None:
         await _timed("SQL: latest etl_jobs per report", fetch_jobs())
 
         async def fetch_bounds() -> dict:
-            async with svc._rls_transaction():
-                return await svc._period_bounds_for_report_ids(report_ids)
+            from app.domain.reports.period_queries import fetch_sale_period_bounds_for_reports
 
-        await _timed("SQL: ledger period bounds GROUP BY", fetch_bounds())
+            async with svc._rls_transaction():
+                return await fetch_sale_period_bounds_for_reports(svc.db, report_ids)
+
+        await _timed("SQL: NRR period bounds (legacy path)", fetch_bounds())
 
     cold_samples: list[float] = []
     for _ in range(3):

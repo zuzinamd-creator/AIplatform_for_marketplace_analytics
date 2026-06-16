@@ -9,7 +9,7 @@ from app.schemas.report_mappers import report_to_response
 from app.services.cost_service import CostService
 
 
-def test_report_to_response_includes_period_from_mapper() -> None:
+def test_report_to_response_includes_period_from_columns() -> None:
     now = datetime.now(UTC)
     report = Report(
         id=uuid4(),
@@ -20,10 +20,12 @@ def test_report_to_response_includes_period_from_mapper() -> None:
         file_path="/x",
         file_checksum="abc",
         raw_data={"period_start": "2025-01-01", "period_end": "2025-01-31"},
+        period_start=date(2025, 2, 1),
+        period_end=date(2025, 2, 28),
         created_at=now,
         updated_at=now,
     )
-    resp = report_to_response(report, None, period_start=date(2025, 2, 1), period_end=date(2025, 2, 28))
+    resp = report_to_response(report, None)
     assert resp.period_start == date(2025, 2, 1)
     assert resp.period_end == date(2025, 2, 28)
 

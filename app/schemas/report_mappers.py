@@ -39,10 +39,12 @@ def report_to_response(
 ) -> ReportResponse:
     """Stable API mapping; processing state projected from latest etl_job."""
     state = inspect(report)
-    if "raw_data" in state.unloaded:
-        raw_start, raw_end = None, None
-    else:
+    resolved_start = period_start if period_start is not None else report.period_start
+    resolved_end = period_end if period_end is not None else report.period_end
+    if resolved_start is None and resolved_end is None and "raw_data" not in state.unloaded:
         raw_start, raw_end = _period_from_raw_data(report.raw_data)
+        resolved_start = raw_start
+        resolved_end = raw_end
     return ReportResponse(
         id=report.id,
         user_id=report.user_id,
@@ -63,8 +65,8 @@ def report_to_response(
         idempotency_key=report.file_checksum or (job.idempotency_key if job else None),
         claimed_at=job.claimed_at if job else None,
         processed_at=derive_processed_at(report, job),
-        period_start=period_start,
-        period_end=period_end,
+        period_start=resolved_start,
+        period_end=resolved_end,
         report_number=extract_report_number(
             filename=report.original_filename,
             marketplace=report.marketplace,

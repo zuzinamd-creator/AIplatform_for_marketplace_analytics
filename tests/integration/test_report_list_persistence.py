@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from uuid import uuid4
 
 import pytest
@@ -43,6 +44,8 @@ async def test_uploaded_report_survives_list_api(
                     original_filename="weekly.xlsx",
                     file_path=f"{user.id}/{report_id}/weekly.xlsx",
                     file_checksum=f"chk-{report_id}",
+                    period_start=date(2026, 5, 4),
+                    period_end=date(2026, 5, 10),
                 )
             )
             session.add(
@@ -68,6 +71,8 @@ async def test_uploaded_report_survives_list_api(
     assert len(body) == 1
     assert body[0]["id"] == str(report_id)
     assert body[0]["status"] == "processed"
+    assert body[0]["period_start"] == "2026-05-04"
+    assert body[0]["period_end"] == "2026-05-10"
 
     integrity = await api_client.get("/api/v1/system/data-integrity", headers=headers)
     assert integrity.status_code == 200

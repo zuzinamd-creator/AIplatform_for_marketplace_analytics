@@ -76,3 +76,6 @@ async def test_persist_result_skips_commit_when_in_transaction(monkeypatch) -> N
                             )
 
     db.commit.assert_not_called()
+    report_service.persist_business_result.assert_awaited_once()
+    kwargs = report_service.persist_business_result.await_args.kwargs
+    assert kwargs["in_transaction"] is True

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Backfill sale-based report periods for all uploaded reports."""
+"""Backfill report.period_start/period_end from raw_data JSON keys."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import argparse
 import asyncio
 import os
 import sys
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,8 +18,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.core.tenant_context import set_bypass_rls_context
-from app.domain.reports.period import attach_period_to_raw_data
-from app.domain.reports.period_queries import fetch_sale_period_bounds_for_reports
 from app.models.report import Report
 
 
@@ -30,6 +29,12 @@ def load_env() -> None:
         if "=" in line and not line.startswith("#"):
             key, value = line.split("=", 1)
             os.environ.setdefault(key.strip(), value.strip())
+
+
+def _parse_iso_date(value: object) -> date | None:
+    if not isinstance(value, str) or not value:
+        return None
+    return date.fromisoformat(value)
 
 
 async def backfill_report_periods(
@@ -47,29 +52,23 @@ async def backfill_report_periods(
 
     for offset in range(0, len(report_ids), batch_size):
         batch_ids = report_ids[offset : offset + batch_size]
-        bounds = await fetch_sale_period_bounds_for_reports(db, batch_ids)
         reports = list(
             (await db.execute(select(Report).where(Report.id.in_(batch_ids)))).scalars().all()
         )
         for report in reports:
-            period_start, period_end = bounds.get(report.id, (None, None))
-            next_raw = attach_period_to_raw_data(
-                report.raw_data,
-                period_start=period_start,
-                period_end=period_end,
-            )
-            current_raw = dict(report.raw_data or {})
-            if current_raw.get("period_start") == next_raw.get("period_start") and current_raw.get(
-                "period_end"
-            ) == next_raw.get("period_end"):
+            raw = dict(report.raw_data or {})
+            next_start = _parse_iso_date(raw.get("period_start"))
+            next_end = _parse_iso_date(raw.get("period_end"))
+            if report.period_start == next_start and report.period_end == next_end:
                 unchanged += 1
                 continue
-            if period_start is None and period_end is None:
+            if next_start is None and next_end is None:
                 cleared += 1
             else:
                 updated += 1
             if not dry_run:
-                report.raw_data = next_raw
+                report.period_start = next_start
+                report.period_end = next_end
                 db.add(report)
 
         if not dry_run:
