@@ -10,6 +10,8 @@ import { Button } from "../../ui/button";
 import { Label, Select } from "../../ui/field";
 import { StatusBadge } from "../../ui/status-badge";
 import { toast } from "../../ui/toast";
+import { buildReportTableRows } from "./report-missing-periods";
+import { sortReportsByPeriod, type PeriodSortOrder } from "./report-period-sort";
 
 function isReportProcessing(status?: string, jobStatus?: string | null): boolean {
   const s = (status ?? "").toLowerCase();
@@ -49,6 +51,7 @@ const LIST_LIMIT = 200;
 export function ReportsPage() {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
+  const [periodSortOrder, setPeriodSortOrder] = useState<PeriodSortOrder>("desc");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const q = useQuery({
@@ -82,9 +85,12 @@ export function ReportsPage() {
 
   const filtered = useMemo(() => {
     const rows = q.data ?? [];
-    if (statusFilter === "all") return rows;
-    return rows.filter((r) => String(r.status).toLowerCase().includes(statusFilter));
-  }, [q.data, statusFilter]);
+    const byStatus =
+      statusFilter === "all" ? rows : rows.filter((r) => String(r.status).toLowerCase().includes(statusFilter));
+    return sortReportsByPeriod(byStatus, periodSortOrder);
+  }, [q.data, statusFilter, periodSortOrder]);
+
+  const tableRows = useMemo(() => buildReportTableRows(filtered), [filtered]);
 
   const savedViews = loadSavedViews("reports");
 
@@ -132,7 +138,17 @@ export function ReportsPage() {
         <div className="grid grid-cols-12 gap-0 border-b border-surface-subtle bg-surface-inset px-4 py-3 text-xs font-medium uppercase tracking-wide text-ink-muted">
           <div className="col-span-3">№ отчёта</div>
           <div className="col-span-2">Маркетплейс</div>
-          <div className="col-span-2">Период</div>
+          <button
+            type="button"
+            className="col-span-2 flex items-center gap-1 text-left transition hover:text-ink-secondary"
+            onClick={() => setPeriodSortOrder((order) => (order === "asc" ? "desc" : "asc"))}
+            aria-sort={periodSortOrder === "asc" ? "ascending" : "descending"}
+          >
+            Период
+            <span aria-hidden="true" className="text-[10px] leading-none">
+              {periodSortOrder === "asc" ? "▲" : "▼"}
+            </span>
+          </button>
           <div className="col-span-2">Статус</div>
           <div className="col-span-2">Примечания</div>
           <div className="col-span-1 text-right">Действия</div>
@@ -141,7 +157,23 @@ export function ReportsPage() {
         {q.isLoading ? (
           <div className="px-4 py-6 text-sm text-ink-secondary">Загрузка…</div>
         ) : filtered.length > 0 ? (
-          filtered.map((r) => {
+          tableRows.map((row) => {
+            if (row.kind === "gap") {
+              return (
+                <div
+                  key={row.gap.id}
+                  className="grid grid-cols-12 gap-0 border-b border-amber-200/60 bg-semantic-warn-bg px-4 py-2 text-xs text-semantic-warn"
+                  role="status"
+                >
+                  <div className="col-span-12 flex items-center gap-2">
+                    <span aria-hidden="true">⚠</span>
+                    <span>Отсутствует отчёт за период {row.gap.label}</span>
+                  </div>
+                </div>
+              );
+            }
+
+            const r = row.report;
             const canDelete = canDeleteReport(r.status, r.job?.status);
             return (
               <div
