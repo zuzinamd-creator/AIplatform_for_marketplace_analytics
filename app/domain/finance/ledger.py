@@ -8,14 +8,17 @@ from app.domain.finance.wb_row_semantics import (
     LOGISTICS_RAW_KEYS,
     WbFinanceRowKind,
     allows_commission,
-    allows_compensation,
     allows_deduction,
     allows_logistics,
+    allows_loyalty_compensation,
     allows_payout,
     allows_penalty,
+    allows_pic_compensation,
     allows_retail_amount,
-    allows_return_amount,
+    allows_return_wb,
     allows_storage,
+    allows_voluntary_compensation,
+    allows_wb_realized_amount,
     classify_wb_finance_row,
 )
 from app.models.finance.enums import LedgerOperationType
@@ -41,6 +44,7 @@ class LedgerBuilder:
         quantity = LedgerBuilder._sale_quantity(canonical, kind)
 
         typed_amounts: list[tuple[LedgerOperationType, Decimal | None]] = []
+        return_basis: str | None = None
 
         if allows_retail_amount(kind):
             typed_amounts.append(
@@ -64,10 +68,6 @@ class LedgerBuilder:
         typed_amounts.append(
             (LedgerOperationType.ACQUIRING, LedgerBuilder._as_negative(canonical.get("acquiring")))
         )
-        if allows_compensation(kind):
-            typed_amounts.append(
-                (LedgerOperationType.COMPENSATION, LedgerBuilder._as_positive(canonical.get("compensation")))
-            )
         if allows_deduction(kind):
             typed_amounts.append(
                 (LedgerOperationType.DEDUCTION, LedgerBuilder._as_negative(canonical.get("deduction")))
@@ -83,25 +83,32 @@ class LedgerBuilder:
         typed_amounts.append(
             (LedgerOperationType.ADVERTISEMENT, LedgerBuilder._as_negative(canonical.get("advertisement")))
         )
-        if allows_return_amount(kind):
-            typed_amounts.append(
-                (LedgerOperationType.RETURN, LedgerBuilder._as_negative(canonical.get("return_amount")))
-            )
+        if allows_return_wb(kind):
+            return_amount, return_basis = LedgerBuilder._resolve_wb_return(canonical)
+            if return_amount is not None:
+                typed_amounts.append((LedgerOperationType.RETURN, return_amount))
 
-        if kind == WbFinanceRowKind.RETURN:
-            explicit_return = canonical.get("return_amount")
-            explicit_return_present = isinstance(explicit_return, Decimal) and explicit_return != Decimal("0")
-            sale_amount = LedgerBuilder._as_positive(canonical.get("retail_amount"))
-            if (not explicit_return_present) and sale_amount is not None:
-                typed_amounts.append((LedgerOperationType.RETURN, -abs(sale_amount)))
-
-        metadata = {"parser_row_index": str(row.source_row_index)}
-        if quantity > 0 and kind == WbFinanceRowKind.SALE:
-            metadata["quantity"] = str(quantity)
+        sale_metadata = LedgerBuilder._build_sale_metadata(
+            canonical=canonical,
+            kind=kind,
+            source_row_index=row.source_row_index,
+            quantity=quantity,
+        )
+        return_metadata = LedgerBuilder._build_return_metadata(
+            canonical=canonical,
+            kind=kind,
+            source_row_index=row.source_row_index,
+            return_basis=return_basis,
+        )
 
         for operation_type, amount in typed_amounts:
             if amount is None or amount == Decimal("0"):
                 continue
+            entry_metadata: dict[str, str] | None = None
+            if operation_type == LedgerOperationType.SALE:
+                entry_metadata = sale_metadata
+            elif operation_type == LedgerOperationType.RETURN:
+                entry_metadata = return_metadata
             drafts.append(
                 LedgerEntryDraft(
                     operation_date=operation_date,
@@ -111,7 +118,23 @@ class LedgerBuilder:
                     amount=amount,
                     currency="RUB",
                     source_row_id=f"{row.source_row_id}:{operation_type.value}",
-                    entry_metadata=metadata if operation_type == LedgerOperationType.SALE else None,
+                    entry_metadata=entry_metadata,
+                )
+            )
+
+        for amount, compensation_metadata in LedgerBuilder._compensation_entry_specs(canonical, kind):
+            drafts.append(
+                LedgerEntryDraft(
+                    operation_date=operation_date,
+                    sku=row.sku,
+                    nm_id=row.nm_id,
+                    operation_type=LedgerOperationType.COMPENSATION,
+                    amount=amount,
+                    currency="RUB",
+                    source_row_id=(
+                        f"{row.source_row_id}:compensation:{compensation_metadata['compensation_kind']}"
+                    ),
+                    entry_metadata=compensation_metadata,
                 )
             )
 
@@ -130,6 +153,99 @@ class LedgerBuilder:
                     )
                 )
         return drafts
+
+    @staticmethod
+    def _compensation_entry_specs(
+        canonical: dict[str, object],
+        kind: WbFinanceRowKind,
+    ) -> list[tuple[Decimal, dict[str, str]]]:
+        specs: list[tuple[Decimal, dict[str, str]]] = []
+
+        if allows_pic_compensation(kind):
+            pic = LedgerBuilder._as_positive(canonical.get("payment_integration_compensation"))
+            if pic is not None:
+                specs.append((pic, {"compensation_kind": "pic"}))
+
+        if allows_loyalty_compensation(kind):
+            loyalty = LedgerBuilder._as_positive(canonical.get("loyalty_compensation"))
+            if loyalty is not None:
+                specs.append((loyalty, {"compensation_kind": "loyalty"}))
+
+        if allows_voluntary_compensation(kind):
+            voluntary = LedgerBuilder._as_positive(canonical.get("voluntary_compensation"))
+            if voluntary is not None:
+                specs.append((voluntary, {"compensation_kind": "voluntary"}))
+            else:
+                payout = canonical.get("payout")
+                if isinstance(payout, Decimal) and payout != Decimal("0"):
+                    specs.append((abs(payout), {"compensation_kind": "voluntary"}))
+
+        # Legacy generic compensation: only on COMPENSATION-kind rows. After C1 rehydrate,
+        # typed row kinds carry dedicated fields; emitting legacy here avoids double-counting.
+        if kind == WbFinanceRowKind.COMPENSATION:
+            legacy = LedgerBuilder._as_positive(canonical.get("compensation"))
+            if legacy is not None:
+                specs.append((legacy, {"compensation_kind": "legacy"}))
+
+        return specs
+
+    @staticmethod
+    def _resolve_wb_return(canonical: dict[str, object]) -> tuple[Decimal | None, str | None]:
+        return_wb = LedgerBuilder._as_positive(canonical.get("return_wb"))
+        if return_wb is not None:
+            return -return_wb, "wb"
+        wb_realized = LedgerBuilder._as_positive(canonical.get("wb_realized_amount"))
+        if wb_realized is not None:
+            return -wb_realized, "wb"
+        retail = LedgerBuilder._as_positive(canonical.get("retail_amount"))
+        if retail is not None:
+            return -retail, "gmv"
+        return None, None
+
+    @staticmethod
+    def _wb_realized_metadata_value(canonical: dict[str, object]) -> str | None:
+        wb_realized = canonical.get("wb_realized_amount")
+        if isinstance(wb_realized, Decimal) and wb_realized != Decimal("0"):
+            return str(wb_realized)
+        return None
+
+    @staticmethod
+    def _build_sale_metadata(
+        *,
+        canonical: dict[str, object],
+        kind: WbFinanceRowKind,
+        source_row_index: int,
+        quantity: int,
+    ) -> dict[str, str] | None:
+        if kind != WbFinanceRowKind.SALE:
+            return None
+        metadata: dict[str, str] = {"parser_row_index": str(source_row_index)}
+        if quantity > 0:
+            metadata["quantity"] = str(quantity)
+        if allows_wb_realized_amount(kind):
+            wb_value = LedgerBuilder._wb_realized_metadata_value(canonical)
+            if wb_value is not None:
+                metadata["wb_realized_amount"] = wb_value
+        return metadata
+
+    @staticmethod
+    def _build_return_metadata(
+        *,
+        canonical: dict[str, object],
+        kind: WbFinanceRowKind,
+        source_row_index: int,
+        return_basis: str | None,
+    ) -> dict[str, str] | None:
+        if kind != WbFinanceRowKind.RETURN:
+            return None
+        metadata: dict[str, str] = {"parser_row_index": str(source_row_index)}
+        if allows_wb_realized_amount(kind):
+            wb_value = LedgerBuilder._wb_realized_metadata_value(canonical)
+            if wb_value is not None:
+                metadata["wb_realized_amount"] = wb_value
+        if return_basis is not None:
+            metadata["return_basis"] = return_basis
+        return metadata
 
     @staticmethod
     def _sale_quantity(canonical: dict[str, object], kind: WbFinanceRowKind) -> int:

@@ -11,7 +11,6 @@ import { toast } from "../../ui/toast";
 
 const marketplaces = [
   { value: "wildberries", label: "Wildberries" },
-  { value: "ozon", label: "Ozon" },
 ];
 
 const reportTypes = [

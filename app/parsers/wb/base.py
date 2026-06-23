@@ -57,6 +57,29 @@ def _column_match_score(field: str, column: str) -> int:
                     score -= 60
                 if "рознич" in column_norm or "retail" in column_norm:
                     score += 30
+            if field == "wb_realized_amount":
+                if "реализовал" in column_norm:
+                    score += 40
+                if "перечислен" in column_norm:
+                    score -= 80
+            if field == "payment_integration_compensation":
+                if "платёжн" in column_norm or "интеграц" in column_norm:
+                    score += 50
+            if field == "return_wb":
+                if "реализовал" in column_norm:
+                    score += 40
+                if "количество" in column_norm:
+                    score -= 100
+            if field == "return_amount":
+                if "количество возврата" in column_norm or "return_qty" in column_norm:
+                    score += 40
+                if "реализовал" in column_norm:
+                    score -= 120
+                if "пвз" in column_norm:
+                    score -= 120
+            if field == "commission":
+                if "платёжн" in column_norm or "интеграц" in column_norm:
+                    score -= 120
             best = max(best, score)
     return best
 

@@ -9,17 +9,22 @@ CANONICAL_FIELDS = (
     "nm_id",
     "operation_type",
     "retail_amount",
+    "wb_realized_amount",
     "commission",
     "logistics",
     "storage_fee",
     "penalty",
     "acquiring",
     "compensation",
+    "payment_integration_compensation",
+    "loyalty_compensation",
+    "voluntary_compensation",
     "deduction",
     "payout",
     "advertisement",
     "quantity",
     "return_amount",
+    "return_wb",
     "warehouse_name",
 )
 
@@ -62,6 +67,12 @@ FIELD_ALIASES: dict[str, tuple[str, ...]] = {
         "цена розничная",
         "retail price withdisc rub",
     ),
+    "wb_realized_amount": (
+        "wb_realized_amount",
+        "wb realized",
+        "wildberries realized",
+        "вайлдберриз реализовал",
+    ),
     "commission": (
         "commission",
         "ppvz_sales_commission",
@@ -82,7 +93,23 @@ FIELD_ALIASES: dict[str, tuple[str, ...]] = {
     "storage_fee": ("storage_fee", "storage", "хранение", "storage_amount"),
     "penalty": ("penalty", "penalties", "штраф", "penalty_amount"),
     "acquiring": ("acquiring", "acquiring_fee", "эквайринг"),
-    "compensation": ("compensation", "compens", "компенсация"),
+    "compensation": ("compensation", "compens"),
+    "payment_integration_compensation": (
+        "payment_integration_compensation",
+        "payment integration",
+        "компенсация платёжных услуг",
+        "комиссия за интеграцию платёжных",
+        "платёжных сервисов",
+    ),
+    "loyalty_compensation": (
+        "loyalty_compensation",
+        "компенсация скидки по программе лояльности",
+        "лояльност",
+    ),
+    "voluntary_compensation": (
+        "voluntary_compensation",
+        "добровольная компенсация",
+    ),
     "deduction": ("deduction", "deductions", "удержание", "удержания"),
     "payout": (
         "payout",
@@ -94,7 +121,11 @@ FIELD_ALIASES: dict[str, tuple[str, ...]] = {
     ),
     "advertisement": ("advertisement", "ads", "реклама", "promo"),
     "quantity": ("quantity", "qty", "кол-во", "количество"),
-    "return_amount": ("return_amount", "return", "возврат", "return_qty"),
+    "return_amount": ("return_amount", "return_qty", "количество возврата"),
+    "return_wb": (
+        "return_wb",
+        "вайлдберриз реализовал",
+    ),
     "warehouse_name": (
         "warehouse_name",
         "warehouse",

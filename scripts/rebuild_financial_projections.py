@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
@@ -57,6 +57,7 @@ async def main() -> None:
     for user_id, email in users:
         async with Session() as db:
             async with db.begin():
+                await db.execute(text("SET LOCAL statement_timeout = '0'"))
                 await set_bypass_rls_context(db, True)
                 await set_current_user_context(db, user_id)
                 persist = WbFinancialPersistService(db, user_id)

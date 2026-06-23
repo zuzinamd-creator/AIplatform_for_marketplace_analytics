@@ -14,6 +14,8 @@ class WbFinanceRowKind(str, Enum):
     STORAGE = "storage"
     DEDUCTION = "deduction"
     COMPENSATION = "compensation"
+    LOYALTY_COMPENSATION = "loyalty_compensation"
+    VOLUNTARY_COMPENSATION = "voluntary_compensation"
     REIMBURSEMENT = "reimbursement"
     PVZ_REIMBURSEMENT = "pvz_reimbursement"
     OTHER = "other"
@@ -30,6 +32,11 @@ _DEDUCTION_ALIASES = ("удержан", "deduction")
 _COMPENSATION_ALIASES = ("компенсац", "compensation")
 _REIMBURSEMENT_ALIASES = ("возмещение издержек", "reimbursement")
 _PVZ_ALIASES = ("возмещение за выдачу", "пвз")
+_VOLUNTARY_ALIASES = ("добровольная компенсация",)
+_LOYALTY_COMPENSATION_ALIASES = (
+    "компенсация скидки по программе лояльности",
+    "коррекция компенсации скидки по программе лояльности",
+)
 _RETURN_ALIASES = ("возврат", "return")
 _SALE_ALIASES = ("продаж", "sale", "реализац", "выкуп")
 
@@ -43,6 +50,10 @@ def classify_wb_finance_row(operation_type: object) -> WbFinanceRowKind:
         return WbFinanceRowKind.PVZ_REIMBURSEMENT
     if any(token in label for token in _REIMBURSEMENT_ALIASES):
         return WbFinanceRowKind.REIMBURSEMENT
+    if any(token in label for token in _VOLUNTARY_ALIASES):
+        return WbFinanceRowKind.VOLUNTARY_COMPENSATION
+    if any(token in label for token in _LOYALTY_COMPENSATION_ALIASES):
+        return WbFinanceRowKind.LOYALTY_COMPENSATION
     if any(token in label for token in _RETURN_ALIASES):
         return WbFinanceRowKind.RETURN
     if any(token in label for token in _SALE_ALIASES):
@@ -86,11 +97,33 @@ def allows_storage(kind: WbFinanceRowKind) -> bool:
 
 
 def allows_compensation(kind: WbFinanceRowKind) -> bool:
+    """Seller compensations only; service-layer PVZ/reimbursement excluded."""
     return kind in {
+        WbFinanceRowKind.SALE,
         WbFinanceRowKind.COMPENSATION,
-        WbFinanceRowKind.REIMBURSEMENT,
-        WbFinanceRowKind.PVZ_REIMBURSEMENT,
+        WbFinanceRowKind.LOYALTY_COMPENSATION,
+        WbFinanceRowKind.VOLUNTARY_COMPENSATION,
     }
+
+
+def allows_pic_compensation(kind: WbFinanceRowKind) -> bool:
+    return kind == WbFinanceRowKind.SALE
+
+
+def allows_loyalty_compensation(kind: WbFinanceRowKind) -> bool:
+    return kind in {WbFinanceRowKind.SALE, WbFinanceRowKind.LOYALTY_COMPENSATION}
+
+
+def allows_voluntary_compensation(kind: WbFinanceRowKind) -> bool:
+    return kind == WbFinanceRowKind.VOLUNTARY_COMPENSATION
+
+
+def allows_wb_realized_amount(kind: WbFinanceRowKind) -> bool:
+    return kind in {WbFinanceRowKind.SALE, WbFinanceRowKind.RETURN}
+
+
+def allows_return_wb(kind: WbFinanceRowKind) -> bool:
+    return kind == WbFinanceRowKind.RETURN
 
 
 def allows_deduction(kind: WbFinanceRowKind) -> bool:
