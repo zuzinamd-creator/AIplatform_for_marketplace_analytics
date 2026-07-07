@@ -35,7 +35,10 @@ def test_seller_what_happened_uses_statement_fallback_not_action() -> None:
 
 
 def test_extract_seller_action_separates_analytics() -> None:
-    from app.ai.presentation.seller_display import extract_seller_action_text, seller_action_from_finding
+    from app.ai.presentation.seller_display import (
+        extract_seller_action_text,
+        seller_action_from_finding,
+    )
 
     raw = (
         "Выручка упала на 27.5%. Главный вклад SKU j-16-184a (-63049 ₽). "

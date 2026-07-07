@@ -5,18 +5,18 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 from threading import Lock
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 T = TypeVar("T")
 
 
 @dataclass
-class _Entry(Generic[T]):
+class _Entry[T]:
     value: T
     expires_at: float
 
 
-class TtlCache(Generic[T]):
+class TtlCache[T]:
     def __init__(self, *, ttl_seconds: float, max_entries: int = 512) -> None:
         self._ttl = ttl_seconds
         self._max_entries = max_entries

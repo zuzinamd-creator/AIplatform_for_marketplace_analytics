@@ -3,8 +3,8 @@ import contextlib
 import os
 import signal
 import sys
-from pathlib import Path
 from collections.abc import AsyncIterator
+from pathlib import Path
 from uuid import UUID
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -16,19 +16,19 @@ from app.core.database import SessionLocal, engine
 from app.core.observability import bind_job_context, clear_context, configure_logging, get_logger
 from app.core.observability.context import set_correlation_id, track_duration
 from app.core.queue import ClaimedJobRecord, get_queue_backend
-from app.core.security_context import TenantSession
-from app.core.startup_validation import validate_environment
-from app.etl.pipeline import ETLPipeline
-from app.etl.report_materialize import materialize_report_file
-from app.etl.storage import read_report_file
 from app.core.queue.etl_retry_policy import (
     EtlRetryableError,
     classify_retry_reason,
     compute_etl_retry_eligible_at,
     retry_audit_extra,
 )
-from app.etl.worker_shutdown import LegacyReportTooLargeError, WorkerShutdownRequested
+from app.core.security_context import TenantSession
+from app.core.startup_validation import validate_environment
+from app.etl.pipeline import ETLPipeline
+from app.etl.report_materialize import materialize_report_file
+from app.etl.storage import read_report_file
 from app.etl.wb.stream_pipeline import process_wb_streamed, wb_streaming_supported
+from app.etl.worker_shutdown import LegacyReportTooLargeError, WorkerShutdownRequested
 from app.models.reliability import ProcessKind
 from app.models.report import Marketplace, Report, ReportType
 from app.models.user import User

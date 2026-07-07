@@ -5,7 +5,6 @@ from datetime import UTC, date, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from app.models.job import EtlJob, JobStatus
 from app.models.report import Marketplace, Report, ReportType
 from app.services.report_service import ReportService

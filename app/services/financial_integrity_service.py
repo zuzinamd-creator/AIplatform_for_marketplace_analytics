@@ -8,6 +8,7 @@ from decimal import Decimal
 
 from sqlalchemy import func, select
 
+from app.domain.analytics.profit_trust import classify_profit_trust
 from app.domain.finance.cost_lookup import resolve_cost_snapshots, unit_cost_on_date
 from app.etl.wb.persist_aggregates import WbPersistAggregatesMixin
 from app.models.cost_history import CostHistory
@@ -16,7 +17,6 @@ from app.models.finance.aggregates import DailyAggregate
 from app.models.finance.reconciliation import ReportReconciliation
 from app.models.report import Marketplace
 from app.schemas.analytics import AnalyticsIntegrityMeta, IntegrityWarning
-from app.domain.analytics.profit_trust import classify_profit_trust
 from app.services.base import TenantScopedService
 
 

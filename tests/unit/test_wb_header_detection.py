@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import csv
 import tempfile
 from pathlib import Path
 
 import pytest
-from openpyxl import Workbook
-
-from app.parsers.wb.header_detection import locate_wb_table, load_wb_dataframe
+from app.parsers.wb.header_detection import load_wb_dataframe, locate_wb_table
 from app.parsers.wb.streaming import iter_wb_normalized_rows
+from openpyxl import Workbook
 
 
 def _write_xlsx(path: Path, *, sheets: dict[str, list[list[object]]]) -> None:

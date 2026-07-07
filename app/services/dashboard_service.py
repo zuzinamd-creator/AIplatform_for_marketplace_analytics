@@ -30,7 +30,6 @@ from app.schemas.analytics import (
 )
 from app.schemas.dashboard import DashboardSummaryResponse
 from app.schemas.ops import PaginatedQueueResponse, QueueJobOpsResponse
-from app.schemas.ops_runtime import RuntimeSummaryResponse
 from app.services.ai_service import AIService
 from app.services.analytics_service import AnalyticsService, Period
 from app.services.cost_coverage_service import CostCoverageService, CoveragePeriod

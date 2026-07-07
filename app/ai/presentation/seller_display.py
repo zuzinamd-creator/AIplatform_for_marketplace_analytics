@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import re
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
-from app.dto.domain_analyst_dto import DomainFindingDTO
+from app.dto.domain_analyst_dto import DomainFindingDTO, SeverityLevel
 
 _DOMAIN_LABELS_RU: dict[str, str] = {
     "sales_analyst": "Продажи",
@@ -545,7 +545,7 @@ def sanitize_domain_insight_for_seller(insight: dict[str, Any]) -> dict[str, Any
         finding_id=finding_id,
         statement=statement,
         confidence=_as_decimal(insight.get("confidence"), default=Decimal("0.5")),
-        severity=str(insight.get("severity") or "medium"),
+        severity=cast(SeverityLevel, str(insight.get("severity") or "medium")),
         evidence_refs=list(insight.get("evidence_refs") or []),
         recommended_actions=[str(a) for a in actions],
     )

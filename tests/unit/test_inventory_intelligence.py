@@ -9,7 +9,11 @@ from uuid import uuid4
 from app.ai.analysts import build_analytical_package, run_domain_analysts
 from app.ai.analysts.inventory import InventoryAnalyst
 from app.ai.executive import ExecutiveIntelligenceAggregator
-from app.ai.insights.priority_engine import StructuredInsight, priority_level_for_finding, pick_executive_lead
+from app.ai.insights.priority_engine import (
+    StructuredInsight,
+    pick_executive_lead,
+    priority_level_for_finding,
+)
 from app.domain.inventory.intelligence import (
     InventoryIntelligenceResult,
     InventorySkuSignal,
@@ -150,7 +154,9 @@ def test_revenue_protection_primary_over_inventory() -> None:
     ]
     lead = pick_executive_lead(items)
     assert lead[0].finding_id == "sales_top_sku"
-    assert any(l.finding_id and l.finding_id.startswith("inventory_") for l in lead)
+    assert any(
+        item.finding_id and item.finding_id.startswith("inventory_") for item in lead
+    )
 
 
 def test_inventory_in_executive_aggregation() -> None:

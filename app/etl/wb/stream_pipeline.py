@@ -10,15 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.observability import get_logger
 from app.core.observability.etl_metrics import record_metrics
-from app.etl.worker_shutdown import ShutdownCheck, WorkerShutdownRequested, is_shutdown
-from app.domain.finance.types import SkuCostSnapshot
 from app.domain.inventory.types import InventoryMovementDraft
 from app.domain.reconciliation.calculator import ReconciliationCalculator
 from app.etl.types import ETLResult
 from app.etl.wb.persist import WbFinancialPersistService
 from app.etl.wb.processor import RAW_SNAPSHOT_SAMPLE_ROWS, WbFinancialProcessor
 from app.etl.wb.stream_process import WbStreamChunkIterator
-from app.etl.wb.types import WbFinancialProcessResult
+from app.etl.worker_shutdown import ShutdownCheck, WorkerShutdownRequested, is_shutdown
 from app.models.report import Report
 
 logger = get_logger("wb_stream_pipeline")

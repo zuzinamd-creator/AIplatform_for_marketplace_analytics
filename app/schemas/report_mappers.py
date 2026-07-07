@@ -1,11 +1,12 @@
 from datetime import date
+from decimal import Decimal
 
 from sqlalchemy import inspect
 
+from app.domain.reports.report_number import extract_report_number
 from app.models.job import EtlJob
 from app.models.report import Report
 from app.schemas.report import ReportResponse
-from app.domain.reports.report_number import extract_report_number
 from app.schemas.report_errors import is_report_retryable, user_facing_error_hint
 from app.schemas.report_projection import (
     derive_error_message,
@@ -67,7 +68,11 @@ def report_to_response(
         processed_at=derive_processed_at(report, job),
         period_start=resolved_start,
         period_end=resolved_end,
-        promotion_expenses=report.promotion_expenses,
+        promotion_expenses=(
+            report.promotion_expenses
+            if report.promotion_expenses is not None
+            else Decimal("0")
+        ),
         report_number=extract_report_number(
             filename=report.original_filename,
             marketplace=report.marketplace,

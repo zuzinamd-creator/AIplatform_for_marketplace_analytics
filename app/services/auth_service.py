@@ -9,9 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.security import create_access_token, get_password_hash, verify_password
+from app.models.auth_audit import AuthAuditEventType
 from app.models.password_reset_token import PasswordResetToken
 from app.models.user import User
-from app.models.auth_audit import AuthAuditEventType
 from app.schemas.auth import UserCreate
 from app.services.auth_audit_service import record_auth_audit
 from app.services.email_service import EmailDeliveryError, send_email, smtp_configured

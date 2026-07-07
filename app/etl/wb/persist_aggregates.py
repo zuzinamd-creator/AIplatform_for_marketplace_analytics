@@ -12,8 +12,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security_context import TenantSession
 from app.core.tenant_context import set_current_user_context, set_queue_role_context
-from app.domain.analytics.aggregation import AggregationEngine, DailyAggregateDraft, SkuDailyMetricDraft
-from app.domain.economics.sku_unit_economics_builder import SkuUnitEconomicsBuilder, SkuUnitEconomicsDraft
+from app.domain.analytics.aggregation import (
+    AggregationEngine,
+    DailyAggregateDraft,
+    SkuDailyMetricDraft,
+)
+from app.domain.economics.sku_unit_economics_builder import (
+    SkuUnitEconomicsBuilder,
+    SkuUnitEconomicsDraft,
+)
 from app.domain.finance.cost_lookup import build_cost_lookup
 from app.domain.finance.ledger import LedgerBuilder
 from app.domain.finance.types import LedgerEntryDraft, SkuCostSnapshot

@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 class RawDataSnapshot(TypedDict):
     row_count: int
     columns: list[str]
-    records: list[dict[str, str | int | float | None]]
+    sample_rows: list[dict[str, str]]
 
 
 class AnalyticsPayload(TypedDict, total=False):

@@ -5,7 +5,6 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
-
 from app.core.queue.types import ClaimedJobRecord
 from app.etl import worker
 

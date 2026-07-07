@@ -3,7 +3,6 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
-
 from app.etl.storage import read_report_file
 from app.etl.worker_shutdown import LEGACY_XLS_TOO_LARGE_MESSAGE, LegacyReportTooLargeError
 

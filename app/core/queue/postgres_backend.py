@@ -4,13 +4,13 @@ from uuid import UUID
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.observability import get_logger
 from app.core.queue.etl_retry_policy import (
     RetryReason,
     compute_etl_retry_eligible_at,
     retry_audit_extra,
 )
 from app.core.queue.stale import is_etl_job_stale
-from app.core.observability import get_logger
 from app.core.queue.types import ClaimedJobRecord, EnqueuePayload, RecoveryRecord
 from app.core.security_context import QueueSession
 from app.models.job import EtlJob, JobStatus

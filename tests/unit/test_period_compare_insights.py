@@ -7,7 +7,6 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
-
 from app.ai.deep.period_insights import _append_period_comparison
 from app.models.report import Marketplace
 

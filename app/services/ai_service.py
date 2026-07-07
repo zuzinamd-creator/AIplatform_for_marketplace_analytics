@@ -10,14 +10,17 @@ from uuid import UUID
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.analysts.governed_signals import build_governed_analyst_signals
 from app.ai.analytics.engine import AIAnalyticsEngine
+from app.ai.deep.period_insights import build_deep_period_insights
 from app.core.security_context import TenantSession
 from app.domain.analytics.processor import AnalyticsProcessor
 from app.domain.analytics.profit_trust import (
     apply_profit_trust_to_ai_metrics,
-    apply_profit_trust_to_kpis,
     classify_profit_trust,
 )
+from app.domain.inventory.intelligence import inventory_deep_bullets
+from app.domain.reports.period_queries import fetch_sale_period_bounds_for_reports
 from app.dto.ai_analytics_dto import AIRunRequestDTO, ValidatedInsightDTO
 from app.dto.analytics_dto import AIInsightInputDTO, AnomalyDTO, TopSKUSummaryDTO
 from app.models.ai_execution import AIExecutionRun
@@ -30,13 +33,8 @@ from app.models.workflow import SellerWorkflowEvent
 from app.schemas.ai import PageMeta
 from app.schemas.ai_intelligence import RecommendationStatsResponse
 from app.schemas.ai_usage import AIUsageResponse
-from app.ai.deep.period_insights import build_deep_period_insights
-from app.ai.analysts.governed_signals import build_governed_analyst_signals
-from app.domain.inventory.intelligence import inventory_deep_bullets
-from app.domain.reports.period_queries import fetch_sale_period_bounds_for_reports
-from app.services.cost_coverage_service import CostCoverageService, CoveragePeriod
 from app.services.analytics_service import AnalyticsService, Period
-from app.services.reconciliation_service import ReconciliationPeriod, ReconciliationService
+from app.services.cost_coverage_service import CostCoverageService, CoveragePeriod
 
 
 class AIService:

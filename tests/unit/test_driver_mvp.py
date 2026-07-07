@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 from decimal import Decimal
 
+from app.ai.drivers.bundle import _cards_from_snapshot
 from app.ai.drivers.cards import build_driver_card
 from app.ai.drivers.decision import data_first_override, select_simple_decision
 from app.ai.drivers.playbook import (
@@ -19,7 +20,6 @@ from app.ai.drivers.sku_factors import (
     detect_dominant_factor,
     dominant_from_static,
 )
-from app.ai.drivers.bundle import _cards_from_snapshot
 from app.dto.ai_analytics_dto import AnalyticsWorkflow, GroundedContextDTO, ValidatedInsightDTO
 
 

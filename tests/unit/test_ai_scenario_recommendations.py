@@ -8,7 +8,13 @@ from uuid import uuid4
 
 from app.ai.analysts import build_analytical_package, run_domain_analysts
 from app.dto.ai_analytics_dto import GroundedContextDTO
-from app.dto.analytics_dto import AIInsightInputDTO, AnomalyDTO, ContextDTO, MetricsDTO, TopSKUSummaryDTO
+from app.dto.analytics_dto import (
+    AIInsightInputDTO,
+    AnomalyDTO,
+    ContextDTO,
+    MetricsDTO,
+    TopSKUSummaryDTO,
+)
 
 
 def _grounded() -> GroundedContextDTO:

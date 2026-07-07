@@ -1,12 +1,10 @@
-from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
-from fastapi import HTTPException
-
 from app.services.auth_service import AuthService
 from app.services.email_service import EmailDeliveryError
+from fastapi import HTTPException
 
 
 def test_hash_reset_token_is_stable() -> None:

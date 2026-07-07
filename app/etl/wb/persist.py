@@ -7,20 +7,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.observability import get_logger
-from app.core.security_context import TenantSession
 from app.core.queue.etl_retry_policy import EtlRetryableError, RetryReason
-from app.etl.pg_timeouts import is_lock_timeout_error, set_local_lock_timeout
-from app.etl.worker_shutdown import WorkerShutdownRequested, default_shutdown_check, is_shutdown
-from app.domain.inventory.errors import InventoryRebuildBusyError
+from app.core.security_context import TenantSession
 from app.domain.finance.types import SkuCostSnapshot
+from app.domain.inventory.errors import InventoryRebuildBusyError
 from app.domain.inventory.snapshot_types import InventoryLossAnalytics
 from app.domain.inventory.types import InventoryMovementDraft
+from app.etl.pg_timeouts import is_lock_timeout_error, set_local_lock_timeout
 from app.etl.wb.inventory_snapshot_rebuild import InventorySnapshotRebuildService
 from app.etl.wb.persist_aggregates import WbPersistAggregatesMixin
 from app.etl.wb.persist_layers import WbPersistLayersMixin
 from app.etl.wb.row_counts import assert_row_count, count_phase1_rows
 from app.etl.wb.stream_types import WbProcessChunk
 from app.etl.wb.types import WbFinancialProcessResult
+from app.etl.worker_shutdown import WorkerShutdownRequested, default_shutdown_check, is_shutdown
 from app.models.report import Report
 
 logger = get_logger("wb_persist")

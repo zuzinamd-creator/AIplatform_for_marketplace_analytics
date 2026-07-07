@@ -272,7 +272,10 @@ class CostCoverageService(TenantScopedService):
             }
 
         async with self._rls_transaction():
-            cost_lookup = await WbPersistAggregatesMixin.load_cost_snapshots(self.db, self.user_id)
+            user_id = self.user_id
+            if user_id is None:
+                raise ValueError("user_id is required for tenant-scoped transactions")
+            cost_lookup = await WbPersistAggregatesMixin.load_cost_snapshots(self.db, user_id)
 
         missing: list[str] = []
         covered = 0

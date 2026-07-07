@@ -5,8 +5,6 @@ from __future__ import annotations
 import ssl
 from unittest.mock import patch
 
-from sqlalchemy.engine import make_url
-
 from app.core.asyncpg_connect import (
     asyncpg_connect_args,
     build_verified_ssl_context,
@@ -16,6 +14,7 @@ from app.core.asyncpg_connect import (
     resolve_database_url,
     sqlalchemy_async_database_url,
 )
+from sqlalchemy.engine import make_url
 
 
 def test_database_url_requires_ssl() -> None:

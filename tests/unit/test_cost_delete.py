@@ -4,7 +4,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
-
 from app.domain.finance.cost_lookup import unit_cost_on_date
 from app.domain.finance.types import SkuCostSnapshot
 from app.models.cost_history import CostHistory

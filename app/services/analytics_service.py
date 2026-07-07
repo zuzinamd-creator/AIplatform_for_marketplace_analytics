@@ -7,7 +7,8 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import cast
 
-from sqlalchemy import Numeric, cast as sql_cast, func, select
+from sqlalchemy import Numeric, func, select
+from sqlalchemy import cast as sql_cast
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.analytics.profit_trust import (
@@ -971,7 +972,9 @@ class AnalyticsService(TenantScopedService):
         b_sum = await self.revenue_summary(marketplace=marketplace, period=b)
 
         delta_rev = a_sum.kpis.total_revenue - b_sum.kpis.total_revenue
-        delta_profit = a_sum.kpis.total_profit - b_sum.kpis.total_profit
+        delta_profit = (a_sum.kpis.total_profit or Decimal("0")) - (
+            b_sum.kpis.total_profit or Decimal("0")
+        )
         delta_margin = None
         if a_sum.kpis.margin_pct is not None and b_sum.kpis.margin_pct is not None:
             delta_margin = a_sum.kpis.margin_pct - b_sum.kpis.margin_pct

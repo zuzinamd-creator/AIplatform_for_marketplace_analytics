@@ -9,7 +9,6 @@ from pathlib import Path
 from uuid import UUID
 
 from app.core.observability.etl_metrics import bind_log_context
-from app.etl.worker_shutdown import ShutdownCheck, WorkerShutdownRequested, is_shutdown
 from app.domain.data_quality.validator import DataQualityValidator
 from app.domain.finance.ledger import LedgerBuilder
 from app.domain.finance.types import SkuCostSnapshot
@@ -19,6 +18,7 @@ from app.domain.semantics.governance_policy import assert_ingest_allowed
 from app.etl.anomaly_buffer import EtlAnomalyBuffer
 from app.etl.wb.processor import PROCESS_CHUNK_SIZE
 from app.etl.wb.stream_types import WbProcessChunk
+from app.etl.worker_shutdown import ShutdownCheck, WorkerShutdownRequested, is_shutdown
 from app.parsers.wb.semantics import SEMANTICS_VERSION
 from app.parsers.wb.streaming import iter_wb_normalized_rows
 

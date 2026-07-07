@@ -211,7 +211,9 @@ async def build_inventory_intelligence(
     dead_stock.sort(key=lambda r: (r.frozen_capital or Decimal("-1")), reverse=True)
     frozen_rows.sort(key=lambda r: (r.frozen_capital or Decimal("-1")), reverse=True)
 
-    total_frozen = sum((r.frozen_capital or Decimal("0")) for r in frozen_rows)
+    total_frozen = sum(
+        (r.frozen_capital or Decimal("0")) for r in frozen_rows
+    ) or Decimal("0")
     frozen_share: Decimal | None = None
     if total_revenue > 0 and total_frozen > 0:
         frozen_share = (total_frozen / total_revenue * Decimal("100")).quantize(Decimal("0.1"))
@@ -220,7 +222,10 @@ async def build_inventory_intelligence(
     top_frozen: list[InventorySkuSignal] = []
     if total_frozen > 0 and frozen_rows:
         if len(frozen_rows) >= 2:
-            top3_sum = sum((r.frozen_capital or Decimal("0")) for r in frozen_rows[:3])
+            top3_sum = sum(
+                ((r.frozen_capital or Decimal("0")) for r in frozen_rows[:3]),
+                start=Decimal("0"),
+            )
             concentration = (top3_sum / total_frozen * Decimal("100")).quantize(Decimal("0.1"))
         for sig in frozen_rows[:5]:
             share = (

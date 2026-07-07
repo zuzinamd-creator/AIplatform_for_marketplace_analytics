@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy.dialects.postgresql import insert
@@ -166,7 +167,7 @@ class WbPersistLayersMixin:
                 await self.db.execute(norm_stmt, batch)
 
         if chunk.ledger_entries:
-            ledger_values = [
+            ledger_values: list[dict[str, Any]] = [
                 {
                     "user_id": self.user_id,
                     "report_id": report_id,
@@ -188,7 +189,7 @@ class WbPersistLayersMixin:
                 await self.db.execute(ledger_stmt, batch)
 
         if chunk.inventory_movements:
-            inv_values = [
+            inv_values: list[dict[str, Any]] = [
                 {
                     "user_id": self.user_id,
                     "report_id": report_id,

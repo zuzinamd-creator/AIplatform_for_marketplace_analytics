@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security_context import TenantSession
 from app.domain.inventory.analytics_payload import extend_analytics_payload
+from app.domain.reports.period import attach_period_to_raw_data, period_bounds_for_wb_rows
+from app.domain.reports.period_queries import fetch_sale_period_bounds_for_reports
 from app.etl.anomaly_persist import EtlAnomalyPersistService
 from app.etl.loaders import dataframe_to_raw_records, load_file_to_dataframe
 from app.etl.pipeline_analytics import LegacyAnalyticsBuilder
@@ -22,8 +24,6 @@ from app.etl.wb.processor import WbFinancialProcessor
 from app.etl.wb.types import WbFinancialProcessResult
 from app.models.ai_insights import AIInsight, InsightStatus
 from app.models.report import Marketplace, Report, ReportType
-from app.domain.reports.period import attach_period_to_raw_data, period_bounds_for_wb_rows
-from app.domain.reports.period_queries import fetch_sale_period_bounds_for_reports
 from app.services.report_service import ReportService
 
 
@@ -142,23 +142,29 @@ class ETLPipeline:
             if not in_transaction:
                 await self.db.commit()
             wb_enriched = WbFinancialProcessor.enrich_with_costs(result.wb_financial, costs)
-            persist_kwargs = {
-                "report": report,
-                "file_checksum": report.file_checksum or "",
-                "storage_uri": report.file_path or "",
-                "result": wb_enriched,
-                "costs_by_sku": costs,
-                "job_id": job_id,
-                "opening_movements": result.wb_opening_movements,
-                "batch_first_dates": result.wb_batch_first_dates,
-            }
             if in_transaction:
                 loss_analytics = await persist_service.persist(
-                    **persist_kwargs,
+                    report=report,
+                    file_checksum=report.file_checksum or "",
+                    storage_uri=report.file_path or "",
+                    result=wb_enriched,
+                    costs_by_sku=costs,
+                    job_id=job_id,
+                    opening_movements=result.wb_opening_movements,
+                    batch_first_dates=result.wb_batch_first_dates,
                     in_transaction=True,
                 )
             else:
-                loss_analytics = await persist_service.persist(**persist_kwargs)
+                loss_analytics = await persist_service.persist(
+                    report=report,
+                    file_checksum=report.file_checksum or "",
+                    storage_uri=report.file_path or "",
+                    result=wb_enriched,
+                    costs_by_sku=costs,
+                    job_id=job_id,
+                    opening_movements=result.wb_opening_movements,
+                    batch_first_dates=result.wb_batch_first_dates,
+                )
             analytics_payload = extend_analytics_payload(
                 dict(wb_enriched.analytics_payload),
                 loss_analytics=loss_analytics,

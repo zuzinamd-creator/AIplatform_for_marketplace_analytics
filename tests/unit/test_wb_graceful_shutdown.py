@@ -7,13 +7,12 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
-
 from app.core.security_context import TenantSession
 from app.domain.reconciliation.calculator import ReconciliationCalculator
-from app.etl.worker_shutdown import WorkerShutdownRequested
 from app.etl.wb.persist import WbFinancialPersistService
 from app.etl.wb.stream_process import WbStreamChunkIterator
 from app.etl.wb.stream_types import WbProcessChunk
+from app.etl.worker_shutdown import WorkerShutdownRequested
 from app.parsers.wb.base import NormalizedWbRow
 from app.parsers.wb.strategies.realization_v1 import RealizationV1Parser
 

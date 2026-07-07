@@ -7,18 +7,18 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
-from app.core.observability import get_logger
 from app.core.config import settings
+from app.core.observability import get_logger
 from app.core.queue import EnqueuePayload, get_queue_backend
 from app.core.ttl_cache import TtlCache
 from app.models.job import EtlJob, JobStatus
-from app.models.report import Marketplace, Report, ReportStatus, ReportType
+from app.models.report import Marketplace, Report, ReportType
+from app.models.user import User
 from app.schemas.report import ReportResponse
+from app.schemas.report_errors import is_report_retryable
 from app.schemas.report_mappers import report_to_response
 from app.schemas.report_projection import report_status_from_job_status
-from app.models.user import User
 from app.services.base import TenantScopedService
-
 
 _reports_list_cache: TtlCache[list[ReportResponse]] = TtlCache(ttl_seconds=45)
 logger = get_logger(__name__)

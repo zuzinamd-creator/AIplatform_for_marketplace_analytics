@@ -5,11 +5,9 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from app.core.queue import get_queue_backend
 from app.core.security_context import TenantSession
 from app.models.job import EtlJob, JobStatus
 from tests.integration.queue_helpers import (
-    QueueFixture,
     claim_next,
     enqueue_job,
     load_job,

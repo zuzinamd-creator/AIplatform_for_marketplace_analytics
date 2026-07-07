@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-
 from app.parsers.wb.streaming import iter_wb_normalized_rows
 
 LARGE_FIXTURE = Path(__file__).resolve().parents[1] / "large_wb_report.xlsx"

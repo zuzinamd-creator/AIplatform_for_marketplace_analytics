@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from app.schemas.ai_intelligence import AIOperationalStatusResponse, TodaysFocusResponse
+from app.schemas.ai_intelligence import (
+    AIOperationalStatusResponse,
+    PaginatedRecommendationsResponse,
+    TodaysFocusResponse,
+)
 from app.schemas.analytics import (
     AnalyticsCoverageResponse,
     CostCoverageResponse,
@@ -14,7 +18,6 @@ from app.schemas.analytics import (
     RevenueTrendResponse,
     TopSkusResponse,
 )
-from app.schemas.ai_intelligence import PaginatedRecommendationsResponse
 from app.schemas.ops import PaginatedQueueResponse
 from app.schemas.ops_runtime import RuntimeSummaryResponse
 

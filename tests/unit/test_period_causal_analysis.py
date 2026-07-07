@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import date
 from decimal import Decimal
 
 from app.ai.deep.period_causes import PeriodSnapshot, _append_revenue_causes

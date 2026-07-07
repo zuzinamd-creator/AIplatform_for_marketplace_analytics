@@ -232,7 +232,9 @@ def detect_dominant_factor(factors: FactorDeltas) -> DominantFactor:
         if pct <= Decimal("-3"):
             return DominantFactor(
                 driver_type="price",
-                factor_delta=abs(factors.price_delta * Decimal(max(factors.units_a, 1))),
+                factor_delta=abs(
+                    factors.price_delta * Decimal(max(abs(factors.units_delta), 1))
+                ),
                 confidence="probable",
             )
 

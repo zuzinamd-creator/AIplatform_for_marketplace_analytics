@@ -16,6 +16,7 @@ from app.domain.finance.types import LedgerEntryDraft, SkuCostSnapshot
 from app.domain.inventory.analytics_payload import extend_analytics_payload
 from app.domain.inventory.ledger_row import InventoryLedgerRow
 from app.domain.inventory.movements import InventoryMovementBuilder
+from app.domain.inventory.opening_balance import is_opening_balance_movement
 from app.domain.inventory.pipeline import InventorySnapshotPipeline
 from app.domain.inventory.types import InventoryMovementDraft
 from app.domain.reconciliation.calculator import ReconciliationCalculator, ReconciliationResult
@@ -24,7 +25,6 @@ from app.dto import TopSKUSummaryDTO
 from app.etl.anomaly_buffer import EtlAnomalyBuffer
 from app.etl.loaders import load_file_to_dataframe
 from app.etl.types import RawDataSnapshot
-from app.domain.inventory.opening_balance import is_opening_balance_movement
 from app.etl.wb.stream_types import WbProcessChunk
 from app.etl.wb.types import WbFinancialProcessResult
 from app.models.report import Marketplace
@@ -39,7 +39,7 @@ RAW_SNAPSHOT_SAMPLE_ROWS = 5000
 T = TypeVar("T")
 
 
-def _iter_chunks(items: Sequence[T], *, chunk_size: int = PROCESS_CHUNK_SIZE) -> Iterator[list[T]]:
+def _iter_chunks[T](items: Sequence[T], *, chunk_size: int = PROCESS_CHUNK_SIZE) -> Iterator[list[T]]:
     if not items:
         return
     for offset in range(0, len(items), chunk_size):

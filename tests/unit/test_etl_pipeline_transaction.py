@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
-
 from app.etl.pipeline import ETLPipeline
 from app.etl.types import ETLResult
 from app.etl.wb.types import WbFinancialProcessResult

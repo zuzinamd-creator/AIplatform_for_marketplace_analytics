@@ -18,6 +18,7 @@ from app.dto.domain_analyst_dto import (
     DomainAnalystOutputDTO,
     DomainFindingDTO,
     InventorySkuRow,
+    SeverityLevel,
 )
 
 
@@ -97,7 +98,7 @@ class InventoryAnalyst(DomainAnalystBase):
 
         if inv.frozen_capital_available and inv.total_frozen_capital and inv.total_frozen_capital > 0:
             share = inv.frozen_capital_share_pct
-            severity = "medium"
+            severity: SeverityLevel = "medium"
             if share is not None and share >= FROZEN_CAPITAL_HIGH_SHARE:
                 severity = "high"
             top = inv.top_frozen_capital_skus[:2]

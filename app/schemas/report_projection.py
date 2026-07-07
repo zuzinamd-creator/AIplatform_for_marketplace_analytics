@@ -5,7 +5,6 @@ API projection layer: processing lifecycle is derived from etl_jobs only.
 from app.models.job import EtlJob, JobStatus
 from app.models.report import Report, ReportStatus
 
-
 _JOB_TO_REPORT_STATUS: dict[JobStatus, ReportStatus] = {
     JobStatus.PENDING: ReportStatus.PENDING,
     JobStatus.PROCESSING: ReportStatus.PROCESSING,

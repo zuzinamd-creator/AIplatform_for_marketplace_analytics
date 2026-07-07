@@ -2,6 +2,7 @@ from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.queue.etl_retry_policy import RetryReason
 from app.core.queue.types import ClaimedJobRecord, EnqueuePayload, RecoveryRecord
 from app.models.job import EtlJob
 
@@ -25,6 +26,7 @@ class QueueBackend(Protocol):
         attempt_count: int,
         max_attempts: int,
         poison: bool = False,
+        retry_reason: RetryReason | str = RetryReason.GENERIC,
     ) -> None: ...
 
     async def requeue(self, job_id: str) -> None: ...
