@@ -132,6 +132,20 @@ async def count_jobs_with_status(
             return int(count)
 
 
+async def make_job_eligible_now(
+    session_factory: async_sessionmaker,
+    user_id: UUID,
+    job_id: UUID,
+) -> None:
+    """Clear retry backoff so claim() can pick up a requeued job in tests."""
+    async with session_factory() as session:
+        async with TenantSession.transaction(session, user_id):
+            job = await session.get(EtlJob, job_id)
+            if job is None:
+                raise AssertionError(f"job {job_id} not found")
+            job.processing_started_at = datetime.now(UTC) - timedelta(seconds=1)
+
+
 async def make_job_visibility_stale(
     session_factory: async_sessionmaker,
     user_id: UUID,

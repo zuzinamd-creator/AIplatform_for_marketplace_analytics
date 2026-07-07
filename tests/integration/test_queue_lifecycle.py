@@ -14,6 +14,7 @@ from tests.integration.queue_helpers import (
     count_jobs_with_status,
     enqueue_job,
     load_job,
+    make_job_eligible_now,
     make_job_visibility_stale,
     recover_stale,
     refresh_job_heartbeat,
@@ -74,6 +75,7 @@ async def test_fail_retry_deterministic_attempt_progression(session_factory) -> 
                     JobStatus.PENDING,
                 )
                 assert refreshed.attempt_count == attempt
+                await make_job_eligible_now(session_factory, fixture.user_id, job.id)
             else:
                 async with TenantSession.transaction(session, fixture.user_id):
                     await get_queue_backend(session).fail(
@@ -116,6 +118,7 @@ async def test_visibility_timeout_recovery_without_wall_clock_sleep(session_fact
     assert recovered[0].job_id == job.id
     assert recovered[0].new_status == JobStatus.PENDING.value
 
+    await make_job_eligible_now(session_factory, fixture.user_id, job.id)
     refreshed = await load_job(session_factory, fixture.user_id, job.id)
     assert refreshed.status == JobStatus.PENDING
     assert refreshed.claimed_at is None
@@ -141,6 +144,7 @@ async def test_visibility_timeout_dead_letters_when_attempts_exhausted(session_f
     await make_job_visibility_stale(session_factory, fixture.user_id, job.id)
     await recover_stale(session_factory)
 
+    await make_job_eligible_now(session_factory, fixture.user_id, job.id)
     second = await claim_next(session_factory)
     assert second is not None
     assert second.attempt_count == 2
@@ -289,6 +293,7 @@ async def test_worker_recover_then_claim_lifecycle(session_factory) -> None:
     await make_job_visibility_stale(session_factory, fixture.user_id, job.id)
 
     await recover_stale(session_factory)
+    await make_job_eligible_now(session_factory, fixture.user_id, job.id)
     reclaimed = await claim_next(session_factory)
     assert reclaimed is not None
     assert reclaimed.attempt_count == 2

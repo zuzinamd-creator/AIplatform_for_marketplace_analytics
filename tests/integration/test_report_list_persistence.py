@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime
 from uuid import uuid4
 
 import pytest
@@ -34,6 +34,8 @@ async def test_uploaded_report_survives_list_api(
             session.add(user)
             await session.flush()
 
+    created_at = datetime.now(UTC)
+    async with session_factory() as session:
         async with TenantSession.transaction(session, user.id):
             session.add(
                 Report(
@@ -46,8 +48,11 @@ async def test_uploaded_report_survives_list_api(
                     file_checksum=f"chk-{report_id}",
                     period_start=date(2026, 5, 4),
                     period_end=date(2026, 5, 10),
+                    created_at=created_at,
+                    updated_at=created_at,
                 )
             )
+            await session.flush()
             session.add(
                 EtlJob(
                     id=uuid4(),
@@ -57,6 +62,8 @@ async def test_uploaded_report_survives_list_api(
                     file_path=f"{user.id}/{report_id}/weekly.xlsx",
                     marketplace=Marketplace.WILDBERRIES,
                     report_type=ReportType.FINANCE,
+                    original_filename="weekly.xlsx",
+                    report_created_at=created_at,
                     status=JobStatus.COMPLETED,
                     attempt_count=1,
                     max_attempts=3,
