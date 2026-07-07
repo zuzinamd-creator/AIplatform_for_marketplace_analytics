@@ -25,6 +25,7 @@ from app.models.ai_insights import AIInsight
 from app.models.ai_intelligence import AIRecommendation, AIRecommendationFeedback
 from app.models.finance.aggregates import DailyAggregate, SkuDailyMetric
 from app.models.report import Marketplace, Report
+from app.models.user import User
 from app.models.workflow import SellerWorkflowEvent
 from app.schemas.ai import PageMeta
 from app.schemas.ai_intelligence import RecommendationStatsResponse
@@ -34,6 +35,7 @@ from app.ai.analysts.governed_signals import build_governed_analyst_signals
 from app.domain.inventory.intelligence import inventory_deep_bullets
 from app.domain.reports.period_queries import fetch_sale_period_bounds_for_reports
 from app.services.cost_coverage_service import CostCoverageService, CoveragePeriod
+from app.services.analytics_service import AnalyticsService, Period
 from app.services.reconciliation_service import ReconciliationPeriod, ReconciliationService
 
 
@@ -574,32 +576,44 @@ class AIService:
         compare_end: date | None = None,
     ) -> tuple[AIInsightInputDTO, dict]:
         total_revenue_d = Decimal("0")
-        total_profit_d = Decimal("0")
-        margin: Decimal | None = None
+        seller_profit_raw_d: Decimal | None = None
+        promotion_expenses_d = Decimal("0")
+        total_profit_d: Decimal | None = None
+        seller_margin: Decimal | None = None
+        seller_profitability: Decimal | None = None
+        seller_margin_raw: Decimal | None = None
         top_skus: list[TopSKUSummaryDTO] = []
         sku_count = 0
         cov_pct: Decimal | None = None
         missing_skus: list[str] = []
 
         async with TenantSession.transaction(self.db, self.user_id):
-            totals = await self.db.execute(
-                select(
-                    func.coalesce(func.sum(DailyAggregate.revenue), 0),
-                    func.coalesce(func.sum(DailyAggregate.net_profit), 0),
-                ).where(
-                    DailyAggregate.user_id == self.user_id,
-                    DailyAggregate.marketplace == marketplace,
-                    DailyAggregate.aggregate_date >= period_start,
-                    DailyAggregate.aggregate_date <= period_end,
-                )
+            user = await self.db.get(User, self.user_id)
+            if user is None:
+                raise RuntimeError("tenant user not found")
+            analytics = AnalyticsService(self.db, user)
+            seller = await analytics._wb_seller_kpis(
+                marketplace=marketplace,
+                period=Period(start=period_start, end=period_end),
             )
-            total_revenue, total_profit = totals.one()
-            total_revenue_d = Decimal(total_revenue)
-            total_profit_d = Decimal(total_profit)
+            adjusted = await analytics._promotion_adjusted_profit(
+                marketplace=marketplace,
+                period=Period(start=period_start, end=period_end),
+                seller=seller,
+            )
+            total_revenue_d = seller.revenue
+            seller_profit_raw_d = adjusted.seller_profit_raw
+            promotion_expenses_d = adjusted.promotion_expenses
+            total_profit_d = adjusted.seller_profit_after_promotion
+            seller_margin = adjusted.margin_pct
+            seller_profitability = adjusted.profitability_pct
+            seller_margin_raw = seller.margin_pct
             anomalies: list[AnomalyDTO] = []
-            if total_revenue_d > 0:
-                margin = (total_profit_d / total_revenue_d) * Decimal("100")
-                if margin > Decimal("100") or total_profit_d > total_revenue_d * Decimal("2"):
+            if total_revenue_d > 0 and seller_margin_raw is not None:
+                if (
+                    seller_margin_raw > Decimal("100")
+                    or seller_profit_raw_d > total_revenue_d * Decimal("2")
+                ):
                     anomalies.append(
                         AnomalyDTO(
                             type="data_quality",
@@ -611,7 +625,7 @@ class AIService:
                             ),
                         )
                     )
-                    margin = None
+                    seller_margin = None
 
             top_rows = await self.db.execute(
                 select(
@@ -662,10 +676,29 @@ class AIService:
         trust = classify_profit_trust(cov_pct)
         profit_out, margin, top_skus = apply_profit_trust_to_ai_metrics(
             trust=trust,
-            total_profit=total_profit_d if total_profit_d != 0 else None,
-            margin_pct=margin,
+            total_profit=total_profit_d if total_profit_d and total_profit_d != 0 else None,
+            margin_pct=seller_margin,
             top_skus=top_skus,
         )
+        profit_raw_out = (
+            seller_profit_raw_d
+            if trust == "full" and seller_profit_raw_d is not None
+            else None
+        )
+        promotion_out = promotion_expenses_d if promotion_expenses_d > 0 else Decimal("0")
+        profit_after_out = profit_out
+        promotion_impact_pct_out: Decimal | None = None
+        if (
+            profit_raw_out is not None
+            and profit_after_out is not None
+            and promotion_out > 0
+        ):
+            from app.domain.analytics.promotion_adjusted import compute_promotion_impact_pct
+
+            promotion_impact_pct_out = compute_promotion_impact_pct(
+                seller_profit_raw=profit_raw_out,
+                seller_profit_after_promotion=profit_after_out,
+            )
         if cov_pct is not None and cov_pct < Decimal("80"):
             anomalies.append(
                 AnomalyDTO(
@@ -711,8 +744,28 @@ class AIService:
             "source_period_end": period_end.isoformat(),
             "sku_count": int(sku_count or 0),
             "total_revenue": str(total_revenue_d) if total_revenue_d > 0 else None,
-            "total_profit": str(profit_out) if profit_out is not None else None,
+            "total_profit": str(profit_after_out) if profit_after_out is not None else None,
             "margin": str(margin) if margin is not None else None,
+            "seller_profit_raw": (
+                str(profit_raw_out) if profit_raw_out is not None else None
+            ),
+            "promotion_expenses": str(promotion_out),
+            "seller_profit_after_promotion": (
+                str(profit_after_out) if profit_after_out is not None else None
+            ),
+            "seller_profit": str(profit_raw_out) if profit_raw_out is not None else None,
+            "seller_margin": str(margin) if margin is not None else None,
+            "seller_profitability": (
+                str(seller_profitability)
+                if seller_profitability is not None and trust == "full"
+                else None
+            ),
+            "promotion_impact_pct": (
+                str(promotion_impact_pct_out.quantize(Decimal("0.01")))
+                if promotion_impact_pct_out is not None
+                else None
+            ),
+            "promotion_expenses_available": promotion_out > 0,
         }
         if cov_pct is not None and cov_pct >= Decimal("100"):
             extras["cost_data_available"] = True
@@ -723,7 +776,7 @@ class AIService:
             marketplace_type=marketplace.value,
             sku_count=int(sku_count or 0),
             total_revenue=total_revenue_d if total_revenue_d > 0 else None,
-            total_profit=profit_out if profit_out is not None and profit_out != 0 else None,
+            total_profit=profit_after_out if profit_after_out is not None and profit_after_out != 0 else None,
             margin=margin,
             top_skus_summary=top_skus,
             anomalies=anomalies,

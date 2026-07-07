@@ -105,3 +105,9 @@ def gate_margin_decimal(margin_pct: Decimal | None, *, trust: str) -> Decimal | 
     if trust == "full":
         return margin_pct
     return None
+
+
+def gate_profitability_decimal(profitability_pct: Decimal | None, *, trust: str) -> Decimal | None:
+    if trust == "full":
+        return profitability_pct
+    return None

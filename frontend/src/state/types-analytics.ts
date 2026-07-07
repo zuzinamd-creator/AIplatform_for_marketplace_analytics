@@ -33,6 +33,7 @@ export type RevenueKpiSummaryResponse = {
     total_revenue: string;
     total_profit: string | null;
     margin_pct?: string | null;
+    profitability_pct?: string | null;
     units_sold: number;
     average_check?: string | null;
   };
@@ -48,7 +49,9 @@ export type RevenueTrendResponse = {
     date: string;
     revenue: string;
     net_profit: string;
+    seller_profit?: string | null;
     margin_pct?: string | null;
+    seller_margin_pct?: string | null;
     units_sold: number;
   }>;
   freshness: AnalyticsFreshnessMeta;
@@ -93,6 +96,7 @@ export type FinancialKpiSummaryResponse = {
     sales_revenue: string;
     returns_amount: string;
     payout: string;
+    payout_for_goods: string;
     commission: string;
     logistics: string;
     storage_fee: string;
@@ -101,8 +105,13 @@ export type FinancialKpiSummaryResponse = {
     penalties: string;
     deductions: string;
     compensation: string;
-    gross_profit: string;
+    cogs?: string | null;
+    gross_profit?: string | null;
+    seller_profit_raw?: string | null;
+    promotion_expenses?: string | null;
+    adjusted_settlement?: string | null;
     margin_pct?: string | null;
+    profitability_pct?: string | null;
     return_rate_pct?: string | null;
     total_to_pay: string;
   };

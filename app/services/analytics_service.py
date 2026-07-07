@@ -7,22 +7,29 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import cast
 
-from sqlalchemy import func, select
+from sqlalchemy import Numeric, cast as sql_cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.analytics.profit_trust import (
     apply_profit_trust_to_kpis,
     gate_margin_decimal,
     gate_profit_decimal,
+    gate_profitability_decimal,
 )
+from app.domain.analytics.promotion_adjusted import (
+    PromotionAdjustedProfit,
+    compute_profit_after_promotion,
+)
+from app.domain.analytics.seller_kpis import SellerKpis, compute_seller_kpis
 from app.domain.economics.inventory_math import compute_turnover, days_since, stock_risk_label
 from app.models.cost_history import CostHistory
 from app.models.economics.sku_unit_economics import SkuUnitEconomicsDaily
 from app.models.finance.aggregates import DailyAggregate, SkuDailyMetric
 from app.models.finance.enums import LedgerOperationType
 from app.models.finance.ledger import FinancialLedgerEntry
+from app.models.finance.normalized import NormalizedReportRow
 from app.models.inventory.snapshot import WarehouseStockSnapshot
-from app.models.report import Marketplace, Report
+from app.models.report import Marketplace, Report, ReportType
 from app.models.user import User
 from app.schemas.analytics import (
     AbcAnalysisResponse,
@@ -262,13 +269,251 @@ class AnalyticsService(TenantScopedService):
             warnings=warnings,
         )
 
+    async def _wb_seller_kpis(self, *, marketplace: Marketplace, period: Period) -> SellerKpis:
+        """
+        WB seller settlement KPIs for a period.
+
+        Uses report-scoped ledger rows when finance reports overlap the period
+        (matches WB weekly settlement). Return payouts are netted from normalized
+        return rows because they are not always materialized as ledger PAYOUT.
+        """
+        agg_stmt = (
+            select(func.coalesce(func.sum(DailyAggregate.revenue), 0))
+            .where(DailyAggregate.marketplace == marketplace)
+            .where(DailyAggregate.aggregate_date >= period.start)
+            .where(DailyAggregate.aggregate_date <= period.end)
+        )
+        revenue = Decimal((await self.execute_with_rls(agg_stmt)).scalar_one())
+
+        cogs_stmt = (
+            select(func.coalesce(func.sum(SkuUnitEconomicsDaily.cogs), 0))
+            .where(SkuUnitEconomicsDaily.marketplace == marketplace)
+            .where(SkuUnitEconomicsDaily.metric_date >= period.start)
+            .where(SkuUnitEconomicsDaily.metric_date <= period.end)
+        )
+        cogs = Decimal((await self.execute_with_rls(cogs_stmt)).scalar_one())
+
+        report_stmt = (
+            select(Report.id)
+            .where(Report.marketplace == marketplace)
+            .where(Report.period_start.is_not(None))
+            .where(Report.period_end.is_not(None))
+            .where(Report.period_start <= period.end)
+            .where(Report.period_end >= period.start)
+        )
+        report_res = await self.execute_with_rls(report_stmt)
+        report_ids = [row[0] for row in report_res.all()]
+
+        if report_ids:
+            ledger_stmt = (
+                select(
+                    FinancialLedgerEntry.operation_type,
+                    func.coalesce(func.sum(FinancialLedgerEntry.amount), 0),
+                )
+                .where(FinancialLedgerEntry.report_id.in_(report_ids))
+                .group_by(FinancialLedgerEntry.operation_type)
+            )
+            payout_returns_stmt = (
+                select(
+                    func.coalesce(
+                        func.sum(
+                            func.abs(
+                                sql_cast(
+                                    NormalizedReportRow.canonical_payload["payout"].astext,
+                                    Numeric(18, 4),
+                                )
+                            )
+                        ),
+                        0,
+                    )
+                )
+                .where(NormalizedReportRow.report_id.in_(report_ids))
+                .where(
+                    func.lower(NormalizedReportRow.canonical_payload["operation_type"].astext).like(
+                        "%возврат%"
+                    )
+                )
+                .where(NormalizedReportRow.canonical_payload["payout"].astext.is_not(None))
+                .where(NormalizedReportRow.canonical_payload["payout"].astext != "0")
+            )
+        else:
+            ledger_stmt = (
+                select(
+                    FinancialLedgerEntry.operation_type,
+                    func.coalesce(func.sum(FinancialLedgerEntry.amount), 0),
+                )
+                .where(FinancialLedgerEntry.operation_date >= period.start)
+                .where(FinancialLedgerEntry.operation_date <= period.end)
+                .group_by(FinancialLedgerEntry.operation_type)
+            )
+            payout_returns_stmt = (
+                select(
+                    func.coalesce(
+                        func.sum(
+                            func.abs(
+                                sql_cast(
+                                    NormalizedReportRow.canonical_payload["payout"].astext,
+                                    Numeric(18, 4),
+                                )
+                            )
+                        ),
+                        0,
+                    )
+                )
+                .join(Report, Report.id == NormalizedReportRow.report_id)
+                .where(Report.marketplace == marketplace)
+                .where(NormalizedReportRow.operation_date >= period.start)
+                .where(NormalizedReportRow.operation_date <= period.end)
+                .where(
+                    func.lower(NormalizedReportRow.canonical_payload["operation_type"].astext).like(
+                        "%возврат%"
+                    )
+                )
+                .where(NormalizedReportRow.canonical_payload["payout"].astext.is_not(None))
+                .where(NormalizedReportRow.canonical_payload["payout"].astext != "0")
+            )
+
+        ledger_res = await self.execute_with_rls(ledger_stmt)
+        by_type = {op: Decimal(total) for op, total in ledger_res.all()}
+        payout_sales = by_type.get(LedgerOperationType.PAYOUT, Decimal("0"))
+        logistics = abs(by_type.get(LedgerOperationType.LOGISTICS, Decimal("0")))
+        storage = abs(by_type.get(LedgerOperationType.STORAGE_FEE, Decimal("0")))
+        deductions = abs(by_type.get(LedgerOperationType.DEDUCTION, Decimal("0")))
+        payout_returns = Decimal((await self.execute_with_rls(payout_returns_stmt)).scalar_one())
+
+        return compute_seller_kpis(
+            revenue=revenue,
+            payout_sales=payout_sales,
+            payout_returns=payout_returns,
+            logistics=logistics,
+            storage=storage,
+            deductions=deductions,
+            cogs=cogs,
+        )
+
+    async def _sum_promotion_expenses(self, *, marketplace: Marketplace, period: Period) -> Decimal:
+        stmt = (
+            select(func.coalesce(func.sum(Report.promotion_expenses), 0))
+            .where(Report.marketplace == marketplace)
+            .where(Report.report_type == ReportType.FINANCE)
+            .where(Report.period_start.is_not(None))
+            .where(Report.period_end.is_not(None))
+            .where(Report.period_start <= period.end)
+            .where(Report.period_end >= period.start)
+        )
+        return Decimal((await self.execute_with_rls(stmt)).scalar_one())
+
+    async def _promotion_adjusted_profit(
+        self, *, marketplace: Marketplace, period: Period, seller: SellerKpis
+    ) -> PromotionAdjustedProfit:
+        promotion = await self._sum_promotion_expenses(marketplace=marketplace, period=period)
+        return compute_profit_after_promotion(
+            settlement_wb=seller.total_to_pay,
+            promotion_expenses=promotion,
+            cogs=seller.cogs,
+            revenue=seller.revenue,
+        )
+
+    async def _wb_seller_profit_by_day(
+        self, *, marketplace: Marketplace, period: Period
+    ) -> dict[date, SellerKpis]:
+        """Daily seller settlement KPIs (operation_date scoped) for trend charts."""
+        led_stmt = (
+            select(
+                FinancialLedgerEntry.operation_date,
+                FinancialLedgerEntry.operation_type,
+                func.coalesce(func.sum(FinancialLedgerEntry.amount), 0),
+            )
+            .where(FinancialLedgerEntry.operation_date >= period.start)
+            .where(FinancialLedgerEntry.operation_date <= period.end)
+            .group_by(FinancialLedgerEntry.operation_date, FinancialLedgerEntry.operation_type)
+        )
+        led_res = await self.execute_with_rls(led_stmt)
+        ledger_by_day: dict[date, dict[LedgerOperationType, Decimal]] = {}
+        for day, op, total in led_res.all():
+            ledger_by_day.setdefault(day, {})[op] = Decimal(total)
+
+        cogs_stmt = (
+            select(
+                SkuUnitEconomicsDaily.metric_date,
+                func.coalesce(func.sum(SkuUnitEconomicsDaily.cogs), 0),
+            )
+            .where(SkuUnitEconomicsDaily.marketplace == marketplace)
+            .where(SkuUnitEconomicsDaily.metric_date >= period.start)
+            .where(SkuUnitEconomicsDaily.metric_date <= period.end)
+            .group_by(SkuUnitEconomicsDaily.metric_date)
+        )
+        cogs_res = await self.execute_with_rls(cogs_stmt)
+        cogs_by_day = {day: Decimal(total) for day, total in cogs_res.all()}
+
+        rev_stmt = (
+            select(
+                DailyAggregate.aggregate_date,
+                func.coalesce(func.sum(DailyAggregate.revenue), 0),
+            )
+            .where(DailyAggregate.marketplace == marketplace)
+            .where(DailyAggregate.aggregate_date >= period.start)
+            .where(DailyAggregate.aggregate_date <= period.end)
+            .group_by(DailyAggregate.aggregate_date)
+        )
+        rev_res = await self.execute_with_rls(rev_stmt)
+        revenue_by_day = {day: Decimal(total) for day, total in rev_res.all()}
+
+        ret_stmt = (
+            select(
+                NormalizedReportRow.operation_date,
+                func.coalesce(
+                    func.sum(
+                        func.abs(
+                            sql_cast(
+                                NormalizedReportRow.canonical_payload["payout"].astext,
+                                Numeric(18, 4),
+                            )
+                        )
+                    ),
+                    0,
+                ),
+            )
+            .join(Report, Report.id == NormalizedReportRow.report_id)
+            .where(Report.marketplace == marketplace)
+            .where(NormalizedReportRow.operation_date >= period.start)
+            .where(NormalizedReportRow.operation_date <= period.end)
+            .where(
+                func.lower(NormalizedReportRow.canonical_payload["operation_type"].astext).like(
+                    "%возврат%"
+                )
+            )
+            .where(NormalizedReportRow.canonical_payload["payout"].astext.is_not(None))
+            .where(NormalizedReportRow.canonical_payload["payout"].astext != "0")
+            .group_by(NormalizedReportRow.operation_date)
+        )
+        ret_res = await self.execute_with_rls(ret_stmt)
+        payout_returns_by_day = {day: Decimal(total) for day, total in ret_res.all() if day is not None}
+
+        days = sorted(set(revenue_by_day) | set(ledger_by_day) | set(cogs_by_day))
+        out: dict[date, SellerKpis] = {}
+        for day in days:
+            led = ledger_by_day.get(day, {})
+            out[day] = compute_seller_kpis(
+                revenue=revenue_by_day.get(day, Decimal("0")),
+                payout_sales=led.get(LedgerOperationType.PAYOUT, Decimal("0")),
+                payout_returns=payout_returns_by_day.get(day, Decimal("0")),
+                logistics=abs(led.get(LedgerOperationType.LOGISTICS, Decimal("0"))),
+                storage=abs(led.get(LedgerOperationType.STORAGE_FEE, Decimal("0"))),
+                deductions=abs(led.get(LedgerOperationType.DEDUCTION, Decimal("0"))),
+                cogs=cogs_by_day.get(day, Decimal("0")),
+            )
+        return out
+
     async def revenue_summary(
         self, *, marketplace: Marketplace, period: Period
     ) -> RevenueKpiSummaryResponse:
+        seller = await self._wb_seller_kpis(marketplace=marketplace, period=period)
+        adjusted = await self._promotion_adjusted_profit(
+            marketplace=marketplace, period=period, seller=seller
+        )
         stmt = (
             select(
-                func.coalesce(func.sum(DailyAggregate.revenue), 0),
-                func.coalesce(func.sum(DailyAggregate.net_profit), 0),
                 func.coalesce(func.sum(DailyAggregate.units_sold), 0),
                 func.avg(DailyAggregate.average_check),
             )
@@ -277,20 +522,20 @@ class AnalyticsService(TenantScopedService):
             .where(DailyAggregate.aggregate_date <= period.end)
         )
         res = await self.execute_with_rls(stmt)
-        total_revenue, total_profit, units_sold, avg_check = res.one()
-        margin = None
-        if total_revenue and Decimal(total_revenue) > 0:
-            margin = (Decimal(total_profit) / Decimal(total_revenue)) * Decimal("100")
+        units_sold, avg_check = res.one()
         freshness = await self._freshness()
         integrity = await self._integrity(marketplace=marketplace, period=period, semantics_version=freshness.semantics_version)
         trust = integrity.profit_metrics_trust if integrity else "insufficient"
         profit_value, margin_value = apply_profit_trust_to_kpis(
             trust=trust or "insufficient",
-            total_profit=Decimal(total_profit),
-            margin_pct=margin,
+            total_profit=adjusted.seller_profit_after_promotion,
+            margin_pct=adjusted.margin_pct,
+        )
+        profitability_value = gate_profitability_decimal(
+            adjusted.profitability_pct, trust=trust or "insufficient"
         )
         if units_sold and int(units_sold) > 0:
-            avg_check = Decimal(total_revenue) / Decimal(units_sold)
+            avg_check = seller.revenue / Decimal(units_sold)
         else:
             avg_check = None
         return RevenueKpiSummaryResponse(
@@ -298,9 +543,10 @@ class AnalyticsService(TenantScopedService):
             period_start=period.start,
             period_end=period.end,
             kpis=RevenueKpiSummary(
-                total_revenue=Decimal(total_revenue),
+                total_revenue=seller.revenue,
                 total_profit=profit_value,
                 margin_pct=margin_value,
+                profitability_pct=profitability_value,
                 units_sold=int(units_sold or 0),
                 average_check=avg_check,
             ),
@@ -310,8 +556,12 @@ class AnalyticsService(TenantScopedService):
 
     async def financial_summary(self, *, marketplace: Marketplace, period: Period) -> FinancialKpiSummaryResponse:
         freshness = await self._freshness()
+        seller = await self._wb_seller_kpis(marketplace=marketplace, period=period)
+        adjusted = await self._promotion_adjusted_profit(
+            marketplace=marketplace, period=period, seller=seller
+        )
 
-        # Ledger totals for the period by operation type.
+        # Supplemental ledger breakdown (operation_date scoped) for display rows.
         stmt = (
             select(FinancialLedgerEntry.operation_type, func.coalesce(func.sum(FinancialLedgerEntry.amount), 0))
             .where(FinancialLedgerEntry.operation_date >= period.start)
@@ -323,38 +573,27 @@ class AnalyticsService(TenantScopedService):
 
         sales = by_type.get(LedgerOperationType.SALE, Decimal("0"))
         returns = abs(by_type.get(LedgerOperationType.RETURN, Decimal("0")))
-        payout = by_type.get(LedgerOperationType.PAYOUT, Decimal("0"))
         commission = abs(by_type.get(LedgerOperationType.COMMISSION, Decimal("0")))
-        logistics = abs(by_type.get(LedgerOperationType.LOGISTICS, Decimal("0")))
-        storage_fee = abs(by_type.get(LedgerOperationType.STORAGE_FEE, Decimal("0")))
         acquiring = abs(by_type.get(LedgerOperationType.ACQUIRING, Decimal("0")))
         advertisement = abs(by_type.get(LedgerOperationType.ADVERTISEMENT, Decimal("0")))
         penalties = abs(by_type.get(LedgerOperationType.PENALTY, Decimal("0")))
-        deductions = abs(by_type.get(LedgerOperationType.DEDUCTION, Decimal("0")))
         compensation = by_type.get(LedgerOperationType.COMPENSATION, Decimal("0"))
-
-        agg_stmt = (
-            select(
-                func.coalesce(func.sum(DailyAggregate.revenue), 0),
-                func.coalesce(func.sum(DailyAggregate.net_profit), 0),
-            )
-            .where(DailyAggregate.marketplace == marketplace)
-            .where(DailyAggregate.aggregate_date >= period.start)
-            .where(DailyAggregate.aggregate_date <= period.end)
-        )
-        agg_res = await self.execute_with_rls(agg_stmt)
-        revenue_sum, profit_sum = agg_res.one()
-        revenue = Decimal(revenue_sum)
-        profit = Decimal(profit_sum)
-        margin = (profit / revenue * Decimal("100")) if revenue > 0 else None
-        return_rate = (returns / revenue * Decimal("100")) if revenue > 0 else None
+        return_rate = (returns / seller.revenue * Decimal("100")) if seller.revenue > 0 else None
 
         integrity = await self._integrity(marketplace=marketplace, period=period, semantics_version=freshness.semantics_version)
         trust = integrity.profit_metrics_trust if integrity else "insufficient"
         profit_value, margin_value = apply_profit_trust_to_kpis(
             trust=trust or "insufficient",
-            total_profit=profit,
-            margin_pct=margin,
+            total_profit=adjusted.seller_profit_after_promotion,
+            margin_pct=adjusted.margin_pct,
+        )
+        cogs_value = seller.cogs if trust == "full" else None
+        profitability_value = gate_profitability_decimal(
+            adjusted.profitability_pct, trust=trust or "insufficient"
+        )
+        profit_raw_value = gate_profit_decimal(
+            adjusted.seller_profit_raw,
+            trust=trust or "insufficient",
         )
         return FinancialKpiSummaryResponse(
             marketplace=marketplace,
@@ -363,19 +602,25 @@ class AnalyticsService(TenantScopedService):
             kpis=FinancialKpiSummary(
                 sales_revenue=sales,
                 returns_amount=returns,
-                payout=payout,
+                payout=seller.payout_for_goods,
+                payout_for_goods=seller.payout_for_goods,
                 commission=commission,
-                logistics=logistics,
-                storage_fee=storage_fee,
+                logistics=seller.logistics,
+                storage_fee=seller.storage,
                 acquiring=acquiring,
                 advertisement=advertisement,
                 penalties=penalties,
-                deductions=deductions,
+                deductions=seller.deductions,
                 compensation=compensation,
+                cogs=cogs_value,
                 gross_profit=profit_value,
+                seller_profit_raw=profit_raw_value,
+                promotion_expenses=adjusted.promotion_expenses,
+                adjusted_settlement=adjusted.adjusted_settlement,
                 margin_pct=margin_value,
+                profitability_pct=profitability_value,
                 return_rate_pct=return_rate,
-                total_to_pay=payout,
+                total_to_pay=seller.total_to_pay,
             ),
             freshness=freshness,
             integrity=integrity,
@@ -572,6 +817,7 @@ class AnalyticsService(TenantScopedService):
         )
         res = await self.execute_with_rls(stmt)
         rows = list(res.scalars().all())
+        seller_by_day = await self._wb_seller_profit_by_day(marketplace=marketplace, period=period)
         integrity = await self._integrity(marketplace=marketplace, period=period)
         trust = integrity.profit_metrics_trust if integrity else "insufficient"
         points = [
@@ -579,7 +825,19 @@ class AnalyticsService(TenantScopedService):
                 date=r.aggregate_date,
                 revenue=r.revenue,
                 net_profit=gate_profit_decimal(r.net_profit, trust=trust or "insufficient"),
+                seller_profit=gate_profit_decimal(
+                    seller_by_day[r.aggregate_date].seller_profit
+                    if r.aggregate_date in seller_by_day
+                    else None,
+                    trust=trust or "insufficient",
+                ),
                 margin_pct=gate_margin_decimal(r.margin, trust=trust or "insufficient"),
+                seller_margin_pct=gate_margin_decimal(
+                    seller_by_day[r.aggregate_date].margin_pct
+                    if r.aggregate_date in seller_by_day
+                    else None,
+                    trust=trust or "insufficient",
+                ),
                 units_sold=r.units_sold,
             )
             for r in rows

@@ -67,6 +67,7 @@ def report_to_response(
         processed_at=derive_processed_at(report, job),
         period_start=resolved_start,
         period_end=resolved_end,
+        promotion_expenses=report.promotion_expenses,
         report_number=extract_report_number(
             filename=report.original_filename,
             marketplace=report.marketplace,

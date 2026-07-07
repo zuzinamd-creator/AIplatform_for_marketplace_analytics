@@ -11,6 +11,7 @@ from app.ai.prompts.v3.contracts import (
     LOCALE_RULES,
     OUTPUT_SCHEMA_V3,
     PRIORITIZATION_RULES,
+    PROMOTION_PROFIT_RULES,
     SEVERITY_RULES,
 )
 from app.ai.prompts.v3.registry import PromptRegistryV3
@@ -38,6 +39,7 @@ def render_prompt_v3(*, grounded, workflow: str) -> RenderedPromptV3:
             f"Prompt: {contract.prompt_id} v{contract.version} label={contract.label}",
             GOVERNANCE_RULES.strip(),
             LOCALE_RULES.strip(),
+            PROMOTION_PROFIT_RULES.strip(),
             SEVERITY_RULES.strip(),
             ACTIONABILITY_RULES.strip(),
             PRIORITIZATION_RULES.strip(),

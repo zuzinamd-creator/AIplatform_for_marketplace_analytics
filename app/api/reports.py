@@ -8,7 +8,7 @@ from app.core.deps import get_current_user
 from app.core.upload_stream import buffer_upload_with_checksum
 from app.models.report import Marketplace, ReportType
 from app.models.user import User
-from app.schemas.report import ReportResponse, ReportUploadResponse
+from app.schemas.report import ReportPromotionExpensesUpdate, ReportResponse, ReportUploadResponse
 from app.schemas.report_mappers import report_to_response
 from app.services.report_deletion_service import ReportDeletionService
 from app.services.report_service import ReportService
@@ -109,6 +109,19 @@ async def get_report(
 ) -> ReportResponse:
     report, job, ps, pe = await ReportService(db, current_user).get_report(report_id)
     return report_to_response(report, job, period_start=ps, period_end=pe)
+
+
+@router.patch("/{report_id}", response_model=ReportResponse)
+async def patch_report(
+    report_id: UUID,
+    payload: ReportPromotionExpensesUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ReportResponse:
+    return await ReportService(db, current_user).update_promotion_expenses(
+        report_id,
+        promotion_expenses=payload.promotion_expenses,
+    )
 
 
 @router.post("/{report_id}/retry", response_model=ReportResponse)

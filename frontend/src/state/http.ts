@@ -237,6 +237,10 @@ export const api = {
       const { data } = await http.get(`/reports/${reportId}`);
       return unwrap<ReportResponse>(data);
     },
+    async patch(reportId: string, body: { promotion_expenses: string }) {
+      const { data } = await http.patch(`/reports/${reportId}`, body);
+      return unwrap<ReportResponse>(data);
+    },
     async retry(reportId: string) {
       const { data } = await http.post(`/reports/${reportId}/retry`);
       return unwrap<ReportResponse>(data);

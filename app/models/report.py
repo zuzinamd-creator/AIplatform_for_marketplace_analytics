@@ -2,7 +2,9 @@ import enum
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, Enum, Integer, String, Text, UniqueConstraint
+from decimal import Decimal
+
+from sqlalchemy import Date, DateTime, Enum, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -66,6 +68,11 @@ class Report(Base, TenantMixin, TimestampMixin):
     raw_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     period_start: Mapped[date | None] = mapped_column(Date, nullable=True)
     period_end: Mapped[date | None] = mapped_column(Date, nullable=True)
+    promotion_expenses: Mapped[Decimal] = mapped_column(
+        Numeric(18, 4),
+        nullable=False,
+        server_default="0",
+    )
     row_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -84,6 +84,8 @@ export function DashboardPage() {
   const bRevenue = Number(data?.revenue_summary_compare?.kpis.total_revenue ?? "0");
   const deltaRevenue = compare ? aRevenue - bRevenue : null;
   const pct = (delta: number, base: number) => (base !== 0 ? (delta / base) * 100 : null);
+  const promotionExpenses = Number(data?.finance_summary.kpis.promotion_expenses ?? "0");
+  const hasPromotion = promotionExpenses > 0;
 
   return (
     <div className="page-shell">
@@ -181,7 +183,13 @@ export function DashboardPage() {
               <span>
                 Чистая прибыль: {formatRub(data?.revenue_summary.kpis.total_profit)}
                 {profitTrust && profitTrust !== "full" ? " (неточно — не у всех товаров указана себестоимость)" : ""}
+                {hasPromotion ? (
+                  <>
+                    {" · "}Прибыль до учёта продвижения: {formatRub(data?.finance_summary.kpis.seller_profit_raw)}
+                  </>
+                ) : null}
                 {" · "}Маржинальность: {formatPct(data?.revenue_summary.kpis.margin_pct)}
+                {" · "}Рентабельность: {formatPct(data?.revenue_summary.kpis.profitability_pct)}
                 {compare && deltaRevenue !== null ? (
                   <>
                     {" "}
@@ -226,7 +234,11 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card className="p-6 md:col-span-2">
           <div className="flex items-center justify-between gap-3">
-            <div className="text-sm font-semibold text-ink">Тренд продаж и прибыли (по дням)</div>
+            <div className="text-sm font-semibold text-ink">
+              {hasPromotion
+                ? "Тренд продаж и прибыли до учёта продвижения (по дням)"
+                : "Тренд продаж и прибыли (по дням)"}
+            </div>
             <StatusBadge tone={stale ? "warn" : "info"}>
               <LineChartIcon className="mr-1 inline h-3 w-3" />
               {stale ? "устарело" : "актуально"}
@@ -238,20 +250,48 @@ export function DashboardPage() {
                 data={(data?.revenue_trend_daily.points ?? []).map((p) => ({
                   date: p.date.slice(5),
                   revenue: Number(p.revenue),
-                  profit: Number(p.net_profit),
+                  profit: Number(p.seller_profit ?? p.net_profit),
                 }))}
               >
                 <XAxis dataKey="date" tick={CHART.axis} />
                 <YAxis tick={CHART.axis} />
-                <Tooltip contentStyle={CHART.tooltip} formatter={chartRubTooltip} />
-                <Line type="monotone" dataKey="revenue" stroke={CHART.series.revenue} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="profit" stroke={CHART.series.profit} strokeWidth={2} dot={false} />
+                <Tooltip
+                  contentStyle={CHART.tooltip}
+                  formatter={(value, name) => chartRubTooltip(value, String(name))}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  name="Выручка"
+                  stroke={CHART.series.revenue}
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="profit"
+                  name={hasPromotion ? "Прибыль до учёта продвижения" : "Прибыль"}
+                  stroke={CHART.series.profit}
+                  strokeWidth={2}
+                  dot={false}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-3 text-xs text-ink-muted">
-            Данные проанализированы за период: {start} → {end} · Последнее обновление: {freshness?.data_as_of ?? "—"}
-            {completeness ? <> · Полнота аналитики: {formatPct(completeness)}</> : null}
+          <div className="mt-3 space-y-1 text-xs text-ink-muted">
+            <div>
+              Данные проанализированы за период: {start} → {end} · Последнее обновление:{" "}
+              {freshness?.data_as_of ?? "—"}
+              {completeness ? <> · Полнота аналитики: {formatPct(completeness)}</> : null}
+            </div>
+            {hasPromotion ? (
+              <div>
+                График показывает прибыль до учёта затрат на продвижение. Чистая прибыль после
+                продвижения отображается в карточке продаж и финансовой сводке.
+              </div>
+            ) : (
+              <div>Прибыль на графике — settlement-прибыль продавца по дням.</div>
+            )}
           </div>
           {integrityWarnings.length || (costCoveragePct !== null && Number(costCoveragePct) < 100) ? (
             <WarnCallout title="Предупреждения целостности" className="mt-4">
@@ -342,21 +382,34 @@ export function DashboardPage() {
           <div className="text-sm font-semibold text-ink">Финансовая сводка</div>
           <div className="mt-2 text-xs text-ink-muted">Период: {start} → {end}</div>
           <div className="mt-5 space-y-2.5 text-sm text-ink-secondary">
-            <div className="flex justify-between gap-3"><span>Продажа, руб.</span><span>{formatRub(data?.finance_summary.kpis.sales_revenue)}</span></div>
-            <div className="flex justify-between gap-3"><span>Возвраты, руб.</span><span>{formatRub(data?.finance_summary.kpis.returns_amount)}</span></div>
-            <div className="flex justify-between gap-3"><span>Стоимость логистики, руб.</span><span>{formatRub(data?.finance_summary.kpis.logistics)}</span></div>
-            <div className="flex justify-between gap-3"><span>Затраты на продвижение, руб.</span><span>{formatRub(data?.finance_summary.kpis.advertisement)}</span></div>
-            <div className="flex justify-between gap-3"><span>Штрафы, руб.</span><span>{formatRub(data?.finance_summary.kpis.penalties)}</span></div>
-            <div className="flex justify-between gap-3"><span>Хранение, руб.</span><span>{formatRub(data?.finance_summary.kpis.storage_fee)}</span></div>
-            <div className="flex justify-between gap-3"><span>К перечислению, руб.</span><span>{formatRub(data?.finance_summary.kpis.payout)}</span></div>
+            <div className="flex justify-between gap-3"><span>Выручка</span><span>{formatRub(data?.revenue_summary.kpis.total_revenue)}</span></div>
+            <div className="flex justify-between gap-3"><span>К перечислению за товар</span><span>{formatRub(data?.finance_summary.kpis.payout_for_goods ?? data?.finance_summary.kpis.payout)}</span></div>
+            <div className="flex justify-between gap-3"><span>Логистика</span><span>{formatRub(data?.finance_summary.kpis.logistics)}</span></div>
+            <div className="flex justify-between gap-3"><span>Хранение</span><span>{formatRub(data?.finance_summary.kpis.storage_fee)}</span></div>
+            <div className="flex justify-between gap-3"><span>Удержания</span><span>{formatRub(data?.finance_summary.kpis.deductions)}</span></div>
+            <div className="flex justify-between gap-3 border-t border-surface-subtle pt-2"><span>Settlement WB (до учёта продвижения)</span><span>{formatRub(data?.finance_summary.kpis.total_to_pay)}</span></div>
+            <div className="flex justify-between gap-3"><span>Затраты на продвижение</span><span>{formatRub(data?.finance_summary.kpis.promotion_expenses)}</span></div>
+            {hasPromotion ? (
+              <div className="flex justify-between gap-3">
+                <span>Settlement WB (после продвижения)</span>
+                <span>{formatRub(data?.finance_summary.kpis.adjusted_settlement)}</span>
+              </div>
+            ) : null}
+            <div className="flex justify-between gap-3"><span>Себестоимость</span><span>{formatRub(data?.finance_summary.kpis.cogs)}</span></div>
+            {hasPromotion ? (
+              <div className="flex justify-between gap-3 text-ink-muted">
+                <span>Прибыль до учёта продвижения</span>
+                <span>{formatRub(data?.finance_summary.kpis.seller_profit_raw)}</span>
+              </div>
+            ) : null}
             <div className="mt-3 flex justify-between gap-3 border-t border-surface-subtle pt-3 font-semibold text-ink">
-              <span>Чистая прибыль, руб.</span><span>{formatRub(data?.finance_summary.kpis.gross_profit)}</span>
+              <span>Чистая прибыль</span><span>{formatRub(data?.finance_summary.kpis.gross_profit)}</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span>Маржинальность, %</span><span>{formatPct(data?.finance_summary.kpis.margin_pct)}</span>
+              <span>Маржинальность</span><span>{formatPct(data?.finance_summary.kpis.margin_pct)}</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span>Процент возвратов</span><span>{formatPct(data?.finance_summary.kpis.return_rate_pct)}</span>
+              <span>Рентабельность</span><span>{formatPct(data?.finance_summary.kpis.profitability_pct)}</span>
             </div>
           </div>
           <div className="mt-4 text-xs text-ink-muted">

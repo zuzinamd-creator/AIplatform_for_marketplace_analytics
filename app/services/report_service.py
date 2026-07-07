@@ -1,4 +1,5 @@
 from datetime import UTC, date, datetime
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -371,3 +372,30 @@ class ReportService(TenantScopedService):
             period_start=period_start,
             period_end=period_end,
         )
+
+    async def update_promotion_expenses(
+        self,
+        report_id: UUID,
+        *,
+        promotion_expenses: Decimal,
+    ) -> ReportResponse:
+        if promotion_expenses < 0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="promotion_expenses must be >= 0",
+            )
+        async with self._rls_transaction():
+            result = await self.db.execute(
+                select(Report).where(Report.id == report_id, Report.user_id == self.user.id)
+            )
+            report = result.scalar_one_or_none()
+            if report is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+            report.promotion_expenses = promotion_expenses
+            self.db.add(report)
+            await self.db.flush()
+            await self.db.refresh(report)
+            jobs_by_report = await self._latest_jobs_for_reports([report.id])
+        self.invalidate_list_cache()
+        job = jobs_by_report.get(report.id)
+        return report_to_response(report, job)

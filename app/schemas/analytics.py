@@ -56,6 +56,7 @@ class RevenueKpiSummary(BaseModel):
     total_revenue: Decimal = Field(default=Decimal("0"))
     total_profit: Decimal | None = None
     margin_pct: Decimal | None = None
+    profitability_pct: Decimal | None = None
     units_sold: int = 0
     average_check: Decimal | None = None
 
@@ -77,7 +78,9 @@ class TrendPoint(BaseModel):
     date: date
     revenue: Decimal
     net_profit: Decimal | None = None
+    seller_profit: Decimal | None = None
     margin_pct: Decimal | None = None
+    seller_margin_pct: Decimal | None = None
     units_sold: int
 
 
@@ -236,6 +239,7 @@ class FinancialKpiSummary(BaseModel):
     sales_revenue: Decimal = Decimal("0")
     returns_amount: Decimal = Decimal("0")
     payout: Decimal = Decimal("0")
+    payout_for_goods: Decimal = Decimal("0")
     commission: Decimal = Decimal("0")
     logistics: Decimal = Decimal("0")
     storage_fee: Decimal = Decimal("0")
@@ -244,9 +248,14 @@ class FinancialKpiSummary(BaseModel):
     penalties: Decimal = Decimal("0")
     deductions: Decimal = Decimal("0")
     compensation: Decimal = Decimal("0")
+    cogs: Decimal | None = None
 
     gross_profit: Decimal | None = None
+    seller_profit_raw: Decimal | None = None
+    promotion_expenses: Decimal = Decimal("0")
+    adjusted_settlement: Decimal | None = None
     margin_pct: Decimal | None = None
+    profitability_pct: Decimal | None = None
     return_rate_pct: Decimal | None = None
     total_to_pay: Decimal = Decimal("0")
 

@@ -11,6 +11,7 @@ import { Label, Select } from "../../ui/field";
 import { StatusBadge } from "../../ui/status-badge";
 import { toast } from "../../ui/toast";
 import { buildReportTableRows } from "./report-missing-periods";
+import { PromotionExpensesCell } from "./PromotionExpensesCell";
 import { sortReportsByPeriod, type PeriodSortOrder } from "./report-period-sort";
 
 function isReportProcessing(status?: string, jobStatus?: string | null): boolean {
@@ -136,7 +137,7 @@ export function ReportsPage() {
 
       <Card className="overflow-hidden">
         <div className="grid grid-cols-12 gap-0 border-b border-surface-subtle bg-surface-inset px-4 py-3 text-xs font-medium uppercase tracking-wide text-ink-muted">
-          <div className="col-span-3">№ отчёта</div>
+          <div className="col-span-2">№ отчёта</div>
           <div className="col-span-2">Маркетплейс</div>
           <button
             type="button"
@@ -150,7 +151,10 @@ export function ReportsPage() {
             </span>
           </button>
           <div className="col-span-2">Статус</div>
-          <div className="col-span-2">Примечания</div>
+          <div className="col-span-2" title="Сумма за весь период отчёта (Telegram, VK, блогеры и др.)">
+            Затраты на продвижение
+          </div>
+          <div className="col-span-1">Примечания</div>
           <div className="col-span-1 text-right">Действия</div>
         </div>
 
@@ -182,7 +186,7 @@ export function ReportsPage() {
               >
                 <Link
                   to={`/app/reports/${r.id}`}
-                  className="col-span-3 truncate font-medium text-ink-secondary hover:underline"
+                  className="col-span-2 truncate font-medium text-ink-secondary hover:underline"
                   title={r.original_filename}
                 >
                   {r.report_number ?? "—"}
@@ -192,7 +196,10 @@ export function ReportsPage() {
                 <div className="col-span-2">
                   <StatusBadge tone={toneForStatus(r.status)}>{r.status}</StatusBadge>
                 </div>
-                <div className="col-span-2 truncate text-ink-muted">
+                <div className="col-span-2">
+                  <PromotionExpensesCell report={r} />
+                </div>
+                <div className="col-span-1 truncate text-ink-muted">
                   {r.error_hint ?? (r.error_message ? `Ошибка: ${r.error_message}` : r.job?.status ? `Задача: ${r.job.status}` : "")}
                 </div>
                 <div className="col-span-1 flex justify-end gap-1">

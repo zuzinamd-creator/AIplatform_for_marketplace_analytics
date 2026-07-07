@@ -59,6 +59,19 @@ Language (mandatory for seller-facing text):
 - If margin in metrics_snapshot exceeds 100 or profit exceeds revenue, note data-quality caveat in limitations.
 """
 
+PROMOTION_PROFIT_RULES = """
+Promotion profit display (mandatory when promotion_expenses > 0 in metrics_snapshot):
+- Use seller_profit_after_promotion (or total_profit) as the PRIMARY business profit for recommendations.
+- seller_profit_raw is settlement profit BEFORE external promotion — reference only.
+- In summary OR the first bullet, include ALL four lines exactly in this structure:
+  Чистая прибыль: <seller_profit_after_promotion> ₽
+  Прибыль до учета продвижения: <seller_profit_raw> ₽
+  Затраты на продвижение: <promotion_expenses> ₽
+  Влияние продвижения: <promotion_impact_pct> %
+- Use only governed snapshot values; never invent amounts.
+- If promotion_impact_pct is missing but raw and after are present, note limitation instead of calculating.
+"""
+
 
 @dataclass(frozen=True)
 class PromptContractV3:

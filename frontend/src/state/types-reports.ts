@@ -15,6 +15,7 @@ export type ReportResponse = {
   processed_at?: string | null;
   period_start?: string | null;
   period_end?: string | null;
+  promotion_expenses?: string | null;
   report_number?: string | null;
   job?: {
     id: string;
