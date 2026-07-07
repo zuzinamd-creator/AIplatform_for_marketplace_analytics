@@ -40,6 +40,7 @@ def run_migrations_offline() -> None:
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
         compare_server_default=True,
+        transaction_per_migration=True,
     )
 
     with context.begin_transaction():
@@ -54,10 +55,9 @@ def do_run_migrations(connection: Connection) -> None:
         target_metadata=target_metadata,
         compare_type=True,
         compare_server_default=True,
+        transaction_per_migration=True,
     )
-
-    with context.begin_transaction():
-        context.run_migrations()
+    context.run_migrations()
 
 
 async def run_migrations_online() -> None:
@@ -68,8 +68,9 @@ async def run_migrations_online() -> None:
         connect_args=asyncpg_connect_args(migration_url),
     )
 
-    # begin() commits on success; connect() alone leaves DDL uncommitted with asyncpg.
-    async with connectable.begin() as connection:
+    # AUTOCOMMIT lets PostgreSQL enum ADD VALUE commits apply before later migrations.
+    async with connectable.connect() as connection:
+        await connection.execution_options(isolation_level="AUTOCOMMIT")
         await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()
