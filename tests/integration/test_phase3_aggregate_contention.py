@@ -12,7 +12,7 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
-from app.core.queue.etl_retry_policy import EtlRetryableError, RetryReason
+from app.core.queue.etl_retry_policy import RetryReason
 from app.core.queue.postgres_backend import PostgresQueueBackend
 from app.core.security_context import TenantSession
 from app.domain.reconciliation.calculator import ReconciliationCalculator
