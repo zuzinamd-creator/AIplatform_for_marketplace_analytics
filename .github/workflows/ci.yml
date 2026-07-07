@@ -76,4 +76,4 @@ jobs:
         run: pytest tests/integration -q -m integration
 
       - name: Docker Compose config
-        run: docker compose config --quiet
+        run: docker compose config
