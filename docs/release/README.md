@@ -2,7 +2,9 @@
 
 | Release | Document | Status |
 |---------|----------|--------|
-| v0.6-mvp-intelligence | [v0.6-mvp-intelligence.md](v0.6-mvp-intelligence.md) | Current |
+| **Phase 8.1 — Promotion Expenses MVP** | **[phase_81_production_release.md](phase_81_production_release.md)** | **CERTIFIED — Current** |
+| Tag `v8.1-promotion-expenses-mvp` | Feature `48a8d7c` · CI `53d730b` · Run `28944603932` | Production accepted 2026-07-07 · CI GREEN 2026-07-08 |
+| v0.6-mvp-intelligence | [v0.6-mvp-intelligence.md](v0.6-mvp-intelligence.md) | Superseded for profit KPI scope |
 | CHANGELOG | [CHANGELOG.md](CHANGELOG.md) | 6.5.1 |
 | Release readiness (6.5.0) | [v0.6_release_readiness_report.md](v0.6_release_readiness_report.md) | Complete |
 | Hardening readiness (6.5.1) | [hardening_readiness.md](hardening_readiness.md) | Complete |
@@ -23,4 +25,6 @@
 | Threshold catalog | [../ai/threshold_catalog.md](../ai/threshold_catalog.md) | 6.5.1 |
 | README cutover (6.4.2) | [readme_cutover_report.md](readme_cutover_report.md) | Complete |
 
+**Tag:** `v8.1-promotion-expenses-mvp` — **CERTIFIED** (Phase 8.1 closed 2026-07-08).  
+**Entry point:** [README.md](../../README.md) · **Manifest:** [phase_81_production_release.md](phase_81_production_release.md)  
 **Tag:** `v0.6-pilot-validated` — **GO** (milestone frozen 6.6.1).

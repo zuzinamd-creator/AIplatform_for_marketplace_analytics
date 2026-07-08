@@ -1,8 +1,24 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
-**Version:** `v0.6-mvp-intelligence`  
-**Status:** Production-ready MVP — Period Intelligence with Inventory Intelligence  
-**Last updated:** 2026-06-07
+**Version:** `v8.1-promotion-expenses-mvp`  
+**Status:** Production Certified — Promotion Expenses MVP  
+**Last updated:** 2026-07-08
+
+---
+
+## Current Production Release
+
+| Field | Value |
+|-------|-------|
+| **Release tag** | `v8.1-promotion-expenses-mvp` |
+| **Feature baseline** | `48a8d7c` — Promotion Expenses MVP |
+| **CI certification** | `53d730b` — GitHub Actions GREEN |
+| **Production status** | Certified — pilot accepted 2026-07-07 |
+| **Release manifest** | [docs/release/phase_81_production_release.md](docs/release/phase_81_production_release.md) |
+
+**Certification:** Production = Workspace = GitHub · CI = GREEN · AI = VALIDATED
+
+Pilot KPIs (2026-06-29 — 2026-07-05): Settlement Profit **100 530.15 ₽** · Promotion **9 925 ₽** · Profit After Promotion **90 605.15 ₽** · Impact **9.87%**
 
 ---
 
@@ -24,8 +40,10 @@ The platform treats marketplace reports as a **financial data platform** — not
 1. Upload WB realization report (`.xlsx` / `.csv`)
 2. ETL → ledger → aggregates → inventory snapshots
 3. Import COGS (`cost_history`) for margin/profit trust
-4. Period Intelligence AI run → executive summary + actionable recommendations
-5. Seller actions: accept / dismiss / complete / snooze
+4. Enter **promotion expenses** per report (Reports UI or `PATCH /api/v1/reports/{id}`)
+5. Dashboard shows **Profit After Promotion** as primary profit KPI
+6. Period Intelligence AI run → executive summary + actionable recommendations (promotion-aware snapshot)
+7. Seller actions: accept / dismiss / complete / snooze
 
 ---
 
@@ -43,9 +61,27 @@ Not a chatbot over raw KPIs. The product combines:
 - **Trust gating** — profit/margin hidden or downgraded when COGS coverage is incomplete
 - **Measurable quality** — Seller Usefulness, AI Readiness, Dashboard Echo, Actionable Rate
 
-**North star:** every recommendation must be **actionable**, **grounded in ledger data**, and **prioritized for seller decisions** — revenue and profit first, inventory escalated only when critical.
+**North star:** every recommendation must be **actionable**, **grounded in ledger data**, and **prioritized for seller decisions** — revenue and **profit after promotion** first, inventory escalated only when critical.
 
 ---
+
+## Promotion Expenses MVP *(Phase 8.1)*
+
+Manual promotion overlay on WB settlement profit — read-layer adjustment, no ledger mutation.
+
+| Capability | Detail |
+|------------|--------|
+| **`promotion_expenses`** | Per-report manual field (`reports.promotion_expenses`, migration 0033); default `0` |
+| **Profit After Promotion** | Primary seller profit: `(settlement − promotion) − COGS` |
+| **Settlement Profit** | Reference only (`seller_profit_raw`) — profit before external promotion |
+| **Dashboard KPI** | Finance block shows settlement reference, promotion spend, adjusted profit, impact % |
+| **AI integration** | Snapshot fields: `seller_profit_raw`, `promotion_expenses`, `seller_profit_after_promotion`, `promotion_impact_pct`; prompt rules in `PROMOTION_PROFIT_RULES` |
+| **PATCH API** | `PATCH /api/v1/reports/{report_id}` with `{ "promotion_expenses": "9925.00" }` |
+
+Domain math: `app/domain/analytics/promotion_adjusted.py`  
+UI: `frontend/src/views/reports/PromotionExpensesCell.tsx`, `DashboardPage.tsx`
+
+Full release specification: [docs/release/phase_81_production_release.md](docs/release/phase_81_production_release.md)
 
 ## Current AI Capabilities
 
@@ -58,9 +94,11 @@ Not a chatbot over raw KPIs. The product combines:
 
 ### Profit Intelligence
 
-- Net profit, margin %, ROI (with COGS trust gating)
+- **Primary KPI:** Profit After Promotion (settlement minus manual promotion expenses minus COGS)
+- **Reference KPI:** Settlement Profit (`seller_profit_raw`) — before promotion overlay
+- Margin %, ROI (with COGS trust gating); promotion impact % when expenses > 0
 - Findings: `sales_low_margin`, `profit_drop`, deep period insights (unprofitable SKUs)
-- Source: `sku_unit_economics_daily`, `cost_history`
+- Source: `financial_ledger_entries`, `cost_history`, `reports.promotion_expenses`
 
 ### Marketplace Cost Intelligence
 
@@ -113,7 +151,7 @@ Deterministic layer over existing tables — **no new integrations**:
 | Marketplace costs | 14 | ✅ ON |
 | COGS & margin | 14 | ✅ ON |
 | Inventory | 10 | ✅ ON (partial — snapshots from WB finance) |
-| Advertising | 12 | ❌ OFF |
+| Advertising | 12 | ⚠️ Partial — manual `promotion_expenses` (Phase 8.1); no WB Ads API |
 | External marketing | 10 | ❌ OFF |
 | Tax | 10 | ❌ OFF |
 | OPEX | 10 | ❌ OFF |
@@ -124,6 +162,8 @@ Deterministic layer over existing tables — **no new integrations**:
 ---
 
 ## Current Metrics
+
+> Historical Phase 6.3.0B pilot audit metrics below. **Phase 8.1 production KPIs** are in [phase_81_production_release.md](docs/release/phase_81_production_release.md#5-production-acceptance-section).
 
 Pilot audit: 4 WB finance reports, user `caefecb3-5789-4878-a9d4-929be573fbcc`  
 Audit script: `scripts/phase_630_inventory_audit.py` → `reports/phase_630_inventory_audit.json`
@@ -211,7 +251,8 @@ flowchart TB
 | Domain | Analytics UI | AI Insights | Data source |
 |--------|-------------|-------------|-------------|
 | Revenue / Sales | ✅ Dashboard, Trends | ✅ L1 primary | WB realization report |
-| Profit / Margin | ✅ Economics | ✅ Trust-gated | Ledger + `cost_history` |
+| Profit / Margin | ✅ Economics | ✅ Trust-gated, promotion-adjusted | Ledger + `cost_history` + `promotion_expenses` |
+| Promotion expenses | ✅ Reports UI, Dashboard | ✅ Snapshot + prompt rules | Manual per-report PATCH |
 | MP costs (commission, logistics, returns) | ✅ Economics, reconciliation | ✅ L1/L2 | Ledger |
 | Inventory (stock, frozen capital, risk) | ✅ Inventory economics | ✅ L2 default, L1 escalated | Snapshots + ledger |
 | SKU unit economics | ✅ Economics drilldown | ✅ Deep insights | Rebuild projections |
@@ -222,7 +263,7 @@ flowchart TB
 
 | Domain | Blocker | Planned phase |
 |--------|---------|---------------|
-| Advertising (spend, ACOS, DRR) | Ads report / column often empty | **6.3.1** |
+| Advertising (spend, ACOS, DRR) | Manual promotion overlay only (Phase 8.1) | **8.2+** WB Ads auto-import |
 | Tax (УСН, НДС) | No import tables | **6.3.2** |
 | OPEX (payroll, rent) | No import tables | **6.3.2** |
 | Conversion (card views, cart, CTR) | No funnel/import tables | **6.3.3** |
@@ -232,40 +273,35 @@ flowchart TB
 
 ---
 
-## Roadmap
+## Project Roadmap
 
-### 6.4.0 — Documentation & Release Hardening *(current)*
+### Completed
 
-- README cutover + documentation migration (Phase 6.4.0–6.4.2)
-- Tag `v0.6-mvp-intelligence` *(pending approval)*
-- Production audit monitoring (primary domain distribution)
-- Weekly Analysis page wiring (product backlog)
+| Phase | Deliverable | Status |
+|-------|-------------|--------|
+| **8.1** | **Promotion Expenses MVP** — manual promotion overlay, adjusted profit KPIs, Dashboard, AI snapshot, migration 0033 | ✅ Certified |
 
-### 6.3.1 — Advertising Intelligence
+### Next
 
-- Activate ads spend from ledger / dedicated report
-- Apply **revenue protection** pattern from 6.3.0B
-- Coverage block: Promotion on MP (weight 12)
+| Phase | Focus |
+|-------|-------|
+| **8.2** | **AI Recommendation Quality Improvement** — promotion-aware LLM compliance, legacy snapshot cleanup, multi-scenario validation |
 
-### 6.3.2 — Tax & OPEX Intelligence
+### Historical roadmap (Phase 6.x)
 
-- Manual import for tax and operating expenses
-- New coverage blocks without breaking V1 formula
-- Domain analysts for tax load and OPEX impact on margin
+<details>
+<summary>Phase 6.3.x — Period Intelligence foundation (completed)</summary>
 
-### 6.3.3 — Conversion Intelligence
+- **6.3.0** — Inventory Intelligence activation
+- **6.3.0B** — Priority calibration (revenue protection)
+- **6.3.1** — Advertising Intelligence (superseded in part by 8.1 manual promotion)
+- **6.3.2** — Tax & OPEX Intelligence
+- **6.3.3** — Conversion Intelligence
+- **6.3.4** — Operating Director scaffold → production
 
-- Card funnel data import (product views, add-to-cart, card CTR) — distinct from existing Funnel analyst (SKU revenue concentration)
-- New conversion metrics tables + domain analyst for listing performance
+Design: [docs/ai/phase_63_architecture_blueprint.md](docs/ai/phase_63_architecture_blueprint.md)
 
-### 6.3.4 — Operating Director
-
-- Promote `app/ai/director/` from scaffold to shadow-run
-- L0 Data Quality → L1 Domain Experts → L2 Cross-Domain → L3 Executive
-- Strangler-fig migration from `AIIntelligenceEngine`
-- Design: [docs/ai/operating_director_architecture.md](docs/ai/operating_director_architecture.md)
-
----
+</details>
 
 ## Development Setup
 
@@ -386,7 +422,9 @@ Reports: `reports/phase_630_inventory_audit.json`, `reports/phase_621_migration_
 
 ### CI
 
-GitHub Actions runs unit + integration tests on push. Stress benchmarks gated by `RUN_STRESS_TESTS=1`.
+GitHub Actions on `main`: Ruff, Mypy, Alembic upgrade, unit tests, integration tests, Docker Compose config.  
+**Last certified run:** `28944603932` @ `53d730b` — GREEN (2026-07-08).  
+Stress benchmarks gated by `RUN_STRESS_TESTS=1`.
 
 ---
 
@@ -434,6 +472,7 @@ python scripts/rebuild_financial_projections.py
 |-------|---------|
 | `/app/dashboard` | KPI + Period Intelligence entry |
 | `/app/reports/upload` | Upload WB report |
+| `/app/reports` | Reports list + promotion expenses edit |
 | `/app/costs` | COGS import and edit |
 | `/app/economics/inventory` | Frozen capital, slow movers, dead stock |
 | `/app/ai/recommendations` | AI recommendations list |
@@ -446,7 +485,7 @@ python scripts/rebuild_financial_projections.py
 | Area | Prefix |
 |------|--------|
 | Auth | `/api/v1/auth/*` |
-| Reports | `/api/v1/reports/*` |
+| Reports | `/api/v1/reports/*` (incl. `PATCH` for `promotion_expenses`) |
 | Analytics | `/api/v1/analytics/*` |
 | Costs | `/api/v1/costs/*` |
 | AI | `/api/v1/ai/*` |
@@ -460,6 +499,8 @@ OpenAPI: `http://localhost:8000/docs` (when `DEBUG=true` or enabled).
 
 | Topic | Document |
 |-------|----------|
+| **Phase 8.1 release manifest** | **[docs/release/phase_81_production_release.md](docs/release/phase_81_production_release.md)** |
+| Release documentation index | [docs/release/README.md](docs/release/README.md) |
 | AI architecture | [docs/ai/ai_architecture.md](docs/ai/ai_architecture.md) |
 | Domain analysts | [docs/ai/domain_analysts.md](docs/ai/domain_analysts.md) |
 | Executive intelligence | [docs/ai/executive_intelligence.md](docs/ai/executive_intelligence.md) |
@@ -476,11 +517,13 @@ OpenAPI: `http://localhost:8000/docs` (when `DEBUG=true` or enabled).
 
 ## Release Notes
 
-**Current release:** [v0.6-mvp-intelligence](docs/release/v0.6-mvp-intelligence.md) (2026-06-07)
+**Current release:** [Phase 8.1 — Promotion Expenses MVP](docs/release/phase_81_production_release.md) (2026-07-08)
 
-Period Intelligence MVP with Inventory Intelligence and priority calibration (Phase 6.3.0B). Key metrics: Seller Usefulness **80.3**, AI Readiness **86.1**, Inventory Insight Rate **100%**, Dashboard Echo **0%**.
+Tag `v8.1-promotion-expenses-mvp` · Production certified · CI GREEN · AI VALIDATED.
 
-Full changelog, upgrade notes, and file list: [docs/release/v0.6-mvp-intelligence.md](docs/release/v0.6-mvp-intelligence.md)
+Key deliverables: manual `promotion_expenses`, Profit After Promotion as primary KPI, Dashboard finance block, AI snapshot + `PROMOTION_PROFIT_RULES`, migration `0033_report_promotion_expenses`.
+
+Previous release: [v0.6-mvp-intelligence](docs/release/v0.6-mvp-intelligence.md) (2026-06-07) — Period Intelligence with Inventory Intelligence.
 
 ---
 
