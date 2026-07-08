@@ -1,7 +1,8 @@
 # Production Safety (Phase 8.2.0)
 
-**Status:** Wave 1 implemented (tooling only — not wired to systemd)  
-**Baseline:** Phase 8.1 certified (`9301e5e`)
+**Status:** Wave 2 implementation complete in repository (systemd units + docs; **not yet deployed to VPS**)  
+**Wave 1 baseline:** `2e9aaad` — tooling committed  
+**Phase 8.1 baseline:** `9301e5e`
 
 ---
 
@@ -33,7 +34,7 @@ Modes:
 | Flag | Purpose |
 |------|---------|
 | `--check` | Default read-only validation |
-| `--systemd` | Compact output for future ExecStartPre (Wave 2) |
+| `--systemd` | Compact output for systemd `ExecStartPre` (Wave 2) |
 | `--verbose` | Extra diagnostics |
 | `--with-schema` | Compare alembic head to `alembic_version` table |
 
@@ -98,12 +99,37 @@ No restarts, no git reset, no `.env` restore.
 
 ---
 
+## ExecStartPre architecture (Wave 2)
+
+Wave 2 wires `scripts/preflight-env.sh --systemd` into systemd **before** process start. Preflight is **fail-closed**: exit `1` prevents `ExecStart` from running.
+
+| Unit | Repo file | ExecStartPre |
+|------|-----------|--------------|
+| Backend | `deploy/systemd/marketplace-backend.service` | `preflight-env.sh --systemd` |
+| Worker | `deploy/systemd/marketplace-worker.service` | `preflight-env.sh --systemd` |
+| Orchestrator | `deploy/systemd/marketplace-orchestrator.service` | `preflight-env.sh --systemd` |
+
+**Flow (each restart / start):**
+
+1. systemd loads `EnvironmentFile=-…/.env` (optional; missing file does not abort unit load).
+2. `ExecStartPre` runs preflight: `.env` exists + readable → `.venv` present → `python -m app.ops.preflight` (no `--schema` in unit).
+3. On success → `ExecStart` runs uvicorn / ETL worker / orchestration worker.
+4. On failure → unit enters `failed`; journal shows `PREFLIGHT FAIL: …`.
+
+**Not in ExecStartPre:** `--with-schema` (alembic vs DB) — remains manual ops / recovery procedure to avoid false blocks on DB blips or schema lag.
+
+**API lifespan unchanged** — preflight is not imported by `app.main`; only systemd invokes the script.
+
+**Deploy to VPS:** copy units to `/etc/systemd/system/`, `daemon-reload`, restart services (maintenance window). See [production_recovery_runbook.md](./production_recovery_runbook.md) Phase 4.
+
+---
+
 ## Wave roadmap
 
 | Wave | Scope | Production touch |
 |------|-------|------------------|
-| **1** (current) | Scripts, CLI, docs, tests | **None** |
-| **2** | systemd `ExecStartPre`, orchestrator unit in repo | Restart required |
+| **1** | Scripts, CLI, docs, tests | **None** (done — `2e9aaad`) |
+| **2** | systemd `ExecStartPre`, orchestrator unit in repo | **Restart required** (repo done; VPS pending) |
 | **3** | Deploy guard in `deploy-frontend.sh` | Next deploy only |
 
 ---

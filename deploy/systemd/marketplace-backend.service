@@ -12,6 +12,7 @@ User=root
 WorkingDirectory=/root/AIplatform_for_marketplace_analytics
 EnvironmentFile=-/root/AIplatform_for_marketplace_analytics/.env
 Environment=PYTHONUNBUFFERED=1
+ExecStartPre=/root/AIplatform_for_marketplace_analytics/scripts/preflight-env.sh --systemd
 ExecStart=/root/AIplatform_for_marketplace_analytics/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-graceful-shutdown 30
 Restart=on-failure
 RestartSec=5

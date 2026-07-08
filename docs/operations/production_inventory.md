@@ -6,8 +6,22 @@
 |------|------|
 | `marketplace-backend` | FastAPI / uvicorn :8000 |
 | `marketplace-worker` | ETL queue consumer |
+| `marketplace-orchestrator` | Runtime control plane — rebuild dispatch + maintenance (`app.runtime.orchestration_worker`) |
 | `nginx` | HTTPS, static frontend, API proxy |
 | `marketplace-dr-drill.timer` | Weekly backup drill (Sun 03:00 UTC) |
+
+### `marketplace-orchestrator` (Phase 8.2.0 Wave 2)
+
+| Property | Value |
+|----------|-------|
+| **Repo unit file** | `deploy/systemd/marketplace-orchestrator.service` |
+| **Production path** | `/etc/systemd/system/marketplace-orchestrator.service` |
+| **ExecStart** | `.venv/bin/python -m app.runtime.orchestration_worker` |
+| **ExecStartPre** | `scripts/preflight-env.sh --systemd` (`.env` + env validation before start) |
+| **Restart** | `on-failure` (singleton via PostgreSQL lease `orchestrator_primary`) |
+| **Purpose** | Dispatches `snapshot_rebuild_requirements`, runs maintenance cycles; separate from ETL worker |
+
+Backend and worker units use the same `ExecStartPre` preflight gate (Wave 2). See [production_safety.md](./production_safety.md).
 
 ## Monitoring
 
