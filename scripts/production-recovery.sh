@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Production recovery — assess-only (Wave 1). No destructive actions.
+# Production recovery — assess-only. No destructive actions.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BASE="${BASE_HTTPS:-https://321997.fornex.cloud}"
 API="${BASE}/api/v1"
-CERTIFIED_SHA="${CERTIFIED_SHA:-9301e5e76bd82e7cc1b69e6514c0a8f15c65b10b}"
+CERTIFIED_SHA="${CERTIFIED_SHA:-01cfee975f05eb1824be181634950914b31d3577}"
 ENV_FILE="${ENV_FILE:-$ROOT/.env}"
 BACKUP_ENV="${BACKUP_ENV:-/root/.env.bak.int2.recovery}"
 
@@ -107,11 +107,15 @@ done
 echo ""
 echo "--- Alembic (code head) ---"
 if [[ -x "${ROOT}/.venv/bin/alembic" ]]; then
-  HEAD_REV="$("${ROOT}/.venv/bin/alembic" heads -q 2>/dev/null | awk '{print $1}' | head -1)"
+  # Note: alembic 1.18.x rejects "heads -q" (-q is global-only). Use "heads" and never
+  # abort the assess report on alembic CLI failure (set -e + pipefail).
+  HEAD_REV="$(
+    "${ROOT}/.venv/bin/alembic" heads 2>/dev/null | awk '{print $1}' | head -1 || true
+  )"
   if [[ -n "${HEAD_REV}" ]]; then
     pass "alembic code head=${HEAD_REV}"
   else
-    fail "alembic heads empty"
+    fail "alembic heads unavailable or empty"
   fi
 else
   warn "alembic not found in venv"

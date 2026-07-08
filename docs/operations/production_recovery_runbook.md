@@ -1,11 +1,12 @@
 # Production Recovery Runbook
 
-**Phase:** 8.2.0 — Production Safety  
-**Certified baseline:** `9301e5e` (Phase 8.1)  
+**Phase:** 8.2.0 — Production Safety (8.2.1a ops stabilization)  
+**Certified production baseline:** `01cfee9` — Wave 2 systemd preflight deployed  
+**Historical rollback (Phase 8.1 only):** `9301e5e` — do not use for routine assess  
 **Last updated:** 2026-07-08
 
 > Human operator guide for restoring production after configuration or code incidents.  
-> Wave 1 provides **assess-only** automation; destructive steps remain manual until Wave 2.
+> `scripts/production-recovery.sh` is **assess-only**; destructive steps remain manual.
 
 ---
 
@@ -66,12 +67,18 @@ Backup locations (in priority order):
 
 ## Phase 3 — Restore code (manual, maintenance window)
 
-Only if HEAD diverged from certified baseline:
+Only if HEAD diverged from the **current** certified production baseline (`01cfee9`):
 
 ```bash
 git fetch origin
-git reset --hard 9301e5e
+git reset --hard 01cfee9
 # Remove uncommitted feature files if present (see incident RCA)
+```
+
+**Historical rollback** to Phase 8.1 promotion-expenses MVP (emergency only, not routine assess):
+
+```bash
+git reset --hard 9301e5e
 ```
 
 Verify:
@@ -82,9 +89,9 @@ Verify:
 
 ---
 
-## Phase 4 — Restart services (Wave 2+ only)
+## Phase 4 — Restart services
 
-> **Not automated in Wave 1.** After Wave 2 systemd preflight is installed:
+> Wave 2 systemd `ExecStartPre` is deployed on production. Use after unit or `.env` changes:
 
 ```bash
 sudo systemctl daemon-reload

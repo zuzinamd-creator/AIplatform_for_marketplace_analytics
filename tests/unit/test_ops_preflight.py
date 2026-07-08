@@ -9,6 +9,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from app.core.startup_validation import StartupValidationReport
 from app.ops.preflight import (
+    _alembic_executable,
+    _alembic_head_revision,
     build_preflight_report,
     check_alembic_revision,
     collect_required_field_errors,
@@ -90,6 +92,17 @@ def test_run_preflight_failure() -> None:
     bad_report = StartupValidationReport(ok=False, warnings=(), errors=("bad",))
     with patch("app.ops.preflight.build_preflight_report", return_value=bad_report):
         assert run_preflight() == 1
+
+
+def test_alembic_head_revision_invokes_heads_without_q_flag() -> None:
+    completed = MagicMock(returncode=0, stdout="0033_report_promotion_expenses (head)\n", stderr="")
+    with patch("app.ops.preflight.subprocess.run", return_value=completed) as mock_run:
+        assert _alembic_head_revision() == "0033_report_promotion_expenses"
+    mock_run.assert_called_once()
+    args, kwargs = mock_run.call_args
+    assert args[0] == [_alembic_executable(), "heads"]
+    assert "-q" not in args[0]
+    assert kwargs.get("cwd") is not None
 
 
 def test_run_preflight_schema_mismatch() -> None:

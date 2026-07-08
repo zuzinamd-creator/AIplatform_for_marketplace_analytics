@@ -6,6 +6,7 @@ import argparse
 import subprocess
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -56,12 +57,23 @@ def build_preflight_report(
     return PreflightReport(ok=ok, errors=tuple(errors), warnings=tuple(warnings))
 
 
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _alembic_executable() -> str:
+    venv_alembic = _REPO_ROOT / ".venv" / "bin" / "alembic"
+    if venv_alembic.is_file():
+        return str(venv_alembic)
+    return "alembic"
+
+
 def _alembic_head_revision() -> str:
     result = subprocess.run(
-        ["alembic", "heads", "-q"],
+        [_alembic_executable(), "heads"],
         check=False,
         capture_output=True,
         text=True,
+        cwd=_REPO_ROOT,
     )
     if result.returncode != 0:
         stderr = (result.stderr or result.stdout or "").strip()
