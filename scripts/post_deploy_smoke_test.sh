@@ -22,7 +22,7 @@ echo "base=${BASE}"
 echo ""
 
 echo "--- Infrastructure ---"
-for unit in marketplace-backend marketplace-worker nginx; do
+for unit in marketplace-backend marketplace-worker marketplace-orchestrator nginx; do
   if systemctl is-active --quiet "${unit}" 2>/dev/null; then
     pass "systemd ${unit}"
   else

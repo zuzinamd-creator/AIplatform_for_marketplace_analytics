@@ -24,7 +24,7 @@ def _setup_recovery_workspace(
     tmp_path: Path,
     *,
     alembic_script: str,
-    git_head: str = "01cfee975f05eb1824be181634950914b31d3577",
+    git_head: str = "11731e911a16c92b9aeea8c6bafb533cf49e245b",
 ) -> Path:
     """Copy recovery script into tmp repo root so ROOT resolves under tmp_path."""
     scripts = tmp_path / "scripts"
@@ -107,9 +107,10 @@ def _run_recovery(
     )
 
 
-def test_default_certified_sha_is_wave2_baseline() -> None:
+def test_default_certified_sha_is_production_baseline() -> None:
     text = RECOVERY_SH_SRC.read_text(encoding="utf-8")
-    assert "01cfee975f05eb1824be181634950914b31d3577" in text
+    assert "11731e911a16c92b9aeea8c6bafb533cf49e245b" in text
+    assert "01cfee975f05eb1824be181634950914b31d3577" not in text
     assert "9301e5e76bd82e7cc1b69e6514c0a8f15c65b10b" not in text
 
 
@@ -118,8 +119,7 @@ def test_recovery_certified_sha_match_reaches_summary(tmp_path: Path) -> None:
         tmp_path,
         alembic_script='echo "0033_report_promotion_expenses (head)"\n',
     )
-    sha = "01cfee975f05eb1824be181634950914b31d3577"
-    result = _run_recovery(tmp_path, fake_bin, {"CERTIFIED_SHA": sha})
+    result = _run_recovery(tmp_path, fake_bin)
     assert "=== Assessment summary ===" in result.stdout
     assert "  OK   HEAD matches certified baseline" in result.stdout
     assert "  OK   alembic code head=0033_report_promotion_expenses" in result.stdout
@@ -148,8 +148,7 @@ def test_recovery_alembic_failure_reaches_summary(tmp_path: Path) -> None:
         tmp_path,
         alembic_script="exit 2\n",
     )
-    sha = "01cfee975f05eb1824be181634950914b31d3577"
-    result = _run_recovery(tmp_path, fake_bin, {"CERTIFIED_SHA": sha})
+    result = _run_recovery(tmp_path, fake_bin)
     assert "=== Assessment summary ===" in result.stdout
     assert "  FAIL alembic heads unavailable or empty" in result.stdout
     assert "--- Deploy guard (dry) ---" in result.stdout

@@ -18,6 +18,12 @@ if ! flock -n 9; then
   exit 1
 fi
 
+# shellcheck source=/dev/null
+source "${ROOT}/scripts/lib/deploy-guard.sh"
+echo "=== Deploy guard (git tree + RAM) ==="
+deploy_guard_check "${ROOT}"
+deploy_guard_check_ram "${DEPLOY_MIN_FREE_MB}"
+
 _stop_project_node_workers() {
   local patterns=(
     "${ROOT}/frontend/node_modules/.bin/vite"
@@ -41,18 +47,6 @@ fi
 _stop_project_node_workers
 sleep 2
 _stop_project_node_workers
-
-avail_mb="$(free -m | awk '/^Mem:/{print $7}')"
-echo "Available memory: ${avail_mb} MB (minimum recommended: ${DEPLOY_MIN_FREE_MB} MB)"
-if [[ "${avail_mb}" -lt "${DEPLOY_MIN_FREE_MB}" ]]; then
-  echo "WARNING: Low memory (${avail_mb} MB < ${DEPLOY_MIN_FREE_MB} MB). Build may OOM and drop SSH." >&2
-  echo "Stop optional services (preview, dev servers) or add swap before continuing." >&2
-  if [[ "${DEPLOY_FORCE:-0}" != "1" ]]; then
-    echo "Aborting. Set DEPLOY_FORCE=1 to build anyway." >&2
-    exit 1
-  fi
-  echo "DEPLOY_FORCE=1 — continuing despite low memory."
-fi
 
 cd "$FRONTEND_DIR"
 

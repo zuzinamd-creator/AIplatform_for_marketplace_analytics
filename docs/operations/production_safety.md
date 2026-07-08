@@ -1,8 +1,9 @@
-# Production Safety (Phase 8.2.0)
+# Production Safety (Phase 8.2.0 — 8.3.0)
 
-**Status:** Wave 2 implementation complete in repository (systemd units + docs; **not yet deployed to VPS**)  
-**Wave 1 baseline:** `2e9aaad` — tooling committed  
-**Phase 8.1 baseline:** `9301e5e`
+**Status:** Phase 8.3.0 certified in repository (deploy guard in `deploy-frontend.sh`; **effect on next frontend deploy only**)  
+**Production baseline:** `11731e9` — 8.2.1a recovery stabilization  
+**Wave 2 deployed:** systemd `ExecStartPre` on production  
+**Phase 8.1 historical rollback:** `9301e5e`
 
 ---
 
@@ -60,12 +61,19 @@ Validates required environment variables using existing `validate_environment()`
 
 ### 3. `scripts/lib/deploy-guard.sh`
 
-Blocks deploy when git working tree has unallowed changes.
+Blocks deploy when git working tree has unallowed changes. **Wired into `scripts/deploy-frontend.sh` (Wave 3).**
 
 ```bash
 source scripts/lib/deploy-guard.sh
 deploy_guard_check /path/to/repo
 deploy_guard_check_ram 300
+```
+
+Before frontend deploy (automatic in `deploy-frontend.sh`):
+
+```bash
+bash scripts/deploy-frontend.sh
+# runs deploy_guard_check + deploy_guard_check_ram after flock, before build
 ```
 
 Bypass flags:
@@ -124,13 +132,32 @@ Wave 2 wires `scripts/preflight-env.sh --systemd` into systemd **before** proces
 
 ---
 
+## Deploy guard integration (Wave 3)
+
+`scripts/deploy-frontend.sh` runs **fail-closed** checks immediately after acquiring the deploy lock:
+
+1. `deploy_guard_check "${ROOT}"` — block if git tree has unallowed changes.
+2. `deploy_guard_check_ram "${DEPLOY_MIN_FREE_MB}"` — block if available memory below threshold.
+
+On failure the script exits **before** stopping preview, `npm run build`, or `rsync` to `/var/www/`.
+
+| Check | Bypass |
+|-------|--------|
+| Dirty tree | `DEPLOY_FORCE_DIRTY=1` or `DEPLOY_FORCE=1` |
+| Low RAM | `DEPLOY_FORCE_RAM=1` or `DEPLOY_FORCE=1` |
+| CI | `GITHUB_ACTIONS=true` (tree check only) |
+
+**No runtime impact until the next frontend deploy** — backend/worker/orchestrator units unchanged.
+
+---
+
 ## Wave roadmap
 
 | Wave | Scope | Production touch |
 |------|-------|------------------|
 | **1** | Scripts, CLI, docs, tests | **None** (done — `2e9aaad`) |
-| **2** | systemd `ExecStartPre`, orchestrator unit in repo | **Restart required** (repo done; VPS pending) |
-| **3** | Deploy guard in `deploy-frontend.sh` | Next deploy only |
+| **2** | systemd `ExecStartPre`, orchestrator unit | **Done** — deployed on VPS |
+| **3** | Deploy guard in `deploy-frontend.sh` | **Next frontend deploy only** (repo done) |
 
 ---
 
@@ -144,7 +171,9 @@ bash scripts/production-recovery.sh --assess-only
 Before any deploy:
 
 ```bash
-source scripts/lib/deploy-guard.sh && deploy_guard_check .
+bash scripts/preflight-env.sh --check
+bash scripts/production-recovery.sh --assess-only
+bash scripts/deploy-frontend.sh   # includes deploy guard (Wave 3)
 bash scripts/post_deploy_smoke_test.sh
 ```
 

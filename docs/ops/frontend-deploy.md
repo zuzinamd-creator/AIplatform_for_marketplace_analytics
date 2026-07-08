@@ -19,17 +19,21 @@ sudo systemctl disable --now marketplace-frontend.service   # recommended on pro
 ## What the deploy script does
 
 1. Exclusive lock (`/var/lock/marketplace-frontend-deploy.lock`) — no parallel deploys.
-2. Stops `marketplace-frontend.service` if running.
-3. Kills stuck **project** Node workers (vite/tsc/npm), not IDE processes.
-4. Checks **available** RAM (`free -m`); aborts if &lt; 300 MB unless `DEPLOY_FORCE=1`.
+2. **Deploy guard** (`scripts/lib/deploy-guard.sh`): blocks if git tree has unallowed changes; checks available RAM (default ≥ 300 MB). Bypass: `DEPLOY_FORCE_DIRTY=1`, `DEPLOY_FORCE_RAM=1`, or `DEPLOY_FORCE=1`.
+3. Stops `marketplace-frontend.service` if running.
+4. Kills stuck **project** Node workers (vite/tsc/npm), not IDE processes.
 5. Builds with `NODE_OPTIONS=--max-old-space-size=1024`.
 6. Publishes `dist/` to nginx root.
 7. Restarts preview **only** if the systemd unit is **enabled**.
 
+Allowlisted dirty paths (do not block): `frontend/tsconfig*.tsbuildinfo`, `.coverage`, `tmp_*`, test artifacts. See [production_safety.md](../operations/production_safety.md).
+
 ## Low memory / force build
 
 ```bash
-DEPLOY_FORCE=1 bash scripts/deploy-frontend.sh
+DEPLOY_FORCE=1 bash scripts/deploy-frontend.sh          # bypass tree + RAM guards
+DEPLOY_FORCE_DIRTY=1 bash scripts/deploy-frontend.sh    # emergency dirty-tree deploy
+DEPLOY_FORCE_RAM=1 bash scripts/deploy-frontend.sh      # emergency low-RAM deploy
 DEPLOY_MIN_FREE_MB=400 bash scripts/deploy-frontend.sh
 NODE_BUILD_HEAP_MB=768 bash scripts/deploy-frontend.sh
 ```

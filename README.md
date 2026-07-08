@@ -1,7 +1,8 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
-**Version:** `v8.1-promotion-expenses-mvp`  
-**Status:** Production Certified — Promotion Expenses MVP  
+**Version:** Phase 8.1 feature · Phase 8.2–8.3 production safety  
+**Production baseline:** `11731e9` (2026-07-08)  
+**Status:** Production certified — Promotion Expenses MVP + operational safety tooling  
 **Last updated:** 2026-07-08
 
 ---
@@ -10,13 +11,15 @@
 
 | Field | Value |
 |-------|-------|
-| **Release tag** | `v8.1-promotion-expenses-mvp` |
+| **Production baseline (VPS)** | `11731e9` — 8.2.1a recovery stabilization |
+| **Safety stack** | 8.2.0 systemd preflight · 8.2.1a recovery tooling · 8.3.0 deploy guard |
+| **Feature release tag** | `v8.1-promotion-expenses-mvp` |
 | **Feature baseline** | `48a8d7c` — Promotion Expenses MVP |
-| **CI certification** | `53d730b` — GitHub Actions GREEN |
-| **Production status** | Certified — pilot accepted 2026-07-07 |
-| **Release manifest** | [docs/release/phase_81_production_release.md](docs/release/phase_81_production_release.md) |
+| **Phase 8.1 manifest** | [docs/release/phase_81_production_release.md](docs/release/phase_81_production_release.md) |
+| **Safety docs** | [docs/operations/production_safety.md](docs/operations/production_safety.md) |
+| **Recovery runbook** | [docs/operations/production_recovery_runbook.md](docs/operations/production_recovery_runbook.md) |
 
-**Certification:** Production = Workspace = GitHub · CI = GREEN · AI = VALIDATED
+**Host:** `321997.fornex.cloud` · **Certification:** Production = Workspace · CI GREEN · AI VALIDATED
 
 Pilot KPIs (2026-06-29 — 2026-07-05): Settlement Profit **100 530.15 ₽** · Promotion **9 925 ₽** · Profit After Promotion **90 605.15 ₽** · Impact **9.87%**
 
@@ -33,7 +36,7 @@ The platform treats marketplace reports as a **financial data platform** — not
 - **PostgreSQL RLS** — strict tenant isolation
 - **AI is advisory only** — never mutates ledgers; degrades confidence when data is incomplete
 
-**Stack:** FastAPI · PostgreSQL 16 · Async SQLAlchemy 2.0 · Alembic · React (Vite) · ETL worker · Optional LLM provider (OpenAI-compatible)
+**Stack:** FastAPI · PostgreSQL 16 (Supabase in production) · Async SQLAlchemy 2.0 · Alembic · React (Vite) · ETL worker · Runtime orchestrator · Optional LLM provider (OpenAI-compatible)
 
 **Primary workflows:**
 
@@ -239,6 +242,18 @@ flowchart TB
 **Production path:** `AIIntelligenceEngine` via `AIService.run_intelligence`  
 **Not in production:** Operating Director scaffold (`app/ai/director/`) — planned Phase 6.3.4
 
+### Production runtime services
+
+| Process | Module / unit | Role |
+|---------|---------------|------|
+| **API** | `app.main` · `marketplace-backend.service` | FastAPI / uvicorn :8000 |
+| **ETL worker** | `app.etl.worker` · `marketplace-worker.service` | Queue consumer, parse → ledger → projections |
+| **Orchestrator** | `app.runtime.orchestration_worker` · `marketplace-orchestrator.service` | Rebuild dispatch + maintenance (PostgreSQL lease) |
+| **Frontend** | nginx static · `/var/www/marketplace-analytics` | Production UI (Vite build via `deploy-frontend.sh`) |
+| **Database** | Supabase Postgres (`ENVIRONMENT_MODE=MAIN`) | RLS, `alembic_version`, ledgers |
+
+Systemd unit files: `deploy/systemd/`. Backend, worker, and orchestrator use **`ExecStartPre`** → `scripts/preflight-env.sh --systemd` before process start.
+
 **Architectural invariants:** [docs/architecture/invariants.md](docs/architecture/invariants.md)  
 **Phase 6.3 blueprint:** [docs/ai/phase_63_architecture_blueprint.md](docs/ai/phase_63_architecture_blueprint.md)
 
@@ -280,12 +295,15 @@ flowchart TB
 | Phase | Deliverable | Status |
 |-------|-------------|--------|
 | **8.1** | **Promotion Expenses MVP** — manual promotion overlay, adjusted profit KPIs, Dashboard, AI snapshot, migration 0033 | ✅ Certified |
+| **8.2** | **Production Safety** — preflight CLI, systemd `ExecStartPre`, orchestrator unit, recovery assess | ✅ Deployed (`01cfee9`) |
+| **8.2.1a** | **Ops stabilization** — recovery script + `app.ops.preflight` alembic fixes | ✅ Deployed (`11731e9`) |
+| **8.3** | **Deploy guard** — dirty-tree + RAM gate in `deploy-frontend.sh` | ✅ Certified *(next frontend deploy)* |
 
 ### Next
 
 | Phase | Focus |
 |-------|-------|
-| **8.2** | **AI Recommendation Quality Improvement** — promotion-aware LLM compliance, legacy snapshot cleanup, multi-scenario validation |
+| **8.2+** | AI recommendation quality, WB Ads auto-import, legacy snapshot cleanup |
 
 ### Historical roadmap (Phase 6.x)
 
@@ -348,14 +366,16 @@ docker compose up --build
 # Frontend: http://localhost (nginx)
 ```
 
-Services: `postgres`, `migrate`, `api`, `worker`, `orchestrator` (optional), `nginx`.
+Services: `postgres`, `migrate`, `api`, `worker`, `orchestrator`, `nginx`.
+
+Local orchestrator (optional for dev): `python -m app.runtime.orchestration_worker`
 
 ### Environment modes
 
 | Mode | Use case | Storage |
 |------|----------|---------|
 | `MAIN` | Production (Supabase) | Supabase Postgres + Storage |
-| `LOCAL` | Dev / integration | Local Postgres + `uploads/` |
+| `LOCAL_DEV` | Dev / integration | Local Postgres + `uploads/` |
 
 See `.env.example` and [docs/product/local_deployment.md](docs/product/local_deployment.md).
 
@@ -432,30 +452,48 @@ Stress benchmarks gated by `RUN_STRESS_TESTS=1`.
 
 ### Production checklist
 
-1. `ENVIRONMENT_MODE=MAIN`, Supabase `DATABASE_URL` with `?ssl=require`
+1. `ENVIRONMENT_MODE=MAIN`, Supabase `DATABASE_URL` with `?ssl=require` (direct host, not pooler)
 2. `STORAGE_BACKEND=supabase`, bucket configured
 3. `SECRET_KEY` — cryptographically random, ≥ 32 chars
-4. `alembic upgrade head` via migrate job
-5. API + worker as systemd services (or Docker)
+4. `alembic upgrade head` via migrate job (maintenance window only)
+5. **systemd services** (production VPS):
+   - `marketplace-backend` — uvicorn
+   - `marketplace-worker` — ETL worker
+   - `marketplace-orchestrator` — rebuild dispatch
+   - All three: `ExecStartPre` = `scripts/preflight-env.sh --systemd`
 6. Nginx serves frontend from `/var/www/marketplace-analytics`
 7. SMTP configured for password reset
 8. `AI_PROVIDER=openai` + key (or mock for advisory-only deterministic mode)
 
+Unit files: `deploy/systemd/` → `/etc/systemd/system/`. Inventory: [docs/operations/production_inventory.md](docs/operations/production_inventory.md).
+
 ### Frontend deploy (VPS)
 
 ```bash
-bash scripts/deploy-frontend.sh
-sudo systemctl restart marketplace-backend   # after API changes
+bash scripts/preflight-env.sh --check
+bash scripts/production-recovery.sh --assess-only
+bash scripts/deploy-frontend.sh          # includes deploy guard (Wave 3)
+bash scripts/post_deploy_smoke_test.sh
 ```
+
+`deploy-frontend.sh` blocks deploy on unallowed dirty git tree or low RAM (see **Operational Safety**).  
+Restart backend only after API code changes: `sudo systemctl restart marketplace-backend`
 
 Docs: [docs/ops/frontend-deploy.md](docs/ops/frontend-deploy.md)
 
 ### Post-deploy validation
 
 ```bash
-curl -s http://127.0.0.1:8000/health
-curl -s http://127.0.0.1/api/v1/system/persistence-status  # JWT required
+bash scripts/post_deploy_smoke_test.sh
+curl -s https://<host>/health
+curl -s https://<host>/health/ready
+```
+
+Optional deeper checks:
+
+```bash
 python scripts/rls_leak_test.py
+python scripts/etl_pipeline_validation.py
 ```
 
 After ledger logic changes:
@@ -463,6 +501,38 @@ After ledger logic changes:
 ```bash
 python scripts/rebuild_financial_projections.py
 ```
+
+### Rollback (manual)
+
+1. Restore `.env` from backup if config incident — see [production_recovery_runbook.md](docs/operations/production_recovery_runbook.md)
+2. `git reset --hard <certified-sha>` — current baseline `11731e9`; historical Phase 8.1: `9301e5e`
+3. Restore pre-change systemd units from `/root/backups/pre-w2-systemd-*` if needed
+4. `sudo systemctl daemon-reload && sudo systemctl restart marketplace-backend marketplace-worker marketplace-orchestrator`
+5. `bash scripts/post_deploy_smoke_test.sh`
+
+---
+
+## Operational Safety
+
+Production safety tooling (Phase 8.2–8.3) prevents configuration and deploy incidents. Full reference: [docs/operations/production_safety.md](docs/operations/production_safety.md).
+
+| Tool | Purpose | When |
+|------|---------|------|
+| **`scripts/preflight-env.sh`** | `.env` exists + readable; Python env validation | Daily ops, before restart |
+| **`python -m app.ops.preflight`** | Same validation + optional `--schema` (alembic vs DB) | Manual / recovery assess |
+| **systemd `ExecStartPre`** | Runs `preflight-env.sh --systemd` before backend/worker/orchestrator start | Every service start/restart |
+| **`scripts/production-recovery.sh`** | Read-only assess: git HEAD, health, alembic, deploy guard dry-run | Incident triage |
+| **`scripts/lib/deploy-guard.sh`** | Block deploy on dirty tree (allowlisted artifacts exempt) + RAM check | `deploy-frontend.sh` (Wave 3) |
+| **`scripts/post_deploy_smoke_test.sh`** | HTTPS health, auth, API, frontend smoke | After deploy or restart |
+
+**Daily operator checklist:**
+
+```bash
+bash scripts/preflight-env.sh --check
+bash scripts/production-recovery.sh --assess-only
+```
+
+**Emergency bypass** (document in incident record): `DEPLOY_FORCE_DIRTY=1`, `DEPLOY_FORCE_RAM=1`, or `DEPLOY_FORCE=1` for deploy guard.
 
 ---
 
@@ -499,7 +569,10 @@ OpenAPI: `http://localhost:8000/docs` (when `DEBUG=true` or enabled).
 
 | Topic | Document |
 |-------|----------|
-| **Phase 8.1 release manifest** | **[docs/release/phase_81_production_release.md](docs/release/phase_81_production_release.md)** |
+| **Phase 8.1 release manifest** | [docs/release/phase_81_production_release.md](docs/release/phase_81_production_release.md) |
+| **Production safety (8.2–8.3)** | [docs/operations/production_safety.md](docs/operations/production_safety.md) |
+| **Recovery runbook** | [docs/operations/production_recovery_runbook.md](docs/operations/production_recovery_runbook.md) |
+| **Production inventory** | [docs/operations/production_inventory.md](docs/operations/production_inventory.md) |
 | Release documentation index | [docs/release/README.md](docs/release/README.md) |
 | AI architecture | [docs/ai/ai_architecture.md](docs/ai/ai_architecture.md) |
 | Domain analysts | [docs/ai/domain_analysts.md](docs/ai/domain_analysts.md) |
@@ -517,11 +590,19 @@ OpenAPI: `http://localhost:8000/docs` (when `DEBUG=true` or enabled).
 
 ## Release Notes
 
-**Current release:** [Phase 8.1 — Promotion Expenses MVP](docs/release/phase_81_production_release.md) (2026-07-08)
+**Current production baseline:** `11731e9` — Phase 8.2.1a ops stabilization (2026-07-08)
 
-Tag `v8.1-promotion-expenses-mvp` · Production certified · CI GREEN · AI VALIDATED.
+**Feature release:** [Phase 8.1 — Promotion Expenses MVP](docs/release/phase_81_production_release.md) · tag `v8.1-promotion-expenses-mvp`
 
-Key deliverables: manual `promotion_expenses`, Profit After Promotion as primary KPI, Dashboard finance block, AI snapshot + `PROMOTION_PROFIT_RULES`, migration `0033_report_promotion_expenses`.
+**Production safety (deployed):**
+
+- `2e9aaad` — preflight tooling, recovery assess, deploy guard library
+- `01cfee9` — systemd `ExecStartPre` on backend/worker/orchestrator
+- `11731e9` — recovery script + `app.ops.preflight` alembic fixes
+
+**Production safety (repo, Wave 3):** deploy guard wired into `deploy-frontend.sh` — effect on next frontend deploy only.
+
+Key Phase 8.1 deliverables: manual `promotion_expenses`, Profit After Promotion as primary KPI, Dashboard finance block, AI snapshot + `PROMOTION_PROFIT_RULES`, migration `0033_report_promotion_expenses`.
 
 Previous release: [v0.6-mvp-intelligence](docs/release/v0.6-mvp-intelligence.md) (2026-06-07) — Period Intelligence with Inventory Intelligence.
 
