@@ -1,9 +1,10 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
 **Version:** Phase 9.3A (invite system) · Phase 9.2 (platform admin) · Phase 8.1–8.3 (finance + safety)  
-**Workspace HEAD:** `b85854c` (9.2 committed) + uncommitted 9.3A in working tree  
-**Alembic head:** `0035_registration_invites` (applied in production DB)  
-**Status:** Runtime aligned with 9.3A; formal baseline certification pending Phase 9.3X-C  
+**Certified baseline:** `6e42fb1` — Phase 9.3A + documentation alignment (tag `certified-production`)  
+**Feature commit:** `2920e42` — invite system MVP  
+**Alembic head:** `0035_registration_invites`  
+**Status:** Production certified — git = runtime = documentation  
 **Last updated:** 2026-07-09
 
 ---
@@ -12,8 +13,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Committed HEAD (VPS)** | `b85854c` — Phase 9.2 platform admin (9.3A uncommitted in working tree) |
-| **Alembic head (DB)** | `0035_registration_invites` — invite system (Phase 9.3A) |
+| **Certified baseline (VPS)** | `6e42fb1` — Phase 9.3A certified (`certified-production` tag) |
+| **Feature commit** | `2920e42` — invite system MVP + docs |
 | **Historical safety baseline** | `11731e9` — 8.2.1a recovery stabilization |
 | **Safety stack** | 8.2.0 systemd preflight · 8.2.1a recovery tooling · 8.3.0 deploy guard |
 | **Feature release tag** | `v8.1-promotion-expenses-mvp` |
@@ -305,13 +306,12 @@ Systemd unit files: `deploy/systemd/`. Backend, worker, and orchestrator use **`
 | **9.2B** | **Platform roles** — `users.role` (`seller` / `platform_admin`), migration `0034` | ✅ Committed (`b85854c`) |
 | **9.2B-R1** | **Recovery assess alignment** — `production-recovery.sh` SHA pointer for 9.2 | ✅ In repo *(CERTIFIED_SHA update in 9.3X-C)* |
 | **9.2C** | **Admin panel (read-only users)** — `/api/v1/admin/users`, UI «Пользователи» | ✅ Committed (`b85854c`) |
-| **9.3A** | **Invite system** — `registration_invites`, admin invites API/UI, invite registration | ✅ Runtime + DB *(commit pending 9.3X-C)* |
+| **9.3A** | **Invite system** — `registration_invites`, admin invites API/UI, invite registration | ✅ Certified (`6e42fb1`) |
 
 ### Next
 
 | Phase | Focus |
 |-------|-------|
-| **9.3X-C** | Commit 9.3A, update `CERTIFIED_SHA`, baseline certification |
 | **8.2+** | AI recommendation quality, WB Ads auto-import, legacy snapshot cleanup |
 
 ### Historical roadmap (Phase 6.x)
@@ -649,9 +649,9 @@ OpenAPI: `http://localhost:8000/docs` (when `DEBUG=true` or enabled).
 
 ## Release Notes
 
-**Committed HEAD:** `b85854c` — Phase 9.2 platform admin (2026-07-09)
+**Certified baseline:** `6e42fb1` — Phase 9.3A invite system + ops certification (2026-07-09)
 
-**Runtime (production VPS):** Phase 9.3A invite system deployed from working tree; migration `0035_registration_invites` applied. Formal `CERTIFIED_SHA` update deferred to Phase 9.3X-C.
+**Feature commit:** `2920e42` — invite system MVP and documentation alignment
 
 **Historical safety baseline:** `11731e9` — Phase 8.2.1a ops stabilization (2026-07-08)
 
