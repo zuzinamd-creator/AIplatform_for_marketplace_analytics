@@ -51,9 +51,13 @@ export function AppShell() {
               </div>
 
               {!isOnboardingDone() && !admin ? (
-                <div className="mt-3 rounded-xl border border-amber-200 bg-semantic-warn-bg px-3 py-2.5 text-xs text-semantic-warn">
-                  Завершите <span className="font-medium">настройку</span>, чтобы аналитика стала полезнее.
-                </div>
+                <NavLink
+                  to="/app/onboarding"
+                  className="mt-3 block rounded-xl border border-amber-200 bg-semantic-warn-bg px-3 py-2.5 text-xs text-semantic-warn transition hover:border-amber-300 hover:bg-amber-50"
+                >
+                  Завершите <span className="font-medium underline-offset-2 hover:underline">настройку</span>, чтобы
+                  аналитика стала полезнее.
+                </NavLink>
               ) : null}
 
               <nav className="mt-5 flex flex-col gap-4" aria-label="Main navigation">

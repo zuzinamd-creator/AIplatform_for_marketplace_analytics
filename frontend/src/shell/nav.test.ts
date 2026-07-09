@@ -14,16 +14,25 @@ function user(role: UserResponse["role"]): UserResponse {
 }
 
 describe("buildNavSections", () => {
-  it("shows seller sections only for seller", () => {
+  it("shows seller sections with account at the bottom", () => {
     const sections = buildNavSections(user(USER_ROLE_SELLER));
     const labels = sections.map((s) => s.label);
-    expect(labels).toEqual(["Dashboard", "Analytics", "Reports", "AI"]);
+    expect(labels).toEqual(["Dashboard", "Analytics", "Reports", "AI", "Аккаунт"]);
+
     const analytics = sections.find((s) => s.id === "analytics");
     expect(analytics?.items.map((i) => i.to)).toContain("/app/analytics/weekly");
+
+    const ai = sections.find((s) => s.id === "ai");
+    expect(ai?.items.map((i) => i.to)).toEqual(["/app/ai/recommendations", "/app/ai/digest"]);
+    expect(ai?.items.map((i) => i.label)).toEqual(["ИИ-помощник", "Сводка ИИ"]);
+
+    const account = sections.find((s) => s.id === "account");
+    expect(account?.items.map((i) => i.to)).toEqual(["/app/onboarding", "/app/settings", "/app/support"]);
+
     expect(sections.flatMap((s) => s.items).some((i) => i.to.startsWith("/app/admin"))).toBe(false);
   });
 
-  it("shows admin operations and system for platform_admin", () => {
+  it("shows admin operations and system for platform_admin without duplicate account section", () => {
     const sections = buildNavSections(user(USER_ROLE_PLATFORM_ADMIN));
     const labels = sections.map((s) => s.label);
     expect(labels).toEqual([
@@ -31,11 +40,16 @@ describe("buildNavSections", () => {
       "Analytics",
       "Reports",
       "AI",
+      "Аккаунт",
       "Администрирование",
-      "Admin",
       "Operations",
       "System",
     ]);
+
+    const accountItems = sections.filter((s) => s.id === "account").flatMap((s) => s.items);
+    expect(accountItems.map((i) => i.to)).toEqual(["/app/onboarding", "/app/settings", "/app/support"]);
+    expect(sections.some((s) => s.id === "admin")).toBe(false);
+
     const administration = sections.find((s) => s.id === "administration");
     expect(administration?.items.map((i) => i.label)).toEqual(["Пользователи", "Приглашения"]);
     expect(administration?.items.map((i) => i.to)).toEqual(["/app/admin/users", "/app/admin/invites"]);

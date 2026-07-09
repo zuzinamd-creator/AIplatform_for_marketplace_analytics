@@ -31,7 +31,6 @@ import { AiRunsPage } from "./views/ai/AiRunsPage";
 import { AiRunDetailPage } from "./views/ai/AiRunDetailPage";
 import { AiOperationalStatusPage } from "./views/ai/AiOperationalStatusPage";
 import { AiDigestPage } from "./views/ai/AiDigestPage";
-import { AiTodayPage } from "./views/ai/AiTodayPage";
 import { AiUsagePage } from "./views/ai/AiUsagePage";
 import { TodayPage } from "./views/today/TodayPage";
 
@@ -95,7 +94,7 @@ export const router = createBrowserRouter([
       { path: "ai/runs", element: withBoundary(<AiRunsPage />) },
       { path: "ai/runs/:runId", element: withBoundary(<AiRunDetailPage />) },
       { path: "ai/ops", element: withBoundary(<AiOperationalStatusPage />) },
-      { path: "ai/today", element: withBoundary(<AiTodayPage />) },
+      { path: "ai/today", element: <Navigate to="/app/today" replace /> },
       { path: "today", element: withBoundary(<TodayPage />) },
       { path: "ai/digest", element: withBoundary(<AiDigestPage />) },
       { path: "ai/usage", element: withBoundary(<AiUsagePage />) },

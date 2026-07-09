@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { cleanup, render, screen } from "@testing-library/react";
 
 import { AuthProvider, RequireAuth } from "./state/auth";
@@ -100,5 +100,26 @@ describe("seller lifecycle routes", () => {
   it("allows platform_admin to access settings", async () => {
     renderLifecycleRoute("/app/settings", "settings-page", USER_ROLE_PLATFORM_ADMIN);
     expect(await screen.findByText("settings-page")).toBeTruthy();
+  });
+});
+
+describe("ai today redirect", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("redirects /app/ai/today to /app/today without cycles", async () => {
+    render(
+      <MemoryRouter initialEntries={["/app/ai/today"]}>
+        <Routes>
+          <Route path="/app">
+            <Route path="ai/today" element={<Navigate to="/app/today" replace />} />
+            <Route path="today" element={<div>today-page</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("today-page")).toBeTruthy();
   });
 });

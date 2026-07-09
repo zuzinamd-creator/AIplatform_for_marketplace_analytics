@@ -53,21 +53,18 @@ const reportsItems: NavItem[] = [
 
 const aiItems: NavItem[] = [
   { to: "/app/ai/recommendations", label: "ИИ-помощник", icon: Bot },
-  { to: "/app/ai/today", label: "Фокус на сегодня", icon: Bot },
-  { to: "/app/ai/digest", label: "Дайджест ИИ", icon: Bot },
-  { to: "/app/ai/usage", label: "Расход ИИ", icon: Bot },
-  { to: "/app/ai/runs", label: "История ИИ", icon: Bot },
+  { to: "/app/ai/digest", label: "Сводка ИИ", icon: Bot },
+];
+
+const accountItems: NavItem[] = [
+  { to: "/app/onboarding", label: "Настройка", icon: Settings2 },
+  { to: "/app/settings", label: "Настройки", icon: Settings },
+  { to: "/app/support", label: "Поддержка", icon: LifeBuoy },
 ];
 
 const administrationItems: NavItem[] = [
   { to: "/app/admin/users", label: "Пользователи", icon: Users },
   { to: "/app/admin/invites", label: "Приглашения", icon: Mail },
-];
-
-const adminItems: NavItem[] = [
-  { to: "/app/onboarding", label: "Настройка", icon: Settings2 },
-  { to: "/app/settings", label: "Настройки", icon: Settings },
-  { to: "/app/support", label: "Поддержка", icon: LifeBuoy },
 ];
 
 const operationsItems: NavItem[] = [
@@ -92,11 +89,11 @@ const sellerSections: NavSection[] = [
   { id: "analytics", label: "Analytics", items: analyticsItems },
   { id: "reports", label: "Reports", items: reportsItems },
   { id: "ai", label: "AI", items: aiItems },
+  { id: "account", label: "Аккаунт", items: accountItems },
 ];
 
 const adminSections: NavSection[] = [
   { id: "administration", label: "Администрирование", items: administrationItems },
-  { id: "admin", label: "Admin", items: adminItems },
   { id: "operations", label: "Operations", items: operationsItems },
   { id: "system", label: "System", items: systemItems },
 ];
