@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   LineChart,
+  Mail,
   Package,
   Server,
   Settings,
@@ -58,6 +59,7 @@ const aiItems: NavItem[] = [
 
 const administrationItems: NavItem[] = [
   { to: "/app/admin/users", label: "Пользователи", icon: Users },
+  { to: "/app/admin/invites", label: "Приглашения", icon: Mail },
 ];
 
 const adminItems: NavItem[] = [

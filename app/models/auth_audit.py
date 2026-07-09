@@ -16,6 +16,9 @@ class AuthAuditEventType(StrEnum):
     PASSWORD_CHANGED = "password_changed"
     PASSWORD_RESET_REQUESTED = "password_reset_requested"
     PASSWORD_RESET_COMPLETED = "password_reset_completed"
+    INVITE_CREATED = "invite_created"
+    INVITE_REVOKED = "invite_revoked"
+    INVITE_ACCEPTED = "invite_accepted"
 
 
 class AuthAuditEvent(Base, TenantMixin):

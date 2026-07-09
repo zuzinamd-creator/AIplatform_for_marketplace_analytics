@@ -8,16 +8,28 @@ Prepare a **portfolio-ready demo** that shows real workflows without exposing in
 
 ### 1) Create demo seller account
 
-Production (`REGISTRATION_MODE=invite_only`): create the account via operator tooling (e.g. `scripts/create_mvp_test_user.py` or direct DB insert), not public `/register`.
+**Production (`REGISTRATION_MODE=invite_only`) — recommended:**
 
-Local dev with `REGISTRATION_MODE=open`:
+1. Log in as `platform_admin`
+2. Navigate **Администрирование → Приглашения**
+3. Create invite for demo email → copy invite link
+4. Open link in incognito → complete registration → log in
+
+**Local dev with `REGISTRATION_MODE=open`:**
 
 ```bash
-# Register via UI: /register
+# Register via UI: /register (no invite token required)
 # Suggested credentials for demos (change in production):
 # email: demo_seller@example.com
 # password: demo_password_123
 ```
+
+**Legacy / emergency only** (not for portfolio demos):
+
+- `scripts/create_mvp_test_user.py`
+- Direct DB insert into `users`
+
+Do **not** use operator scripts for normal production onboarding — use the invite flow above.
 
 Or use validation script:
 

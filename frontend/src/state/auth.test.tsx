@@ -1,6 +1,6 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 
 import { AuthProvider, RequirePlatformAdmin } from "./auth";
 import { USER_ROLE_PLATFORM_ADMIN, USER_ROLE_SELLER } from "./userRoles";
@@ -61,6 +61,10 @@ describe("RequirePlatformAdmin", () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it("redirects seller to dashboard", async () => {
     renderGuard(USER_ROLE_SELLER);
     expect(await screen.findByText("dashboard")).toBeTruthy();
@@ -70,6 +74,57 @@ describe("RequirePlatformAdmin", () => {
   it("allows platform_admin", async () => {
     renderGuard(USER_ROLE_PLATFORM_ADMIN);
     expect(await screen.findByText("ops-content")).toBeTruthy();
+  });
+
+  it("redirects seller from admin invites route", async () => {
+    localStorage.setItem("ma.accessToken", "token");
+    vi.mocked(api.auth.me).mockResolvedValue(seller);
+
+    render(
+      <MemoryRouter initialEntries={["/app/admin/invites"]}>
+        <AuthProvider>
+          <Routes>
+            <Route
+              path="/app/admin/invites"
+              element={
+                <RequirePlatformAdmin>
+                  <div>admin-invites</div>
+                </RequirePlatformAdmin>
+              }
+            />
+            <Route path="/app/dashboard" element={<div>dashboard</div>} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("dashboard")).toBeTruthy();
+    expect(screen.queryByText("admin-invites")).toBeNull();
+  });
+
+  it("allows platform_admin on admin invites route", async () => {
+    localStorage.setItem("ma.accessToken", "token");
+    vi.mocked(api.auth.me).mockResolvedValue(admin);
+
+    render(
+      <MemoryRouter initialEntries={["/app/admin/invites"]}>
+        <AuthProvider>
+          <Routes>
+            <Route
+              path="/app/admin/invites"
+              element={
+                <RequirePlatformAdmin>
+                  <div>admin-invites</div>
+                </RequirePlatformAdmin>
+              }
+            />
+            <Route path="/app/dashboard" element={<div>dashboard</div>} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("admin-invites")).toBeTruthy();
   });
 
   it("redirects seller from admin users route", async () => {

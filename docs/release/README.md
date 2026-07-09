@@ -2,7 +2,17 @@
 
 | Release | Document | Status |
 |---------|----------|--------|
-| **Phase 8.1 — Promotion Expenses MVP** | **[phase_81_production_release.md](phase_81_production_release.md)** | **CERTIFIED — Current** |
+| **Phase 9.3A — Invite System** | *(this index)* | **Runtime deployed** — commit pending 9.3X-C |
+| Workspace | `registration_invites`, admin invites API/UI, invite registration | Migration `0035` applied in production DB |
+| **Phase 9.2C — Admin Panel (read-only users)** | *(this index)* | **Committed** (`b85854c`) |
+| Scope | `GET /api/v1/admin/users`, `/app/admin/users`, `platform_admin` nav gates | Read-only user list |
+| **Phase 9.2B-R1 — Recovery assess alignment** | `scripts/production-recovery.sh` | **In repo** — `CERTIFIED_SHA` update in 9.3X-C |
+| Scope | Recovery script SHA pointer for Phase 9.2 deployment | Assess-only; no runtime change |
+| **Phase 9.2B — Platform roles** | Migration `0034_user_role_platform_admin` | **Committed** (`b85854c`) |
+| Scope | `users.role` (`seller` \| `platform_admin`), `require_platform_admin` dep | Seed platform admin by email |
+| **Phase 9.1A — Registration gate** | `REGISTRATION_MODE=invite_only` | **Committed** (`83daf8c`) |
+| Scope | Blocks open `POST /register` without invite flow | Production default |
+| **Phase 8.1 — Promotion Expenses MVP** | **[phase_81_production_release.md](phase_81_production_release.md)** | **CERTIFIED** |
 | Tag `v8.1-promotion-expenses-mvp` | Feature `48a8d7c` · CI `53d730b` · Run `28944603932` | Production accepted 2026-07-07 · CI GREEN 2026-07-08 |
 | v0.6-mvp-intelligence | [v0.6-mvp-intelligence.md](v0.6-mvp-intelligence.md) | Superseded for profit KPI scope |
 | CHANGELOG | [CHANGELOG.md](CHANGELOG.md) | 6.5.1 |
@@ -26,5 +36,6 @@
 | README cutover (6.4.2) | [readme_cutover_report.md](readme_cutover_report.md) | Complete |
 
 **Tag:** `v8.1-promotion-expenses-mvp` — **CERTIFIED** (Phase 8.1 closed 2026-07-08).  
+**Phase 9.x:** committed through 9.2 (`b85854c`); 9.3A in working tree — baseline certification in Phase 9.3X-C.  
 **Entry point:** [README.md](../../README.md) · **Manifest:** [phase_81_production_release.md](phase_81_production_release.md)  
 **Tag:** `v0.6-pilot-validated` — **GO** (milestone frozen 6.6.1).

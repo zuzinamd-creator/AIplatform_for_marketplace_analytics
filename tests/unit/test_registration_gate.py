@@ -123,15 +123,29 @@ async def test_register_open_mode_success(auth_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("mode_open", [False])
-async def test_register_blocked_when_not_open(auth_client: AsyncClient, mode_open: bool) -> None:
-    with patch("app.api.auth.is_registration_open", return_value=mode_open):
+@pytest.mark.parametrize(
+    ("mode_open", "invite_only", "expected_detail"),
+    [
+        (False, False, REGISTRATION_UNAVAILABLE_MESSAGE),
+        (False, True, "Valid invitation required."),
+    ],
+)
+async def test_register_blocked_when_not_open(
+    auth_client: AsyncClient,
+    mode_open: bool,
+    invite_only: bool,
+    expected_detail: str,
+) -> None:
+    with (
+        patch("app.api.auth.is_registration_open", return_value=mode_open),
+        patch("app.api.auth.is_invite_only_mode", return_value=invite_only),
+    ):
         response = await auth_client.post(
             "/api/v1/auth/register",
             json={"email": "blocked@example.com", "password": "password123"},
         )
     assert response.status_code == 403
-    assert response.json()["detail"] == REGISTRATION_UNAVAILABLE_MESSAGE
+    assert response.json()["detail"] == expected_detail
 
 
 @pytest.mark.asyncio

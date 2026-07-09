@@ -1,9 +1,10 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
-**Version:** Phase 8.1 feature · Phase 8.2–8.3 production safety  
-**Production baseline:** `11731e9` (2026-07-08)  
-**Status:** Production certified — Promotion Expenses MVP + operational safety tooling  
-**Last updated:** 2026-07-08
+**Version:** Phase 9.3A (invite system) · Phase 9.2 (platform admin) · Phase 8.1–8.3 (finance + safety)  
+**Workspace HEAD:** `b85854c` (9.2 committed) + uncommitted 9.3A in working tree  
+**Alembic head:** `0035_registration_invites` (applied in production DB)  
+**Status:** Runtime aligned with 9.3A; formal baseline certification pending Phase 9.3X-C  
+**Last updated:** 2026-07-09
 
 ---
 
@@ -11,10 +12,12 @@
 
 | Field | Value |
 |-------|-------|
-| **Production baseline (VPS)** | `11731e9` — 8.2.1a recovery stabilization |
+| **Committed HEAD (VPS)** | `b85854c` — Phase 9.2 platform admin (9.3A uncommitted in working tree) |
+| **Alembic head (DB)** | `0035_registration_invites` — invite system (Phase 9.3A) |
+| **Historical safety baseline** | `11731e9` — 8.2.1a recovery stabilization |
 | **Safety stack** | 8.2.0 systemd preflight · 8.2.1a recovery tooling · 8.3.0 deploy guard |
 | **Feature release tag** | `v8.1-promotion-expenses-mvp` |
-| **Feature baseline** | `48a8d7c` — Promotion Expenses MVP |
+| **Auth phases** | 9.1A gate · 9.2B roles · 9.2C admin panel · 9.3A invites |
 | **Phase 8.1 manifest** | [docs/release/phase_81_production_release.md](docs/release/phase_81_production_release.md) |
 | **Safety docs** | [docs/operations/production_safety.md](docs/operations/production_safety.md) |
 | **Recovery runbook** | [docs/operations/production_recovery_runbook.md](docs/operations/production_recovery_runbook.md) |
@@ -298,11 +301,17 @@ Systemd unit files: `deploy/systemd/`. Backend, worker, and orchestrator use **`
 | **8.2** | **Production Safety** — preflight CLI, systemd `ExecStartPre`, orchestrator unit, recovery assess | ✅ Deployed (`01cfee9`) |
 | **8.2.1a** | **Ops stabilization** — recovery script + `app.ops.preflight` alembic fixes | ✅ Deployed (`11731e9`) |
 | **8.3** | **Deploy guard** — dirty-tree + RAM gate in `deploy-frontend.sh` | ✅ Certified *(next frontend deploy)* |
+| **9.1A** | **Registration gate** — `REGISTRATION_MODE=invite_only` blocks open signup | ✅ Deployed |
+| **9.2B** | **Platform roles** — `users.role` (`seller` / `platform_admin`), migration `0034` | ✅ Committed (`b85854c`) |
+| **9.2B-R1** | **Recovery assess alignment** — `production-recovery.sh` SHA pointer for 9.2 | ✅ In repo *(CERTIFIED_SHA update in 9.3X-C)* |
+| **9.2C** | **Admin panel (read-only users)** — `/api/v1/admin/users`, UI «Пользователи» | ✅ Committed (`b85854c`) |
+| **9.3A** | **Invite system** — `registration_invites`, admin invites API/UI, invite registration | ✅ Runtime + DB *(commit pending 9.3X-C)* |
 
 ### Next
 
 | Phase | Focus |
 |-------|-------|
+| **9.3X-C** | Commit 9.3A, update `CERTIFIED_SHA`, baseline certification |
 | **8.2+** | AI recommendation quality, WB Ads auto-import, legacy snapshot cleanup |
 
 ### Historical roadmap (Phase 6.x)
@@ -505,7 +514,7 @@ python scripts/rebuild_financial_projections.py
 ### Rollback (manual)
 
 1. Restore `.env` from backup if config incident — see [production_recovery_runbook.md](docs/operations/production_recovery_runbook.md)
-2. `git reset --hard <certified-sha>` — current baseline `11731e9`; historical Phase 8.1: `9301e5e`
+2. `git reset --hard <certified-sha>` — see `scripts/production-recovery.sh` (`CERTIFIED_SHA`); formal update in Phase 9.3X-C. Historical: `11731e9` (8.2.1a), `9301e5e` (8.1 emergency)
 3. Restore pre-change systemd units from `/root/backups/pre-w2-systemd-*` if needed
 4. `sudo systemctl daemon-reload && sudo systemctl restart marketplace-backend marketplace-worker marketplace-orchestrator`
 5. `bash scripts/post_deploy_smoke_test.sh`
@@ -548,25 +557,63 @@ bash scripts/production-recovery.sh --assess-only
 | `/app/ai/recommendations` | AI recommendations list |
 | `/app/ai/today` | Today's Focus (priority queue) |
 
+### User roles (Phase 9.2B)
+
+| Role | Scope |
+|------|-------|
+| **`seller`** | Default tenant user — dashboard, reports, costs, AI workflows. RLS-isolated per account. |
+| **`platform_admin`** | Platform operator — seller routes **plus** Administration, Operations, and System sections. |
+
+Role is stored in `users.role` (migration `0034_user_role_platform_admin`). JWT carries no separate role claim; frontend gates use `GET /api/v1/auth/me` → `role`.
+
+### Administration (Phase 9.2C + 9.3A)
+
+Visible in the app shell for `platform_admin` only:
+
+```
+Администрирование
+├─ Пользователи      → /app/admin/users
+└─ Приглашения       → /app/admin/invites
+```
+
+| Route | API | Purpose |
+|-------|-----|---------|
+| `/app/admin/users` | `GET /api/v1/admin/users` | Read-only user list (email, role, active, created) |
+| `/app/admin/invites` | `GET/POST/DELETE /api/v1/admin/invites` | Create, list, revoke registration invites |
+
+Operations (`/app/ops/*`) and System (`/app/system/*`) routes remain `platform_admin`-only (Phase 9.2 frontend gates).
+
 ---
 
 ## API Surface (summary)
 
-| Area | Prefix |
-|------|--------|
-| Auth | `/api/v1/auth/*` |
-
-### Access control (Phase 9.1A)
+### Access control (Phase 9.1A — 9.3A)
 
 | Setting | Production value |
 |---------|------------------|
 | `REGISTRATION_MODE` | `invite_only` |
+| `INVITE_TOKEN_EXPIRE_HOURS` | Default `72` (override per invite at creation) |
+| `APP_PUBLIC_URL` | Public site URL for invite links (`{APP_PUBLIC_URL}/register?invite=…`) |
 
-- **Self-registration is disabled** — public `POST /api/v1/auth/register` returns 403.
-- **Onboarding is manual** — platform operator provisions seller accounts (DB/script).
-- **Login, JWT, and password reset** are unchanged for existing users.
-- Local/integration environments may set `REGISTRATION_MODE=open` for bootstrap scripts.
+#### Production registration flow (Phase 9.3A)
 
+```
+platform_admin creates invite
+    → invite link ({APP_PUBLIC_URL}/register?invite=<token>)
+    → GET /api/v1/auth/invite/validate?token=…
+    → POST /api/v1/auth/register { email, password, invite_token }
+    → seller account (role=seller)
+    → login → /app/onboarding or dashboard
+```
+
+- **Open self-registration** (`REGISTRATION_MODE=open`) — **development / local only**.
+- **Invite-only** (`invite_only`) — **production default**; `POST /register` without `invite_token` returns **403**.
+- **Operator scripts** (`scripts/create_mvp_test_user.py`, direct DB insert) — **legacy / emergency only**; superseded by Admin → Приглашения for normal onboarding.
+
+| Area | Prefix |
+|------|--------|
+| Auth | `/api/v1/auth/*` (incl. `/invite/validate`, `/registration-status`) |
+| Admin | `/api/v1/admin/*` (`platform_admin` only) |
 | Reports | `/api/v1/reports/*` (incl. `PATCH` for `promotion_expenses`) |
 | Analytics | `/api/v1/analytics/*` |
 | Costs | `/api/v1/costs/*` |
@@ -602,9 +649,19 @@ OpenAPI: `http://localhost:8000/docs` (when `DEBUG=true` or enabled).
 
 ## Release Notes
 
-**Current production baseline:** `11731e9` — Phase 8.2.1a ops stabilization (2026-07-08)
+**Committed HEAD:** `b85854c` — Phase 9.2 platform admin (2026-07-09)
+
+**Runtime (production VPS):** Phase 9.3A invite system deployed from working tree; migration `0035_registration_invites` applied. Formal `CERTIFIED_SHA` update deferred to Phase 9.3X-C.
+
+**Historical safety baseline:** `11731e9` — Phase 8.2.1a ops stabilization (2026-07-08)
 
 **Feature release:** [Phase 8.1 — Promotion Expenses MVP](docs/release/phase_81_production_release.md) · tag `v8.1-promotion-expenses-mvp`
+
+**Auth & admin (9.1A — 9.3A):**
+
+- `83daf8c` — invite-only registration gate (`REGISTRATION_MODE`)
+- `b85854c` — `platform_admin` role, frontend gates, read-only admin users panel
+- Working tree — invite lifecycle (`registration_invites`), admin invites API/UI, invite registration flow
 
 **Production safety (deployed):**
 

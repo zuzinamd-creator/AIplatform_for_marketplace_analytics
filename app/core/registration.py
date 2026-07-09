@@ -7,6 +7,7 @@ from app.core.config import settings
 VALID_REGISTRATION_MODES: frozenset[str] = frozenset({"open", "invite_only", "disabled"})
 DEFAULT_REGISTRATION_MODE = "invite_only"
 REGISTRATION_UNAVAILABLE_MESSAGE = "Registration is currently unavailable."
+INVITE_REQUIRED_MESSAGE = "Valid invitation required."
 
 
 def normalize_registration_mode(mode: str) -> str:
@@ -24,3 +25,8 @@ def registration_mode_error(mode: str) -> str | None:
 def is_registration_open(mode: str | None = None) -> bool:
     normalized = normalize_registration_mode(mode or settings.registration_mode)
     return normalized == "open"
+
+
+def is_invite_only_mode(mode: str | None = None) -> bool:
+    normalized = normalize_registration_mode(mode or settings.registration_mode)
+    return normalized == "invite_only"

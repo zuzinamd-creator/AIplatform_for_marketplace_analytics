@@ -82,8 +82,12 @@ export type CostImportResultResponse = {
   invalid_sku_count: number;
   issues: CostImportIssue[];
 };
-import type { RegistrationStatusResponse, Token, UserCreate, UserResponse } from "./types-auth";
-import type { PaginatedAdminUsersResponse } from "./types-admin";
+import type { RegistrationStatusResponse, Token, UserCreate, UserResponse, InviteValidateResponse } from "./types-auth";
+import type {
+  AdminInviteCreateResponse,
+  PaginatedAdminInvitesResponse,
+  PaginatedAdminUsersResponse,
+} from "./types-admin";
 import type {
   CostCreateRequest,
   CostListParams,
@@ -141,6 +145,7 @@ const AUTH_PUBLIC_PATHS = [
   "/auth/login",
   "/auth/register",
   "/auth/registration-status",
+  "/auth/invite/validate",
   "/auth/forgot-password",
   "/auth/reset-password",
 ];
@@ -207,6 +212,10 @@ export const api = {
     async register(payload: UserCreate) {
       const { data } = await http.post("/auth/register", payload);
       return unwrap<UserResponse>(data);
+    },
+    async validateInvite(token: string) {
+      const { data } = await http.get("/auth/invite/validate", { params: { token } });
+      return unwrap<InviteValidateResponse>(data);
     },
     async login(username: string, password: string) {
       const body = new URLSearchParams();
@@ -398,6 +407,20 @@ export const api = {
     async listUsers(skip = 0, limit = 50) {
       const { data } = await http.get("/admin/users", { params: { skip, limit } });
       return unwrap<PaginatedAdminUsersResponse>(data);
+    },
+    async listInvites(skip = 0, limit = 50) {
+      const { data } = await http.get("/admin/invites", { params: { skip, limit } });
+      return unwrap<PaginatedAdminInvitesResponse>(data);
+    },
+    async createInvite(email: string, expiresInHours?: number) {
+      const { data } = await http.post("/admin/invites", {
+        email,
+        expires_in_hours: expiresInHours,
+      });
+      return unwrap<AdminInviteCreateResponse>(data);
+    },
+    async revokeInvite(inviteId: string) {
+      await http.delete(`/admin/invites/${inviteId}`);
     },
   },
 

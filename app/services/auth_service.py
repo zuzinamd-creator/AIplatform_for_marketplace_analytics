@@ -16,6 +16,7 @@ from app.models.user import User
 from app.schemas.auth import UserCreate
 from app.services.auth_audit_service import record_auth_audit
 from app.services.email_service import EmailDeliveryError, send_email, smtp_configured
+from app.services.invite_service import InviteService
 
 
 class AuthService:
@@ -48,6 +49,39 @@ class AuthService:
             )
             self.db.add(user)
             await self.db.flush()
+            await self.db.refresh(user)
+        return user
+
+    async def register_with_invite(self, data: UserCreate) -> User:
+        if not data.invite_token:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Valid invitation required.",
+            )
+        async with self.db.begin():
+            invite_service = InviteService(self.db)
+            invite = await invite_service.consume_token(data.invite_token, email=str(data.email))
+            result = await self.db.execute(select(User).where(User.email == data.email.lower()))
+            if result.scalar_one_or_none():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email already registered",
+                )
+            user = User(
+                email=data.email.lower(),
+                hashed_password=get_password_hash(data.password),
+                full_name=data.full_name,
+                role=invite.role or DEFAULT_USER_ROLE,
+            )
+            self.db.add(user)
+            await self.db.flush()
+            await record_auth_audit(
+                self.db,
+                user_id=user.id,
+                event_type=AuthAuditEventType.INVITE_ACCEPTED,
+                detail=f"Registration completed via invitation for {user.email}",
+                payload={"invite_id": str(invite.id), "email": user.email},
+            )
             await self.db.refresh(user)
         return user
 

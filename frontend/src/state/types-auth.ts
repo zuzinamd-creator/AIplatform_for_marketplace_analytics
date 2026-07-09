@@ -6,6 +6,14 @@ export type Token = {
 export type UserCreate = {
   email: string;
   password: string;
+  full_name?: string | null;
+  invite_token?: string;
+};
+
+export type InviteValidateResponse = {
+  valid: boolean;
+  email?: string | null;
+  expires_at?: string | null;
 };
 
 export type { UserResponse } from "./types";

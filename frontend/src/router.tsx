@@ -11,6 +11,7 @@ import { RegisterPage } from "./views/auth/RegisterPage";
 import { ForgotPasswordPage } from "./views/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "./views/auth/ResetPasswordPage";
 
+import { AdminInvitesPage } from "./views/admin/AdminInvitesPage";
 import { AdminUsersPage } from "./views/admin/AdminUsersPage";
 import { DashboardPage } from "./views/dashboard/DashboardPage";
 import { OnboardingPage } from "./views/onboarding/OnboardingPage";
@@ -98,6 +99,7 @@ export const router = createBrowserRouter([
       { path: "ai/usage", element: withBoundary(<AiUsagePage />) },
 
       { path: "admin/users", element: adminOnly(<AdminUsersPage />) },
+      { path: "admin/invites", element: adminOnly(<AdminInvitesPage />) },
 
       { path: "system/status", element: adminOnly(<SystemStatusPage />) },
       { path: "system/persistence", element: adminOnly(<SystemPersistencePage />) },

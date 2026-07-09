@@ -54,8 +54,9 @@ Edit `.env` for local real testing:
 | `AI_PROVIDER` | `openai`, `openrouter`, or `deepseek` (not `mock` for real LLM) |
 | `AI_OPENAI_API_KEY` | Your API key |
 | `AI_OPENAI_MODEL` | e.g. `gpt-4o-mini` |
-| `AI_PROMPT_RUNTIME_VERSION` | `v3` |
-| `AI_ENABLE_STREAMING` | `true` |
+| `REGISTRATION_MODE` | `open` for §5a; `invite_only` for §5b |
+| `APP_PUBLIC_URL` | `http://localhost:5173` — invite link base |
+| `INVITE_TOKEN_EXPIRE_HOURS` | Default `72` |
 
 See also `docs/ai/provider_setup.md`.
 
@@ -175,7 +176,8 @@ Point frontend at `VITE_API_BASE_URL=http://localhost:8000` or run nginx separat
 | http://localhost:5173/app/dashboard | Seller dashboard |
 | http://localhost:5173/app/ai/today | Today's Focus |
 | http://localhost:5173/app/ai/recommendations | AI inbox |
-| http://localhost:5173/app/reports/upload | Report upload |
+| http://localhost:5173/register | Registration (open mode or invite link) |
+| http://localhost:5173/app/admin/invites | Admin invites (platform_admin) |
 
 Authenticated ops (JWT required):
 
@@ -196,17 +198,88 @@ Environment:
 - `SMOKE_BASE_URL` — default `http://localhost:8080`
 - `SMOKE_SKIP_AI_PROBE=1` — skip live LLM ping (faster, no API cost)
 
-Checks: `/health`, `/health/ready`, register/login (requires `REGISTRATION_MODE=open` for register step), ops runtime health, AI provider status, optional LLM probe.
+Checks: `/health`, `/health/ready`, register/login (§5a requires `REGISTRATION_MODE=open`; invite flow in §5b), ops runtime health, AI provider status, optional LLM probe.
 
 ---
 
 ## 5. Login flow
 
-1. Set `REGISTRATION_MODE=open` in `.env` for local self-registration (production default is `invite_only`).
+### 5a. Open registration (development only)
+
+1. Set `REGISTRATION_MODE=open` in `.env`
 2. Open http://localhost:5173/register
-3. Register seller account (password ≥ 8 chars), or use operator script when `invite_only`
+3. Register seller account (password ≥ 8 chars) without invite token
 4. Login → redirected to `/app/onboarding` or dashboard
 5. Token stored in `localStorage` (`ma.accessToken`)
+
+### 5b. Invite registration (production-like — Phase 9.3A)
+
+Prerequisites:
+
+- `alembic upgrade head` (includes `0035_registration_invites`)
+- `REGISTRATION_MODE=invite_only` in `.env`
+- `APP_PUBLIC_URL=http://localhost:5173` (or your dev frontend origin)
+- A user with `role=platform_admin` (migration `0034` seeds one by email)
+
+**Scenario: create invite**
+
+1. Log in as `platform_admin`
+2. Open **Администрирование → Приглашения** (`/app/admin/invites`)
+3. Create invite for `new_seller@example.com` with TTL (default 72 h)
+4. Copy the one-time `invite_link` from the modal
+
+API equivalent:
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/admin/invites \
+  -H "Authorization: Bearer $PLATFORM_ADMIN_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"new_seller@example.com","expires_in_hours":72}'
+```
+
+**Scenario: validate invite**
+
+1. Open invite link in incognito: `/register?invite=<token>`
+2. UI calls `GET /api/v1/auth/invite/validate?token=…`
+3. Expect `valid: true`, email pre-filled
+
+```bash
+curl -s "http://localhost:8080/api/v1/auth/invite/validate?token=<token>"
+```
+
+**Scenario: register by invite**
+
+1. Set password on the pre-filled form → submit
+2. Expect `POST /api/v1/auth/register` with `{ email, password, invite_token }` → 201
+3. Login as new seller → `GET /api/v1/auth/me` → `role: "seller"`
+
+**Scenario: reuse rejection (used invite)**
+
+1. Complete registration with a valid invite
+2. Open the same invite link again
+3. Expect `/invite/validate` → `valid: false` and registration blocked
+
+**Scenario: expired / revoked invite**
+
+| Case | Setup | Expect |
+|------|-------|--------|
+| Expired | Create invite with `expires_in_hours: 1`, wait or backdate `expires_at` in DB | `valid: false` |
+| Revoked | Admin clicks revoke on pending invite | `valid: false`; `DELETE /api/v1/admin/invites/{id}` → 204 |
+
+**Scenario: seller forbidden on admin invites**
+
+1. Log in as `seller` (not `platform_admin`)
+2. `GET /api/v1/admin/invites` → **403** `Platform admin access required`
+3. Nav does not show **Администрирование** section
+
+Unit test coverage:
+
+```bash
+.venv/bin/pytest tests/unit/test_admin_invites_api.py \
+  tests/unit/test_invite_registration.py \
+  tests/unit/test_invite_token_lifecycle.py \
+  tests/unit/test_registration_gate.py -q
+```
 
 If `SECRET_KEY` was changed after registration, existing tokens invalidate — re-login.
 
@@ -300,7 +373,7 @@ Stop stack:
 
 Use this for a single end-to-end seller session:
 
-- [ ] Register + login
+- [ ] Register + login (§5a open mode, or §5b invite flow)
 - [ ] Upload WB weekly report (real file)
 - [ ] Report reaches `processed`; worker log shows no fatal error
 - [ ] Dashboard KPIs match order of magnitude (not empty)

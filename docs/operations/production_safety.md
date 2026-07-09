@@ -1,7 +1,10 @@
-# Production Safety (Phase 8.2.0 — 8.3.0)
+# Production Safety (Phase 8.2.0 — 9.3A)
 
-**Status:** Phase 8.3.0 certified in repository (deploy guard in `deploy-frontend.sh`; **effect on next frontend deploy only**)  
-**Production baseline:** `11731e9` — 8.2.1a recovery stabilization  
+**Status:** Safety tooling certified (8.2–8.3); auth phases 9.1A–9.3A deployed to production runtime  
+**Committed HEAD (VPS):** `b85854c` — Phase 9.2 platform admin  
+**Alembic head (DB):** `0035_registration_invites` — Phase 9.3A invite system  
+**CERTIFIED_SHA:** defined in `scripts/production-recovery.sh` — formal update in Phase 9.3X-C  
+**Historical safety baseline:** `11731e9` — 8.2.1a recovery stabilization  
 **Wave 2 deployed:** systemd `ExecStartPre` on production  
 **Phase 8.1 historical rollback:** `9301e5e`
 
@@ -14,7 +17,36 @@ Production safety tooling prevents recurrence of the 2026-07-08 incident:
 - Missing `.env` → backend crash on restart → 502 → empty UI
 - Uncommitted code on production host → schema mismatch risk
 
-Wave 1 adds **scripts and CLI checks** without changing Phase 8.1 runtime behavior.
+Phase 9.x adds auth/admin surfaces that must stay aligned with the database:
+
+| Risk | Mitigation |
+|------|------------|
+| Code at HEAD without migration `0035` | `preflight --schema` / `alembic current` |
+| Migration `0035` without invite code | ORM/import failures on restart |
+| Dirty tree deploy | `deploy-guard.sh` blocks frontend build |
+| Rollback to pre-9.3A code | Runbook Phase 3 — requires migration coordination |
+
+---
+
+## Auth & admin inventory (Phase 9.2B — 9.3A)
+
+| Item | Detail |
+|------|--------|
+| **Roles** | `seller`, `platform_admin` (`users.role`, migration `0034`) |
+| **Registration gate** | `REGISTRATION_MODE=invite_only` (Phase 9.1A) |
+| **Invite system** | `registration_invites` table (migration `0035`) |
+| **Admin users API** | `GET /api/v1/admin/users` — read-only (Phase 9.2C) |
+| **Admin invites API** | `GET/POST/DELETE /api/v1/admin/invites` (Phase 9.3A) |
+| **Frontend gates** | `RequirePlatformAdmin` on admin/ops/system routes (Phase 9.2) |
+| **Admin UI** | Администрирование → Пользователи, Приглашения |
+
+Environment variables for invites:
+
+| Variable | Purpose |
+|----------|---------|
+| `REGISTRATION_MODE` | `invite_only` in production |
+| `APP_PUBLIC_URL` | Base URL for `{APP_PUBLIC_URL}/register?invite=…` links |
+| `INVITE_TOKEN_EXPIRE_HOURS` | Default TTL when creating invites (default `72`) |
 
 ---
 
@@ -41,6 +73,8 @@ Modes:
 
 Exit `0` = pass, `1` = fail.
 
+**Expected schema head (current):** `0035_registration_invites`
+
 ### 2. `python -m app.ops.preflight`
 
 Validates required environment variables using existing `validate_environment()`:
@@ -57,7 +91,7 @@ Validates required environment variables using existing `validate_environment()`
 .venv/bin/python -m app.ops.preflight --schema
 ```
 
-**Not imported by API lifespan** — Phase 8.1 startup path unchanged.
+**Not imported by API lifespan** — preflight is not part of normal request handling.
 
 ### 3. `scripts/lib/deploy-guard.sh`
 
@@ -95,6 +129,8 @@ Skipped when `GITHUB_ACTIONS=true`.
 - `frontend/test-results/`
 - `docs/release/screenshots/`
 
+**Note:** Phase 9.3A source files (`app/services/invite_service.py`, `alembic/versions/0035_*.py`, etc.) are **not** allowlisted — deploy guard blocks until committed (Phase 9.3X-C).
+
 ### 4. `scripts/production-recovery.sh`
 
 Assess-only recovery report (Wave 1):
@@ -102,6 +138,8 @@ Assess-only recovery report (Wave 1):
 ```bash
 bash scripts/production-recovery.sh --assess-only
 ```
+
+Compares `git rev-parse HEAD` to `CERTIFIED_SHA` in the script. During Phase 9.3X-B/C, a mismatch is expected until formal certification — see [production_recovery_runbook.md](./production_recovery_runbook.md).
 
 No restarts, no git reset, no `.env` restore.
 
@@ -147,8 +185,6 @@ On failure the script exits **before** stopping preview, `npm run build`, or `rs
 | Low RAM | `DEPLOY_FORCE_RAM=1` or `DEPLOY_FORCE=1` |
 | CI | `GITHUB_ACTIONS=true` (tree check only) |
 
-**No runtime impact until the next frontend deploy** — backend/worker/orchestrator units unchanged.
-
 ---
 
 ## Wave roadmap
@@ -157,7 +193,7 @@ On failure the script exits **before** stopping preview, `npm run build`, or `rs
 |------|-------|------------------|
 | **1** | Scripts, CLI, docs, tests | **None** (done — `2e9aaad`) |
 | **2** | systemd `ExecStartPre`, orchestrator unit | **Done** — deployed on VPS |
-| **3** | Deploy guard in `deploy-frontend.sh` | **Next frontend deploy only** (repo done) |
+| **3** | Deploy guard in `deploy-frontend.sh` | **Active** — blocks dirty 9.3A deploy |
 
 ---
 
@@ -172,13 +208,18 @@ Before any deploy:
 
 ```bash
 bash scripts/preflight-env.sh --check
+bash scripts/preflight-env.sh --check --with-schema
 bash scripts/production-recovery.sh --assess-only
 bash scripts/deploy-frontend.sh   # includes deploy guard (Wave 3)
 bash scripts/post_deploy_smoke_test.sh
 ```
+
+Post-deploy auth checks (see [production_recovery_runbook.md](./production_recovery_runbook.md) Phase 5).
 
 ---
 
 ## See also
 
 - [production_recovery_runbook.md](./production_recovery_runbook.md)
+- [../frontend/user_workflows.md](../frontend/user_workflows.md)
+- [../release/README.md](../release/README.md)

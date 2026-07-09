@@ -34,7 +34,9 @@ describe("buildNavSections", () => {
       "Operations",
       "System",
     ]);
-    expect(sections.find((s) => s.id === "administration")?.items[0]?.to).toBe("/app/admin/users");
+    const administration = sections.find((s) => s.id === "administration");
+    expect(administration?.items.map((i) => i.label)).toEqual(["Пользователи", "Приглашения"]);
+    expect(administration?.items.map((i) => i.to)).toEqual(["/app/admin/users", "/app/admin/invites"]);
     expect(sections.find((s) => s.id === "operations")?.items.length).toBeGreaterThan(0);
     expect(sections.find((s) => s.id === "system")?.items.length).toBeGreaterThan(0);
   });

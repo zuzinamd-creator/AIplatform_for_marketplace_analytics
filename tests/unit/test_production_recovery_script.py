@@ -24,7 +24,7 @@ def _setup_recovery_workspace(
     tmp_path: Path,
     *,
     alembic_script: str,
-    git_head: str = "74e7fff65664d4cc87118b621b2dc8221c1bf09e",
+    git_head: str = "8cb1997c4dedacd0584789faa6fd39454b697eff",,,,,,,,,,,
 ) -> Path:
     """Copy recovery script into tmp repo root so ROOT resolves under tmp_path."""
     scripts = tmp_path / "scripts"
@@ -109,9 +109,9 @@ def _run_recovery(
 
 def test_default_certified_sha_is_production_baseline() -> None:
     text = RECOVERY_SH_SRC.read_text(encoding="utf-8")
-    assert "74e7fff65664d4cc87118b621b2dc8221c1bf09e" in text
+    assert "8cb1997c4dedacd0584789faa6fd39454b697eff" in text
+    assert "74e7fff65664d4cc87118b621b2dc8221c1bf09e" not in text
     assert "b4a8497e35f95ff5599221ada82d4d212e2fc056" not in text
-    assert "1276f7a2e0951f9f4ce80a2720cbbfba70224c7d" not in text
     assert "11731e911a16c92b9aeea8c6bafb533cf49e245b" not in text
     assert "83daf8c43673344ccba8735ff5b95fb60c4d4e6c" not in text
     assert "01cfee975f05eb1824be181634950914b31d3577" not in text
@@ -121,12 +121,12 @@ def test_default_certified_sha_is_production_baseline() -> None:
 def test_recovery_certified_sha_match_reaches_summary(tmp_path: Path) -> None:
     fake_bin = _setup_recovery_workspace(
         tmp_path,
-        alembic_script='echo "0034_user_role_platform_admin (head)"\n',
+        alembic_script='echo "0035_registration_invites (head)"\n',
     )
     result = _run_recovery(tmp_path, fake_bin)
     assert "=== Assessment summary ===" in result.stdout
     assert "  OK   HEAD matches certified baseline" in result.stdout
-    assert "  OK   alembic code head=0034_user_role_platform_admin" in result.stdout
+    assert "  OK   alembic code head=0035_registration_invites" in result.stdout
     assert "  result: ASSESS OK" in result.stdout
     assert result.returncode == 0
 
@@ -134,7 +134,7 @@ def test_recovery_certified_sha_match_reaches_summary(tmp_path: Path) -> None:
 def test_recovery_head_mismatch_exit_one(tmp_path: Path) -> None:
     fake_bin = _setup_recovery_workspace(
         tmp_path,
-        alembic_script='echo "0034_user_role_platform_admin (head)"\n',
+        alembic_script='echo "0035_registration_invites (head)"\n',
     )
     result = _run_recovery(
         tmp_path,

@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
     password_reset_token_expire_minutes: int = 60
+    invite_token_expire_hours: int = 72
 
     smtp_host: str = ""
     smtp_port: int = 587

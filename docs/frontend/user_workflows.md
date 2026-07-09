@@ -1,12 +1,66 @@
 # Seller Workflows (UX-1)
 
-This document describes the seller-facing workflows implemented in the `frontend/` app during **PHASE UX-1**.
+This document describes the seller-facing workflows implemented in the `frontend/` app during **PHASE UX-1**, updated for **Phase 9.3A** invite registration.
 
 ## 1) Onboarding & sign-in
 
-- **Registration**: `/register` → `GET /api/v1/auth/registration-status` then `POST /api/v1/auth/register` when `REGISTRATION_MODE=open`. Production uses **`invite_only`** — self-registration is blocked; operator provisions accounts.
+### Invite registration flow (production — Phase 9.3A)
+
+Production uses `REGISTRATION_MODE=invite_only`. New seller accounts are created **only** via a valid invitation link.
+
+```
+platform_admin
+  → Администрирование → Приглашения → create invite
+  → invite link: {APP_PUBLIC_URL}/register?invite=<token>
+  → seller opens link
+  → GET /api/v1/auth/invite/validate?token=…
+  → POST /api/v1/auth/register { email, password, invite_token }
+  → seller account (role=seller)
+  → login → /app/onboarding or dashboard
+```
+
+| Step | Route / API | Notes |
+|------|-------------|-------|
+| Create invite | `POST /api/v1/admin/invites` | `platform_admin` only; returns `invite_link` once |
+| Open link | `/register?invite=…` | Email pre-filled from validation |
+| Validate | `GET /api/v1/auth/invite/validate` | Returns `valid`, `email`, `expires_at` |
+| Register | `POST /api/v1/auth/register` | Requires `invite_token` when `invite_only` |
+| Login | `/login` → `POST /api/v1/auth/login` | JWT stored locally → `GET /api/v1/auth/me` |
+
+#### Invite lifecycle outcomes
+
+| Status | Condition | User experience |
+|--------|-----------|-----------------|
+| **pending** | Not used, not revoked, not expired | Registration succeeds; invite marked `used` |
+| **used** | `used_at` set | `/invite/validate` → `valid: false`; register rejected |
+| **expired** | `expires_at` in the past | `/invite/validate` → `valid: false`; register rejected |
+| **revoked** | `revoked_at` set by admin | `/invite/validate` → `valid: false`; register rejected |
+
+Admin can revoke pending invites from **Администрирование → Приглашения** (`DELETE /api/v1/admin/invites/{id}`).
+
+### Legacy / development registration
+
+| Method | When | Status |
+|--------|------|--------|
+| `REGISTRATION_MODE=open` + `/register` | Local dev, integration tests | **Development only** |
+| `scripts/create_mvp_test_user.py` | Bootstrap without UI | **Legacy / emergency only** |
+| Direct DB insert | Incident recovery | **Emergency only** |
+
+### Sign-in (all users)
+
 - **Login**: `/login` → `POST /api/v1/auth/login` → token stored locally → `GET /api/v1/auth/me`
 - **Tenant identity**: shown in the app shell (email + user id). Tenancy isolation is enforced by backend RLS.
+- **Roles**: `seller` (default) or `platform_admin` — determines visible nav sections (see Administration below).
+
+### Administration (platform_admin only)
+
+```
+Администрирование
+├─ Пользователи   → /app/admin/users   (GET /api/v1/admin/users)
+└─ Приглашения    → /app/admin/invites (GET/POST/DELETE /api/v1/admin/invites)
+```
+
+Sellers receive **403** on all `/api/v1/admin/*` endpoints.
 
 ## 2) Main dashboard (operational-first)
 

@@ -1,13 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.registration import (
+    INVITE_REQUIRED_MESSAGE,
+    REGISTRATION_UNAVAILABLE_MESSAGE,
+    is_invite_only_mode,
+    is_registration_open,
+)
 from app.models.user import User
 from app.schemas.auth import (
     ChangePasswordRequest,
     ForgotPasswordRequest,
+    InviteValidateResponse,
     MessageResponse,
     RegistrationStatusResponse,
     ResetPasswordRequest,
@@ -15,8 +22,8 @@ from app.schemas.auth import (
     UserCreate,
     UserResponse,
 )
-from app.core.registration import REGISTRATION_UNAVAILABLE_MESSAGE, is_registration_open
 from app.services.auth_service import AuthService
+from app.services.invite_service import InviteService
 
 router = APIRouter()
 
@@ -26,14 +33,36 @@ async def registration_status() -> RegistrationStatusResponse:
     return RegistrationStatusResponse(available=is_registration_open())
 
 
+@router.get("/invite/validate", response_model=InviteValidateResponse)
+async def validate_invite(
+    token: str = Query(..., min_length=16, max_length=256),
+    db: AsyncSession = Depends(get_db),
+) -> InviteValidateResponse:
+    invite = await InviteService(db).validate_token(token)
+    if invite is None:
+        return InviteValidateResponse(valid=False)
+    return InviteValidateResponse(
+        valid=True,
+        email=invite.email,
+        expires_at=invite.expires_at,
+    )
+
+
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(data: UserCreate, db: AsyncSession = Depends(get_db)) -> User:
-    if not is_registration_open():
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=REGISTRATION_UNAVAILABLE_MESSAGE,
-        )
-    return await AuthService(db).register(data)
+    if is_registration_open():
+        return await AuthService(db).register(data)
+    if is_invite_only_mode():
+        if not data.invite_token:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=INVITE_REQUIRED_MESSAGE,
+            )
+        return await AuthService(db).register_with_invite(data)
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=REGISTRATION_UNAVAILABLE_MESSAGE,
+    )
 
 
 @router.post("/login", response_model=Token)

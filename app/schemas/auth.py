@@ -14,6 +14,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     full_name: str | None = Field(default=None, min_length=1, max_length=255)
+    invite_token: str | None = Field(default=None, min_length=16, max_length=256)
 
 
 class UserLogin(BaseModel):
@@ -73,3 +74,11 @@ class RegistrationStatusResponse(BaseModel):
     model_config = ConfigDict(strict=True)
 
     available: bool
+
+
+class InviteValidateResponse(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    valid: bool
+    email: EmailStr | None = None
+    expires_at: datetime | None = None
