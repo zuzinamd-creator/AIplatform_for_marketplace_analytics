@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { api, formatApiError } from "../../state/http";
 import { useAuth, bootstrapTokenFromStorage, SESSION_EXPIRED_KEY } from "../../state/auth";
+import { isOnboardingDone } from "../../state/onboarding";
+import { isPlatformAdmin } from "../../state/userRoles";
 import { t } from "../../i18n";
 import { Button } from "../../ui/button";
 import { Card } from "../../ui/card";
@@ -64,7 +66,15 @@ export function LoginPage() {
         t("auth.signed_in"),
         `${t("auth.welcome_back")}${trimmedEmail ? `, ${trimmedEmail}` : ""}.`,
       );
-      nav(loc.state?.from ?? "/app/dashboard", { replace: true });
+      const from = loc.state?.from;
+      let dest = from ?? "/app/dashboard";
+      if (!from) {
+        const me = await api.auth.me();
+        if (!isPlatformAdmin(me) && !isOnboardingDone()) {
+          dest = "/app/onboarding";
+        }
+      }
+      nav(dest, { replace: true });
     } catch (err) {
       const message = formatApiError(err);
       setError(message);

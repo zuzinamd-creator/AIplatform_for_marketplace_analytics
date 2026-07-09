@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
+import { useAuth } from "../state/auth";
 import { api } from "../state/http";
 import { loadSettings } from "../state/settings";
+import { isPlatformAdmin } from "../state/userRoles";
 import { Card } from "./card";
 import { StatusBadge } from "./status-badge";
 
@@ -132,10 +134,14 @@ function collectBanners(
 }
 
 export function TrustBanners() {
+  const { user } = useAuth();
+  const admin = isPlatformAdmin(user);
+
   const runtime = useQuery({
     queryKey: ["ops", "runtimeSummary"],
     queryFn: () => api.ops.runtimeSummary(),
-    refetchInterval: 30_000,
+    enabled: admin,
+    refetchInterval: admin ? 30_000 : false,
   });
   const aiOps = useQuery({
     queryKey: ["ai", "ops"],
