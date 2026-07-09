@@ -38,7 +38,7 @@ export function saveSettings(s: TenantSettings) {
 
 export function isMvpMode() {
   const s = loadSettings();
-  return s.product_mode === "mvp" && !s.show_internal_ops;
+  return s.product_mode === "mvp";
 }
 
 export function isDemoMode() {

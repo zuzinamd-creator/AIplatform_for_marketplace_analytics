@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 const hmrClientPort = process.env.VITE_HMR_CLIENT_PORT
@@ -7,6 +7,10 @@ const hmrClientPort = process.env.VITE_HMR_CLIENT_PORT
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: "jsdom",
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+  },
   server: {
     port: 5173,
     host: true,

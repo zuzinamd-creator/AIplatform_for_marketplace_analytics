@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import require_platform_admin
 from app.models.user import User
 from app.services.persistence_validation_service import PersistenceValidationService
 from app.services.report_data_integrity_service import ReportDataIntegrityService
@@ -13,7 +13,7 @@ router = APIRouter()
 @router.get("/persistence-status")
 async def persistence_status(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ):
     status = await PersistenceValidationService(db, user_id=current_user.id).status()
     return {
@@ -34,7 +34,7 @@ async def persistence_status(
 @router.get("/data-integrity")
 async def data_integrity(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ):
     integrity = await ReportDataIntegrityService(db, user_id=current_user.id).status()
     return {

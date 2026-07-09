@@ -6,8 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import decode_access_token
+from app.core.user_roles import is_platform_admin
 from app.models.user import User
 from app.services.auth_service import AuthService
+
+PLATFORM_ADMIN_REQUIRED_MESSAGE = "Platform admin access required."
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -36,3 +39,14 @@ async def get_current_user(
         await db.commit()
     db.info["current_user_id"] = str(user.id)
     return user
+
+
+async def require_platform_admin(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if not is_platform_admin(current_user.role):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=PLATFORM_ADMIN_REQUIRED_MESSAGE,
+        )
+    return current_user

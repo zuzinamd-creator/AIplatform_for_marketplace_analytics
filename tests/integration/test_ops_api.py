@@ -6,6 +6,7 @@ from datetime import UTC, date, datetime
 from uuid import uuid4
 
 import pytest
+from app.core.user_roles import USER_ROLE_PLATFORM_ADMIN
 from app.core.security import create_access_token
 from app.core.security_context import TenantSession
 from app.models.etl.anomaly import EtlAnomaly, EtlAnomalySeverity, EtlAnomalyType, EtlParserStage
@@ -30,6 +31,7 @@ async def test_ops_endpoints_tenant_scoped(
         email=f"ops-{user_id}@example.com",
         hashed_password="not-used",
         is_active=True,
+        role=USER_ROLE_PLATFORM_ADMIN,
     )
     headers = {"Authorization": f"Bearer {create_access_token(user_id)}"}
 
@@ -135,6 +137,29 @@ async def test_ops_endpoints_tenant_scoped(
     semantics = await api_client.get("/api/v1/ops/semantics-status", headers=headers)
     assert semantics.status_code == 200
     assert any(v["version"] == "1.0" for v in semantics.json()["versions"])
+
+
+@pytest.mark.integration
+async def test_ops_endpoints_reject_seller_role(
+    api_client: AsyncClient,
+    session_factory,
+) -> None:
+    user_id = uuid4()
+    user = User(
+        id=user_id,
+        email=f"seller-ops-{user_id}@example.com",
+        hashed_password="not-used",
+        is_active=True,
+    )
+    headers = {"Authorization": f"Bearer {create_access_token(user_id)}"}
+
+    async with session_factory() as session:
+        async with session.begin():
+            session.add(user)
+
+    response = await api_client.get("/api/v1/ops/rebuilds", headers=headers)
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Platform admin access required."
 
 
 @pytest.mark.integration

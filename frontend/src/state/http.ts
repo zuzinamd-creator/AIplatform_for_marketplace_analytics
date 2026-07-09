@@ -83,6 +83,7 @@ export type CostImportResultResponse = {
   issues: CostImportIssue[];
 };
 import type { RegistrationStatusResponse, Token, UserCreate, UserResponse } from "./types-auth";
+import type { PaginatedAdminUsersResponse } from "./types-admin";
 import type {
   CostCreateRequest,
   CostListParams,
@@ -390,6 +391,13 @@ export const api = {
     async dataIntegrity() {
       const { data } = await http.get("/system/data-integrity");
       return unwrap<Record<string, unknown>>(data);
+    },
+  },
+
+  admin: {
+    async listUsers(skip = 0, limit = 50) {
+      const { data } = await http.get("/admin/users", { params: { skip, limit } });
+      return unwrap<PaginatedAdminUsersResponse>(data);
     },
   },
 

@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, require_platform_admin
 from app.core.template_paths import (
     COST_IMPORT_TEMPLATE_FILENAME,
     cost_import_template_path,
@@ -127,7 +127,7 @@ async def download_cost_import_template(
 
 @router.get("/import/template-info")
 async def cost_import_template_info(
-    _current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(require_platform_admin),
 ) -> dict[str, str | bool]:
     """Debug info for template resolution (local/prod packaging)."""
     return cost_import_template_resolution()

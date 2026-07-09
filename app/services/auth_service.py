@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.security import create_access_token, get_password_hash, verify_password
+from app.core.user_roles import DEFAULT_USER_ROLE
 from app.models.auth_audit import AuthAuditEventType
 from app.models.password_reset_token import PasswordResetToken
 from app.models.user import User
@@ -43,6 +44,7 @@ class AuthService:
                 email=data.email.lower(),
                 hashed_password=get_password_hash(data.password),
                 full_name=data.full_name,
+                role=DEFAULT_USER_ROLE,
             )
             self.db.add(user)
             await self.db.flush()

@@ -35,6 +35,10 @@ export function SupportPage() {
             <dd>{user?.email ?? "—"}</dd>
           </div>
           <div>
+            <dt className="text-xs text-ink-muted">Роль</dt>
+            <dd>{user?.role ?? "—"}</dd>
+          </div>
+          <div>
             <dt className="text-xs text-ink-muted">Tenant ID</dt>
             <dd className="font-mono text-xs">{user?.id ?? "—"}</dd>
           </div>

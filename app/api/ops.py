@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import require_platform_admin
 from app.models.user import User
 from app.schemas.ops import (
     DriftCheckOpsResponse,
@@ -39,7 +39,7 @@ async def list_rebuilds(
     limit: int = Query(50, ge=1, le=200),
     status: str | None = None,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ) -> PaginatedRebuildsResponse:
     rows, total = await OpsService(db, current_user).list_rebuilds(
         skip=skip, limit=limit, status=status
@@ -55,7 +55,7 @@ async def list_anomalies(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ) -> PaginatedAnomaliesResponse:
     rows, total = await OpsService(db, current_user).list_anomalies(skip=skip, limit=limit)
     return PaginatedAnomaliesResponse(
@@ -70,7 +70,7 @@ async def list_drift_checks(
     limit: int = Query(50, ge=1, le=200),
     consistent_only: bool | None = None,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ) -> PaginatedDriftChecksResponse:
     rows, total = await OpsService(db, current_user).list_drift_checks(
         skip=skip, limit=limit, consistent_only=consistent_only
@@ -86,7 +86,7 @@ async def list_queue(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ) -> PaginatedQueueResponse:
     rows, total, status_counts = await OpsService(db, current_user).list_queue_jobs(
         skip=skip, limit=limit
@@ -103,7 +103,7 @@ async def list_dead_letters(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ) -> PaginatedQueueResponse:
     rows, total = await OpsService(db, current_user).list_dead_letter_jobs(skip=skip, limit=limit)
     return PaginatedQueueResponse(
@@ -116,7 +116,7 @@ async def list_dead_letters(
 @router.get("/runtime/health", response_model=RuntimeHealthResponse)
 async def runtime_health(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ) -> RuntimeHealthResponse:
     return await OpsService(db, current_user).runtime_health()
 
@@ -124,7 +124,7 @@ async def runtime_health(
 @router.get("/runtime/summary", response_model=RuntimeSummaryResponse)
 async def runtime_summary(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ) -> RuntimeSummaryResponse:
     return await OpsService(db, current_user).runtime_summary()
 
@@ -132,7 +132,7 @@ async def runtime_summary(
 @router.get("/runtime/autonomy/status", response_model=AutonomyStatusResponse)
 async def autonomy_status(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ) -> AutonomyStatusResponse:
     return await OpsService(db, current_user).autonomy_status()
 
@@ -140,7 +140,7 @@ async def autonomy_status(
 @router.get("/runtime/forecast", response_model=OperationalForecastResponse)
 async def operational_forecast(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ) -> OperationalForecastResponse:
     return await OpsService(db, current_user).operational_forecast()
 
@@ -149,7 +149,7 @@ async def operational_forecast(
 async def run_operational_simulation(
     body: SimulationRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ) -> SimulationResponse:
     return await OpsService(db, current_user).run_simulation(body.scenario)
 
@@ -157,7 +157,7 @@ async def run_operational_simulation(
 @router.get("/runtime/schedules", response_model=SchedulePolicyResponse)
 async def runtime_schedules(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ) -> SchedulePolicyResponse:
     return await OpsService(db, current_user).schedule_policy()
 
@@ -167,7 +167,7 @@ async def remediation_history(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ) -> PaginatedRemediationHistoryResponse:
     rows, total = await OpsService(db, current_user).list_remediation_history(skip=skip, limit=limit)
     return PaginatedRemediationHistoryResponse(
@@ -181,7 +181,7 @@ async def remediation_history(
 @router.get("/semantics-status", response_model=SemanticsStatusOpsResponse)
 async def semantics_status(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_platform_admin),
 ) -> SemanticsStatusOpsResponse:
     versions = await OpsService(db, current_user).semantics_status()
     return SemanticsStatusOpsResponse(

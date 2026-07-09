@@ -3,11 +3,13 @@ import { Navigate, useLocation } from "react-router-dom";
 
 import { api, setAccessToken } from "../state/http";
 import type { UserResponse } from "./types";
+import { isPlatformAdmin } from "./userRoles";
 
 import { SESSION_EXPIRED_KEY, setUnauthorizedHandler } from "./session";
 
 const TOKEN_KEY = "ma.accessToken";
 export { SESSION_EXPIRED_KEY };
+export { isPlatformAdmin } from "./userRoles";
 
 type AuthContextValue = {
   token: string | null;
@@ -23,11 +25,12 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider(props: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [user, setUser] = useState<UserResponse | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => Boolean(localStorage.getItem(TOKEN_KEY)));
 
   const refreshMe = async () => {
     if (!token) {
       setUser(null);
+      setLoading(false);
       return;
     }
     setLoading(true);
@@ -47,6 +50,7 @@ export function AuthProvider(props: { children: React.ReactNode }) {
       setAccessToken(null);
       setToken(null);
       setUser(null);
+      setLoading(false);
       sessionStorage.setItem(SESSION_EXPIRED_KEY, "1");
       const path = window.location.pathname;
       if (!path.startsWith("/login")) {
@@ -55,6 +59,16 @@ export function AuthProvider(props: { children: React.ReactNode }) {
     });
     return () => setUnauthorizedHandler(null);
   }, []);
+
+  useEffect(() => {
+    if (token) {
+      void refreshMe();
+    } else {
+      setUser(null);
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const signIn = async (newToken: string) => {
     localStorage.setItem(TOKEN_KEY, newToken);
@@ -74,6 +88,7 @@ export function AuthProvider(props: { children: React.ReactNode }) {
     setAccessToken(null);
     setToken(null);
     setUser(null);
+    setLoading(false);
   };
 
   const value = useMemo<AuthContextValue>(
@@ -91,9 +106,32 @@ export function useAuth() {
 }
 
 export function RequireAuth(props: { children: React.ReactNode }) {
-  const { token } = useAuth();
+  const { token, user, loading } = useAuth();
   const loc = useLocation();
   if (!token) return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
+  if (loading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface-muted text-sm text-ink-muted">
+        Загрузка профиля…
+      </div>
+    );
+  }
+  return <>{props.children}</>;
+}
+
+export function RequirePlatformAdmin(props: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const loc = useLocation();
+  if (loading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface-muted text-sm text-ink-muted">
+        Загрузка профиля…
+      </div>
+    );
+  }
+  if (!isPlatformAdmin(user)) {
+    return <Navigate to="/app/dashboard" replace state={{ from: loc.pathname, denied: "platform_admin" }} />;
+  }
   return <>{props.children}</>;
 }
 
@@ -102,4 +140,3 @@ export function bootstrapTokenFromStorage() {
   setAccessToken(token);
   return token;
 }
-

@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BASE="${BASE_HTTPS:-https://321997.fornex.cloud}"
 API="${BASE}/api/v1"
-CERTIFIED_SHA="${CERTIFIED_SHA:-11731e911a16c92b9aeea8c6bafb533cf49e245b}"
+CERTIFIED_SHA="${CERTIFIED_SHA:-74e7fff65664d4cc87118b621b2dc8221c1bf09e}"
 ENV_FILE="${ENV_FILE:-$ROOT/.env}"
 BACKUP_ENV="${BACKUP_ENV:-/root/.env.bak.int2.recovery}"
 

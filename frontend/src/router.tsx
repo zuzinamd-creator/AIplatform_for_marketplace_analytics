@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { AppShell } from "./shell/AppShell";
-import { RequireAuth } from "./state/auth";
+import { RequireAuth, RequirePlatformAdmin } from "./state/auth";
 import { RouteError } from "./ui/route-error";
 
 import { LoginPage } from "./views/auth/LoginPage";
@@ -11,6 +11,7 @@ import { RegisterPage } from "./views/auth/RegisterPage";
 import { ForgotPasswordPage } from "./views/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "./views/auth/ResetPasswordPage";
 
+import { AdminUsersPage } from "./views/admin/AdminUsersPage";
 import { DashboardPage } from "./views/dashboard/DashboardPage";
 import { OnboardingPage } from "./views/onboarding/OnboardingPage";
 import { UploadReportPage } from "./views/reports/UploadReportPage";
@@ -20,6 +21,8 @@ import { CostsPage } from "./views/costs/CostsPage";
 import { SettingsPage } from "./views/settings/SettingsPage";
 import { SupportPage } from "./views/support/SupportPage";
 import { SystemStatusPage } from "./views/status/SystemStatusPage";
+import { SystemPersistencePage } from "./views/system/SystemPersistencePage";
+import { SystemIntegrityPage } from "./views/system/SystemIntegrityPage";
 
 import { RecommendationsPage } from "./views/ai/RecommendationsPage";
 import { RecommendationDetailPage } from "./views/ai/RecommendationDetailPage";
@@ -50,6 +53,10 @@ const withBoundary = (node: React.ReactNode) => (
   </ErrorBoundary>
 );
 
+const adminOnly = (node: React.ReactNode) => (
+  <RequirePlatformAdmin>{withBoundary(node)}</RequirePlatformAdmin>
+);
+
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/app" replace /> },
   { path: "/login", element: withBoundary(<LoginPage />) },
@@ -65,11 +72,11 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
-      { path: "onboarding", element: withBoundary(<OnboardingPage />) },
+      { path: "onboarding", element: adminOnly(<OnboardingPage />) },
       { path: "dashboard", element: withBoundary(<DashboardPage />) },
-      { path: "status", element: withBoundary(<SystemStatusPage />) },
-      { path: "settings", element: withBoundary(<SettingsPage />) },
-      { path: "support", element: withBoundary(<SupportPage />) },
+      { path: "status", element: <Navigate to="/app/system/status" replace /> },
+      { path: "settings", element: adminOnly(<SettingsPage />) },
+      { path: "support", element: adminOnly(<SupportPage />) },
       { path: "reports", element: withBoundary(<ReportsPage />) },
       { path: "reports/upload", element: withBoundary(<UploadReportPage />) },
       { path: "reports/:reportId", element: withBoundary(<ReportDetailPage />) },
@@ -90,16 +97,21 @@ export const router = createBrowserRouter([
       { path: "ai/digest", element: withBoundary(<AiDigestPage />) },
       { path: "ai/usage", element: withBoundary(<AiUsagePage />) },
 
-      { path: "ops/queue", element: withBoundary(<QueuePage />) },
-      { path: "ops/dead-letters", element: withBoundary(<DeadLettersPage />) },
-      { path: "ops/rebuilds", element: withBoundary(<RebuildsPage />) },
-      { path: "ops/drift-checks", element: withBoundary(<DriftChecksPage />) },
-      { path: "ops/anomalies", element: withBoundary(<AnomaliesPage />) },
-      { path: "ops/runtime/health", element: withBoundary(<RuntimeHealthPage />) },
-      { path: "ops/runtime/summary", element: withBoundary(<RuntimeSummaryPage />) },
-      { path: "ops/semantics", element: withBoundary(<SemanticsStatusPage />) },
+      { path: "admin/users", element: adminOnly(<AdminUsersPage />) },
+
+      { path: "system/status", element: adminOnly(<SystemStatusPage />) },
+      { path: "system/persistence", element: adminOnly(<SystemPersistencePage />) },
+      { path: "system/integrity", element: adminOnly(<SystemIntegrityPage />) },
+
+      { path: "ops/queue", element: adminOnly(<QueuePage />) },
+      { path: "ops/dead-letters", element: adminOnly(<DeadLettersPage />) },
+      { path: "ops/rebuilds", element: adminOnly(<RebuildsPage />) },
+      { path: "ops/drift-checks", element: adminOnly(<DriftChecksPage />) },
+      { path: "ops/anomalies", element: adminOnly(<AnomaliesPage />) },
+      { path: "ops/runtime/health", element: adminOnly(<RuntimeHealthPage />) },
+      { path: "ops/runtime/summary", element: adminOnly(<RuntimeSummaryPage />) },
+      { path: "ops/semantics", element: adminOnly(<SemanticsStatusPage />) },
     ],
   },
   { path: "*", element: <RouteError status={404} title="Not found" /> },
 ]);
-

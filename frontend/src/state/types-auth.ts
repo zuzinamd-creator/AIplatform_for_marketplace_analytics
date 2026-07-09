@@ -8,13 +8,8 @@ export type UserCreate = {
   password: string;
 };
 
-export type UserResponse = {
-  id: string;
-  email: string;
-  created_at: string;
-};
+export type { UserResponse } from "./types";
 
 export type RegistrationStatusResponse = {
   available: boolean;
 };
-

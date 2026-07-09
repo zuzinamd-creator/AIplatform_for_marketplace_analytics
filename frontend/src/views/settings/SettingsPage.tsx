@@ -72,17 +72,9 @@ export function SettingsPage() {
             <option value="full">Полный (показывать все страницы)</option>
           </Select>
           <div className="text-xs text-ink-muted">
-            В MVP внутренние “операторские” страницы скрыты из навигации. Поддержка/диагностика остаётся доступной.
+            MVP скрывает расширенные возможности; доступ к операторским разделам определяется ролью пользователя на сервере.
           </div>
         </div>
-        <label className="flex items-center gap-2 text-sm text-ink-secondary">
-          <input
-            type="checkbox"
-            checked={settings.show_internal_ops}
-            onChange={(e) => setSettings((s) => ({ ...s, show_internal_ops: e.target.checked }))}
-          />
-          Показывать внутренние страницы в навигации
-        </label>
       </Card>
 
       <SecuritySettingsCard />

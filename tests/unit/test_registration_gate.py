@@ -106,6 +106,7 @@ async def test_register_open_mode_success(auth_client: AsyncClient) -> None:
         hashed_password="hash",
         full_name=None,
         is_active=True,
+        role="seller",
         created_at=datetime.now(UTC),
     )
     with (
@@ -141,6 +142,7 @@ async def test_login_unaffected_by_registration_gate(auth_client: AsyncClient) -
         hashed_password="hash",
         full_name=None,
         is_active=True,
+        role="seller",
     )
     with (
         patch("app.api.auth.is_registration_open", return_value=False),
