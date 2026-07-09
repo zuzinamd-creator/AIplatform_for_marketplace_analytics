@@ -18,6 +18,8 @@ describe("buildNavSections", () => {
     const sections = buildNavSections(user(USER_ROLE_SELLER));
     const labels = sections.map((s) => s.label);
     expect(labels).toEqual(["Dashboard", "Analytics", "Reports", "AI"]);
+    const analytics = sections.find((s) => s.id === "analytics");
+    expect(analytics?.items.map((i) => i.to)).toContain("/app/analytics/weekly");
     expect(sections.flatMap((s) => s.items).some((i) => i.to.startsWith("/app/admin"))).toBe(false);
   });
 

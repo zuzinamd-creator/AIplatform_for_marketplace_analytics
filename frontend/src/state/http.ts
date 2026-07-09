@@ -98,19 +98,23 @@ import type {
 import type { ReportResponse, ReportUploadResponse } from "./types-reports";
 import type { WorkflowEventCreateRequest, WorkflowEventResponse, WorkflowHistoryResponse } from "./types-workflow";
 import type {
+  AbcAnalysisResponse,
   AnalyticsCoverageResponse,
   CostCoverageResponse,
   FinancialKpiSummaryResponse,
   FinancialTrendsResponse,
   InventoryDeadStockResponse,
   InventoryEconomicsResponse,
+  InventoryRiskIndicatorsResponse,
   InventorySlowMoversResponse,
+  PeriodComparisonResponse,
   ReconciliationResponse,
   RevenueKpiSummaryResponse,
   RevenueTrendResponse,
   SkuEconomicsResponse,
   SkuDrilldownResponse,
   TopSkusResponse,
+  WarehouseAnalyticsResponse,
 } from "./types-analytics";
 import type {
   PaginatedAnomaliesResponse,
@@ -637,6 +641,28 @@ export const api = {
         params: rest,
       });
       return unwrap<SkuDrilldownResponse>(data);
+    },
+    async periodCompare(params: {
+      marketplace: string;
+      a_start: string;
+      a_end: string;
+      b_start: string;
+      b_end: string;
+    }) {
+      const { data } = await http.get("/analytics/kpis/period-compare", { params });
+      return unwrap<PeriodComparisonResponse>(data);
+    },
+    async abcAnalysis(params: { marketplace: string; start: string; end: string }) {
+      const { data } = await http.get("/analytics/kpis/abc", { params });
+      return unwrap<AbcAnalysisResponse>(data);
+    },
+    async inventoryRisk(params: { snapshot_date: string; semantics_version?: string }) {
+      const { data } = await http.get("/analytics/kpis/inventory-risk", { params });
+      return unwrap<InventoryRiskIndicatorsResponse>(data);
+    },
+    async warehouseAnalytics(params: { snapshot_date: string; semantics_version?: string }) {
+      const { data } = await http.get("/analytics/kpis/warehouses", { params });
+      return unwrap<WarehouseAnalyticsResponse>(data);
     },
   },
 

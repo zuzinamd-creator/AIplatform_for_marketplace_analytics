@@ -1,0 +1,451 @@
+import React, { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  AlertTriangle,
+  BarChart3,
+  Boxes,
+  Layers3,
+  PackageSearch,
+  TrendingDown,
+  TrendingUp,
+  Warehouse,
+} from "lucide-react";
+
+import { api } from "../../state/http";
+import { loadWorkspaceProfile } from "../../state/onboarding";
+import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
+import { formatInteger, formatPct, formatRub, parseNumeric } from "../../utils/format";
+import { Card } from "../../ui/card";
+import { CollapsibleSection } from "../../ui/collapsible-section";
+import { KpiCard } from "../../ui/kpi-card";
+import { Select } from "../../ui/field";
+import { PeriodSelector } from "../../ui/period-selector";
+import { StatusBadge } from "../../ui/status-badge";
+import { WarnCallout } from "../../ui/warn-callout";
+
+function DeltaBadge(props: { value: unknown; format?: "rub" | "pct" | "int" }) {
+  const n = parseNumeric(props.value);
+  if (n === null) return <span className="text-ink-muted">—</span>;
+  const positive = n > 0;
+  const negative = n < 0;
+  const tone = positive ? "ok" : negative ? "bad" : "info";
+  const Icon = positive ? TrendingUp : negative ? TrendingDown : BarChart3;
+  const formatted =
+    props.format === "pct"
+      ? formatPct(n)
+      : props.format === "int"
+        ? (n > 0 ? "+" : "") + formatInteger(n)
+        : (n > 0 ? "+" : "") + formatRub(n);
+  return (
+    <StatusBadge tone={tone}>
+      <span className="inline-flex items-center gap-1">
+        <Icon className="h-3 w-3" />
+        {formatted}
+      </span>
+    </StatusBadge>
+  );
+}
+
+function SectionState(props: { loading: boolean; error: Error | null; empty: boolean; emptyText: string; children: React.ReactNode }) {
+  if (props.loading) {
+    return <div className="py-8 text-center text-sm text-ink-muted">Загрузка…</div>;
+  }
+  if (props.error) {
+    return (
+      <WarnCallout title="Не удалось загрузить данные">
+        {props.error instanceof Error ? props.error.message : "Неизвестная ошибка"}
+      </WarnCallout>
+    );
+  }
+  if (props.empty) {
+    return <div className="py-8 text-center text-sm text-ink-muted">{props.emptyText}</div>;
+  }
+  return <>{props.children}</>;
+}
+
+function stockRiskLabel(risk: string | null | undefined): string {
+  if (risk === "overstock") return "Затоваривание";
+  if (risk === "stockout") return "Дефицит";
+  return "Норма";
+}
+
+function stockRiskTone(risk: string | null | undefined): "ok" | "warn" | "bad" | "info" {
+  if (risk === "overstock") return "warn";
+  if (risk === "stockout") return "bad";
+  return "ok";
+}
+
+export function WeeklyAnalysisPage() {
+  const workspace = loadWorkspaceProfile();
+  const defaultMarketplace = workspace.marketplace === "unknown" ? "wildberries" : workspace.marketplace;
+  const [marketplace, setMarketplace] = useState<"wildberries" | "ozon">(defaultMarketplace as "wildberries" | "ozon");
+  const [periodSel, setPeriodSel] = useState<PeriodSelection>(() => {
+    const base = loadPeriodSelection();
+    if (base.compareEnabled) return base;
+    return {
+      ...base,
+      compareEnabled: true,
+      comparePreset: "previous_period",
+      compareRange: previousPeriod(base.range),
+    };
+  });
+
+  const rangeA = periodSel.range;
+  const rangeB = useMemo(() => {
+    if (!periodSel.compareEnabled) return previousPeriod(rangeA);
+    if (periodSel.comparePreset === "custom" && periodSel.compareRange) return periodSel.compareRange;
+    return previousPeriod(rangeA);
+  }, [periodSel, rangeA]);
+
+  const snapshotDate = rangeA.end;
+
+  const compare = useQuery({
+    queryKey: ["analytics", "periodCompare", marketplace, rangeA, rangeB],
+    queryFn: () =>
+      api.analytics.periodCompare({
+        marketplace,
+        a_start: rangeA.start,
+        a_end: rangeA.end,
+        b_start: rangeB.start,
+        b_end: rangeB.end,
+      }),
+  });
+
+  const abc = useQuery({
+    queryKey: ["analytics", "abc", marketplace, rangeA.start, rangeA.end],
+    queryFn: () => api.analytics.abcAnalysis({ marketplace, start: rangeA.start, end: rangeA.end }),
+  });
+
+  const inventoryRisk = useQuery({
+    queryKey: ["analytics", "inventoryRisk", snapshotDate],
+    queryFn: () => api.analytics.inventoryRisk({ snapshot_date: snapshotDate }),
+  });
+
+  const inventorySkus = useQuery({
+    queryKey: ["analytics", "inventoryEconomics", "weekly", marketplace, rangeA.start, rangeA.end],
+    queryFn: () => api.analytics.inventoryEconomics({ marketplace, start: rangeA.start, end: rangeA.end, limit: 100 }),
+  });
+
+  const warehouses = useQuery({
+    queryKey: ["analytics", "warehouses", snapshotDate],
+    queryFn: () => api.analytics.warehouseAnalytics({ snapshot_date: snapshotDate }),
+  });
+
+  const deltaOrders = useMemo(() => {
+    if (!compare.data) return null;
+    return compare.data.a.units_sold - compare.data.b.units_sold;
+  }, [compare.data]);
+
+  const abcBuckets = useMemo(() => {
+    const map = new Map((abc.data?.buckets ?? []).map((b) => [b.bucket, b]));
+    return ["A", "B", "C"].map((bucket) => map.get(bucket) ?? { bucket, sku_count: 0, revenue: "0", revenue_pct: "0" });
+  }, [abc.data]);
+
+  const riskSkus = useMemo(() => {
+    const items = inventorySkus.data?.items ?? [];
+    const overstock = items.filter((i) => i.stock_risk === "overstock").slice(0, 15);
+    const stockout = items.filter((i) => i.stock_risk === "stockout").slice(0, 15);
+    return { overstock, stockout };
+  }, [inventorySkus.data]);
+
+  const warehouseRows = warehouses.data?.items ?? [];
+  const stale =
+    compare.data?.freshness?.stale_data_warning ||
+    abc.data?.freshness?.stale_data_warning ||
+    inventoryRisk.data?.stale_data_warning;
+
+  const priorities = useMemo(() => {
+    const list: Array<{ tone: "bad" | "warn" | "info"; text: string }> = [];
+    if ((inventoryRisk.data?.high_discrepancy_warehouses ?? 0) > 0) {
+      list.push({
+        tone: "bad",
+        text: `Проверьте ${inventoryRisk.data!.high_discrepancy_warehouses} склад(ов) с расхождениями остатков`,
+      });
+    }
+    if (riskSkus.stockout.length > 0) {
+      list.push({ tone: "bad", text: `Пополните остатки: ${riskSkus.stockout.length} SKU в зоне дефицита` });
+    }
+    if (riskSkus.overstock.length > 0) {
+      list.push({ tone: "warn", text: `Снизьте закупку: ${riskSkus.overstock.length} SKU с риском затоваривания` });
+    }
+    if (parseNumeric(compare.data?.delta_profit) !== null && (parseNumeric(compare.data?.delta_profit) ?? 0) < 0) {
+      list.push({ tone: "warn", text: "Прибыль снизилась относительно предыдущего периода — проверьте ABC-группу C" });
+    }
+    if (list.length === 0) {
+      list.push({ tone: "info", text: "Критичных складских рисков не обнаружено за выбранный период" });
+    }
+    return list;
+  }, [compare.data, inventoryRisk.data, riskSkus]);
+
+  return (
+    <div className="page-shell">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h1 className="page-title">Недельный анализ</h1>
+          <p className="page-subtitle">
+            Сравнение периодов, ABC-структура выручки, складские риски и остатки — на основе уже загруженных отчётов.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge tone={stale ? "warn" : "info"}>{stale ? "данные устарели" : "актуально"}</StatusBadge>
+          <Select
+            value={marketplace}
+            onChange={(e) => setMarketplace(e.target.value as "wildberries" | "ozon")}
+            className="h-9 w-auto min-w-[10rem]"
+          >
+            <option value="wildberries">Wildberries</option>
+            <option value="ozon">Ozon</option>
+          </Select>
+        </div>
+      </div>
+
+      <PeriodSelector onChange={setPeriodSel} />
+
+      <CollapsibleSection
+        title="Сравнение периодов"
+        subtitle={`Период A: ${rangeA.start} → ${rangeA.end} · Период B: ${rangeB.start} → ${rangeB.end}`}
+        defaultOpen
+      >
+        <SectionState
+          loading={compare.isLoading}
+          error={compare.error as Error | null}
+          empty={false}
+          emptyText=""
+        >
+          {compare.data ? (
+            <div className="space-y-4">
+              <div className="kpi-row md:grid-cols-2 xl:grid-cols-4">
+                <KpiCard
+                  variant="hero"
+                  icon={<BarChart3 className="h-5 w-5" />}
+                  label="Изменение выручки"
+                  value={<DeltaBadge value={compare.data.delta_revenue} format="rub" />}
+                  sub={`A: ${formatRub(compare.data.a.total_revenue)} · B: ${formatRub(compare.data.b.total_revenue)}`}
+                />
+                <KpiCard
+                  icon={<TrendingUp className="h-5 w-5" />}
+                  label="Изменение прибыли"
+                  value={<DeltaBadge value={compare.data.delta_profit} format="rub" />}
+                  sub={`A: ${formatRub(compare.data.a.total_profit)} · B: ${formatRub(compare.data.b.total_profit)}`}
+                />
+                <KpiCard
+                  icon={<Layers3 className="h-5 w-5" />}
+                  label="Изменение маржинальности"
+                  value={<DeltaBadge value={compare.data.delta_margin_pct} format="pct" />}
+                  sub={`A: ${formatPct(compare.data.a.margin_pct)} · B: ${formatPct(compare.data.b.margin_pct)}`}
+                />
+                <KpiCard
+                  icon={<PackageSearch className="h-5 w-5" />}
+                  label="Изменение заказов (ед.)"
+                  value={<DeltaBadge value={deltaOrders} format="int" />}
+                  sub={`A: ${formatInteger(compare.data.a.units_sold)} · B: ${formatInteger(compare.data.b.units_sold)}`}
+                />
+              </div>
+            </div>
+          ) : null}
+        </SectionState>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="ABC-анализ" subtitle="Распределение выручки по группам A / B / C" defaultOpen>
+        <SectionState
+          loading={abc.isLoading}
+          error={abc.error as Error | null}
+          empty={!abc.data?.buckets?.length}
+          emptyText="Нет SKU с выручкой за выбранный период. Загрузите отчёты продаж."
+        >
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {abcBuckets.map((bucket) => (
+              <Card key={bucket.bucket} className="p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-lg font-semibold">Группа {bucket.bucket}</div>
+                  <StatusBadge tone={bucket.bucket === "A" ? "ok" : bucket.bucket === "B" ? "info" : "warn"}>
+                    {formatPct(bucket.revenue_pct)} выручки
+                  </StatusBadge>
+                </div>
+                <div className="mt-3 text-2xl font-semibold text-ink">{formatRub(bucket.revenue)}</div>
+                <div className="mt-1 text-xs text-ink-muted">SKU: {formatInteger(bucket.sku_count)}</div>
+              </Card>
+            ))}
+          </div>
+        </SectionState>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Риски запасов"
+        subtitle="Дефицит, затоваривание и складские расхождения"
+        defaultOpen
+      >
+        <SectionState
+          loading={inventoryRisk.isLoading || inventorySkus.isLoading}
+          error={(inventoryRisk.error ?? inventorySkus.error) as Error | null}
+          empty={false}
+          emptyText=""
+        >
+          <div className="space-y-4">
+            <div className="kpi-row md:grid-cols-3">
+              <KpiCard
+                icon={<AlertTriangle className="h-5 w-5" />}
+                label="Склады с расхождениями"
+                value={formatInteger(inventoryRisk.data?.high_discrepancy_warehouses ?? 0)}
+                sub={`Стоимость расхождений: ${formatRub(inventoryRisk.data?.discrepancy_cost_total)}`}
+              />
+              <KpiCard
+                icon={<TrendingDown className="h-5 w-5" />}
+                label="SKU в дефиците"
+                value={formatInteger(riskSkus.stockout.length)}
+                sub="stock_risk = stockout"
+              />
+              <KpiCard
+                icon={<Boxes className="h-5 w-5" />}
+                label="SKU с затовариванием"
+                value={formatInteger(riskSkus.overstock.length)}
+                sub="stock_risk = overstock"
+              />
+            </div>
+
+            <Card className="p-4">
+              <div className="text-sm font-semibold">Приоритеты действий</div>
+              <ul className="mt-3 space-y-2">
+                {priorities.map((p, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-sm text-ink-secondary">
+                    <StatusBadge tone={p.tone}>{p.tone === "bad" ? "Высокий" : p.tone === "warn" ? "Средний" : "Инфо"}</StatusBadge>
+                    <span>{p.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <Card className="p-4">
+                <div className="text-sm font-semibold">Риск дефицита (топ SKU)</div>
+                {riskSkus.stockout.length === 0 ? (
+                  <div className="mt-3 text-sm text-ink-muted">Нет SKU с признаком дефицита.</div>
+                ) : (
+                  <div className="mt-3 overflow-auto">
+                    <table className="table-shell w-full min-w-[480px] text-sm">
+                      <thead className="text-left text-xs text-ink-muted">
+                        <tr>
+                          <th className="py-2">SKU</th>
+                          <th className="py-2">Остаток</th>
+                          <th className="py-2">Продано</th>
+                          <th className="py-2">Риск</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {riskSkus.stockout.map((row) => (
+                          <tr key={row.sku}>
+                            <td className="py-2 font-mono text-xs">{row.sku}</td>
+                            <td className="py-2">{formatInteger(row.stock_units)}</td>
+                            <td className="py-2">{formatInteger(row.sold_units)}</td>
+                            <td className="py-2">
+                              <StatusBadge tone={stockRiskTone(row.stock_risk)}>{stockRiskLabel(row.stock_risk)}</StatusBadge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Card>
+
+              <Card className="p-4">
+                <div className="text-sm font-semibold">Риск затоваривания (топ SKU)</div>
+                {riskSkus.overstock.length === 0 ? (
+                  <div className="mt-3 text-sm text-ink-muted">Нет SKU с признаком затоваривания.</div>
+                ) : (
+                  <div className="mt-3 overflow-auto">
+                    <table className="table-shell w-full min-w-[480px] text-sm">
+                      <thead className="text-left text-xs text-ink-muted">
+                        <tr>
+                          <th className="py-2">SKU</th>
+                          <th className="py-2">Остаток</th>
+                          <th className="py-2">Заморожено</th>
+                          <th className="py-2">Риск</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {riskSkus.overstock.map((row) => (
+                          <tr key={row.sku}>
+                            <td className="py-2 font-mono text-xs">{row.sku}</td>
+                            <td className="py-2">{formatInteger(row.stock_units)}</td>
+                            <td className="py-2">{formatRub(row.frozen_capital)}</td>
+                            <td className="py-2">
+                              <StatusBadge tone={stockRiskTone(row.stock_risk)}>{stockRiskLabel(row.stock_risk)}</StatusBadge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Card>
+            </div>
+          </div>
+        </SectionState>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Складская аналитика"
+        subtitle={`Снимок на ${snapshotDate}`}
+        defaultOpen
+      >
+        <SectionState
+          loading={warehouses.isLoading}
+          error={warehouses.error as Error | null}
+          empty={warehouseRows.length === 0}
+          emptyText="Нет складских снимков за выбранную дату. Загрузите отчёты с остатками."
+        >
+          <div className="kpi-row md:grid-cols-3">
+            <KpiCard
+              icon={<Warehouse className="h-5 w-5" />}
+              label="Складов в снимке"
+              value={formatInteger(warehouseRows.length)}
+            />
+            <KpiCard
+              label="Фактические остатки (ед.)"
+              value={formatInteger(warehouseRows.reduce((acc, r) => acc + r.actual_stock, 0))}
+            />
+            <KpiCard
+              label="Расхождения (ед.)"
+              value={formatInteger(warehouseRows.reduce((acc, r) => acc + Math.abs(r.discrepancy_units), 0))}
+              sub={`Стоимость: ${formatRub(warehouseRows.reduce((acc, r) => acc + Number(r.discrepancy_cost ?? 0), 0))}`}
+            />
+          </div>
+
+          <div className="mt-4 overflow-auto">
+            <table className="table-shell w-full min-w-[960px] text-sm">
+              <thead className="text-left text-xs text-ink-muted">
+                <tr>
+                  <th className="py-2">Склад</th>
+                  <th className="py-2">Открытие</th>
+                  <th className="py-2">Продано</th>
+                  <th className="py-2">Факт</th>
+                  <th className="py-2">Ожидание</th>
+                  <th className="py-2">Расхождение</th>
+                  <th className="py-2">Стоимость расх.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {warehouseRows.map((row, idx) => (
+                  <tr key={`${row.warehouse_name ?? "wh"}-${idx}`}>
+                    <td className="py-2">{row.warehouse_name ?? "—"}</td>
+                    <td className="py-2">{formatInteger(row.opening_stock)}</td>
+                    <td className="py-2">{formatInteger(row.sold_units)}</td>
+                    <td className="py-2">{formatInteger(row.actual_stock)}</td>
+                    <td className="py-2">{formatInteger(row.expected_closing_stock)}</td>
+                    <td className="py-2">
+                      <StatusBadge tone={row.discrepancy_units !== 0 ? "warn" : "ok"}>
+                        {formatInteger(row.discrepancy_units)}
+                      </StatusBadge>
+                    </td>
+                    <td className="py-2">{formatRub(row.discrepancy_cost)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </SectionState>
+      </CollapsibleSection>
+    </div>
+  );
+}

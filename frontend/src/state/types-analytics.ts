@@ -268,6 +268,79 @@ export type InventoryDeadStockResponse = {
   integrity?: AnalyticsIntegrityMeta | null;
 };
 
+export type PeriodComparisonResponse = {
+  marketplace: string;
+  a_start: string;
+  a_end: string;
+  b_start: string;
+  b_end: string;
+  a: {
+    total_revenue: string;
+    total_profit: string | null;
+    margin_pct?: string | null;
+    profitability_pct?: string | null;
+    units_sold: number;
+    average_check?: string | null;
+  };
+  b: {
+    total_revenue: string;
+    total_profit: string | null;
+    margin_pct?: string | null;
+    profitability_pct?: string | null;
+    units_sold: number;
+    average_check?: string | null;
+  };
+  delta_revenue: string;
+  delta_profit: string;
+  delta_margin_pct?: string | null;
+  freshness: AnalyticsFreshnessMeta;
+  integrity?: AnalyticsIntegrityMeta | null;
+};
+
+export type AbcAnalysisResponse = {
+  marketplace: string;
+  period_start: string;
+  period_end: string;
+  buckets: Array<{
+    bucket: string;
+    sku_count: number;
+    revenue: string;
+    revenue_pct: string;
+  }>;
+  freshness: AnalyticsFreshnessMeta;
+  integrity?: AnalyticsIntegrityMeta | null;
+};
+
+export type InventoryRiskIndicatorsResponse = {
+  snapshot_date: string;
+  high_discrepancy_warehouses: number;
+  discrepancy_cost_total: string;
+  stale_data_warning: boolean;
+  freshness: AnalyticsFreshnessMeta;
+  integrity?: AnalyticsIntegrityMeta | null;
+};
+
+export type WarehouseAnalyticsResponse = {
+  snapshot_date: string;
+  semantics_version: string;
+  items: Array<{
+    warehouse_name: string | null;
+    opening_stock: number;
+    inbound_units: number;
+    sold_units: number;
+    returned_units: number;
+    lost_units: number;
+    writeoff_units: number;
+    expected_closing_stock: number;
+    actual_stock: number;
+    discrepancy_units: number;
+    discrepancy_cost: string;
+    discrepancy_sale_value: string;
+  }>;
+  freshness: AnalyticsFreshnessMeta;
+  integrity?: AnalyticsIntegrityMeta | null;
+};
+
 export type SkuDrilldownResponse = {
   marketplace: string;
   sku: string;

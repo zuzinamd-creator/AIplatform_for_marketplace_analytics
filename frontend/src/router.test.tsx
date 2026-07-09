@@ -49,6 +49,7 @@ function renderLifecycleRoute(path: string, pageLabel: string, role: typeof USER
             <Route path="onboarding" element={<div>{pageLabel}</div>} />
             <Route path="settings" element={<div>{pageLabel}</div>} />
             <Route path="support" element={<div>{pageLabel}</div>} />
+            <Route path="analytics/weekly" element={<div>{pageLabel}</div>} />
           </Route>
           <Route path="/app/dashboard" element={<div>dashboard</div>} />
         </Routes>
@@ -82,6 +83,12 @@ describe("seller lifecycle routes", () => {
   it("allows seller to access support under RequireAuth", async () => {
     renderLifecycleRoute("/app/support", "support-page", USER_ROLE_SELLER);
     expect(await screen.findByText("support-page")).toBeTruthy();
+    expect(screen.queryByText("dashboard")).toBeNull();
+  });
+
+  it("allows seller to access weekly analysis under RequireAuth", async () => {
+    renderLifecycleRoute("/app/analytics/weekly", "weekly-analysis-page", USER_ROLE_SELLER);
+    expect(await screen.findByText("weekly-analysis-page")).toBeTruthy();
     expect(screen.queryByText("dashboard")).toBeNull();
   });
 
