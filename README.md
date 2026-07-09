@@ -1,7 +1,7 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
 **Version:** Phase 9.3A (invite system) · Phase 9.2 (platform admin) · Phase 8.1–8.3 (finance + safety)  
-**Certified baseline:** `6e42fb1` — Phase 9.3A + documentation alignment (tag `certified-production`)  
+**Certified baseline:** git tag `certified-production` (current: `05992e2`)  
 **Feature commit:** `2920e42` — invite system MVP  
 **Alembic head:** `0035_registration_invites`  
 **Status:** Production certified — git = runtime = documentation  
@@ -13,7 +13,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Certified baseline (VPS)** | `6e42fb1` — Phase 9.3A certified (`certified-production` tag) |
+| **Certified baseline (VPS)** | git tag `certified-production` → `05992e2` |
 | **Feature commit** | `2920e42` — invite system MVP + docs |
 | **Historical safety baseline** | `11731e9` — 8.2.1a recovery stabilization |
 | **Safety stack** | 8.2.0 systemd preflight · 8.2.1a recovery tooling · 8.3.0 deploy guard |
@@ -306,7 +306,7 @@ Systemd unit files: `deploy/systemd/`. Backend, worker, and orchestrator use **`
 | **9.2B** | **Platform roles** — `users.role` (`seller` / `platform_admin`), migration `0034` | ✅ Committed (`b85854c`) |
 | **9.2B-R1** | **Recovery assess alignment** — `production-recovery.sh` SHA pointer for 9.2 | ✅ In repo *(CERTIFIED_SHA update in 9.3X-C)* |
 | **9.2C** | **Admin panel (read-only users)** — `/api/v1/admin/users`, UI «Пользователи» | ✅ Committed (`b85854c`) |
-| **9.3A** | **Invite system** — `registration_invites`, admin invites API/UI, invite registration | ✅ Certified (`6e42fb1`) |
+| **9.3A** | **Invite system** — `registration_invites`, admin invites API/UI, invite registration | ✅ Certified (`certified-production`) |
 
 ### Next
 
@@ -649,7 +649,7 @@ OpenAPI: `http://localhost:8000/docs` (when `DEBUG=true` or enabled).
 
 ## Release Notes
 
-**Certified baseline:** `6e42fb1` — Phase 9.3A invite system + ops certification (2026-07-09)
+**Certified baseline:** `05992e2` — Phase 9.3A (tag `certified-production`, 2026-07-09)
 
 **Feature commit:** `2920e42` — invite system MVP and documentation alignment
 
