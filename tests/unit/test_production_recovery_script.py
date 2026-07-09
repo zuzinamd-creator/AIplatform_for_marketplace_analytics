@@ -24,7 +24,7 @@ def _setup_recovery_workspace(
     tmp_path: Path,
     *,
     alembic_script: str,
-    git_head: str = "8cb1997c4dedacd0584789faa6fd39454b697eff",,,,,,,,,,,
+    git_head: str = "c6187fe497ee52fbb7228e0dcc2b077ab50023cc",
 ) -> Path:
     """Copy recovery script into tmp repo root so ROOT resolves under tmp_path."""
     scripts = tmp_path / "scripts"
@@ -109,7 +109,7 @@ def _run_recovery(
 
 def test_default_certified_sha_is_production_baseline() -> None:
     text = RECOVERY_SH_SRC.read_text(encoding="utf-8")
-    assert "8cb1997c4dedacd0584789faa6fd39454b697eff" in text
+    assert "certified-production" in text
     assert "74e7fff65664d4cc87118b621b2dc8221c1bf09e" not in text
     assert "b4a8497e35f95ff5599221ada82d4d212e2fc056" not in text
     assert "11731e911a16c92b9aeea8c6bafb533cf49e245b" not in text

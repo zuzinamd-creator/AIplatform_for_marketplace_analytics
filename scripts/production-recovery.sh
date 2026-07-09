@@ -5,7 +5,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BASE="${BASE_HTTPS:-https://321997.fornex.cloud}"
 API="${BASE}/api/v1"
-CERTIFIED_SHA="${CERTIFIED_SHA:-8cb1997c4dedacd0584789faa6fd39454b697eff}"
+# Phase 9.3A certified baseline — override with CERTIFIED_SHA= for drills.
+if [[ -z "${CERTIFIED_SHA:-}" ]]; then
+  CERTIFIED_SHA="$(
+    cd "${ROOT}" && git rev-parse certified-production 2>/dev/null \
+      || git rev-parse HEAD 2>/dev/null \
+      || echo unknown
+  )"
+fi
 ENV_FILE="${ENV_FILE:-$ROOT/.env}"
 BACKUP_ENV="${BACKUP_ENV:-/root/.env.bak.int2.recovery}"
 
