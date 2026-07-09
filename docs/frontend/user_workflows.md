@@ -4,7 +4,7 @@ This document describes the seller-facing workflows implemented in the `frontend
 
 ## 1) Onboarding & sign-in
 
-- **Register**: `/register` → `POST /api/v1/auth/register`
+- **Registration**: `/register` → `GET /api/v1/auth/registration-status` then `POST /api/v1/auth/register` when `REGISTRATION_MODE=open`. Production uses **`invite_only`** — self-registration is blocked; operator provisions accounts.
 - **Login**: `/login` → `POST /api/v1/auth/login` → token stored locally → `GET /api/v1/auth/me`
 - **Tenant identity**: shown in the app shell (email + user id). Tenancy isolation is enforced by backend RLS.
 

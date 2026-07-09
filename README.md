@@ -555,6 +555,18 @@ bash scripts/production-recovery.sh --assess-only
 | Area | Prefix |
 |------|--------|
 | Auth | `/api/v1/auth/*` |
+
+### Access control (Phase 9.1A)
+
+| Setting | Production value |
+|---------|------------------|
+| `REGISTRATION_MODE` | `invite_only` |
+
+- **Self-registration is disabled** — public `POST /api/v1/auth/register` returns 403.
+- **Onboarding is manual** — platform operator provisions seller accounts (DB/script).
+- **Login, JWT, and password reset** are unchanged for existing users.
+- Local/integration environments may set `REGISTRATION_MODE=open` for bootstrap scripts.
+
 | Reports | `/api/v1/reports/*` (incl. `PATCH` for `promotion_expenses`) |
 | Analytics | `/api/v1/analytics/*` |
 | Costs | `/api/v1/costs/*` |

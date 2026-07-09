@@ -62,3 +62,9 @@ class MessageResponse(BaseModel):
     model_config = ConfigDict(strict=True)
 
     message: str = Field(min_length=1, max_length=512)
+
+
+class RegistrationStatusResponse(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    available: bool

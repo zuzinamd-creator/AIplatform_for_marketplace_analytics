@@ -17,6 +17,7 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registrationAvailable, setRegistrationAvailable] = useState(false);
 
   useEffect(() => {
     bootstrapTokenFromStorage();
@@ -26,6 +27,21 @@ export function LoginPage() {
       setError(message);
       toast(t("auth.session_expired_title"), message);
     }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    api.auth
+      .registrationStatus()
+      .then((status) => {
+        if (active) setRegistrationAvailable(status.available);
+      })
+      .catch(() => {
+        if (active) setRegistrationAvailable(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -103,10 +119,14 @@ export function LoginPage() {
         </div>
 
         <div className="mt-5 text-sm text-ink-secondary">
-          {t("auth.new_here")}{" "}
-          <Link className="link-muted" to="/register">
-            {t("auth.create_account")}
-          </Link>
+          {registrationAvailable ? (
+            <>
+              {t("auth.new_here")}{" "}
+              <Link className="link-muted" to="/register">
+                {t("auth.create_account")}
+              </Link>
+            </>
+          ) : null}
         </div>
       </Card>
     </div>

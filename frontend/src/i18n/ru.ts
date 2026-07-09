@@ -60,6 +60,9 @@ export const RU = {
     account_created: "Аккаунт создан",
     you_can_sign_in_now: "Теперь можно войти.",
     registration_failed: "Не удалось зарегистрироваться",
+    registration_unavailable_title: "Регистрация недоступна",
+    registration_unavailable_detail:
+      "Создание аккаунта через сайт сейчас отключено. Обратитесь к оператору платформы для получения доступа.",
     already_have_account: "Уже есть аккаунт?",
   },
   ai: {

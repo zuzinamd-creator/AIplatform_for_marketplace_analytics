@@ -196,16 +196,17 @@ Environment:
 - `SMOKE_BASE_URL` — default `http://localhost:8080`
 - `SMOKE_SKIP_AI_PROBE=1` — skip live LLM ping (faster, no API cost)
 
-Checks: `/health`, `/health/ready`, register/login, ops runtime health, AI provider status, optional LLM probe.
+Checks: `/health`, `/health/ready`, register/login (requires `REGISTRATION_MODE=open` for register step), ops runtime health, AI provider status, optional LLM probe.
 
 ---
 
 ## 5. Login flow
 
-1. Open http://localhost:5173/register
-2. Register seller account (password ≥ 8 chars)
-3. Login → redirected to `/app/onboarding` or dashboard
-4. Token stored in `localStorage` (`ma.accessToken`)
+1. Set `REGISTRATION_MODE=open` in `.env` for local self-registration (production default is `invite_only`).
+2. Open http://localhost:5173/register
+3. Register seller account (password ≥ 8 chars), or use operator script when `invite_only`
+4. Login → redirected to `/app/onboarding` or dashboard
+5. Token stored in `localStorage` (`ma.accessToken`)
 
 If `SECRET_KEY` was changed after registration, existing tokens invalidate — re-login.
 

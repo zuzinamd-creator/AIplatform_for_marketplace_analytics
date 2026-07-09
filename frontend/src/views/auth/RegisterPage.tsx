@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { api, formatApiError } from "../../state/http";
@@ -15,6 +15,22 @@ export function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [registrationAvailable, setRegistrationAvailable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    api.auth
+      .registrationStatus()
+      .then((status) => {
+        if (active) setRegistrationAvailable(status.available);
+      })
+      .catch(() => {
+        if (active) setRegistrationAvailable(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +59,32 @@ export function RegisterPage() {
       setLoading(false);
     }
   };
+
+  if (registrationAvailable === null) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-14">
+        <Card className="p-6 shadow-soft">
+          <div className="text-sm text-ink-muted">{t("common.loading")}</div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!registrationAvailable) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-14">
+        <Card className="p-6 shadow-soft">
+          <div className="text-lg font-semibold">{t("auth.registration_unavailable_title")}</div>
+          <p className="mt-2 text-sm text-ink-secondary">{t("auth.registration_unavailable_detail")}</p>
+          <div className="mt-5 text-sm text-ink-secondary">
+            <Link className="link-muted" to="/login">
+              {t("auth.back_to_sign_in")}
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-md px-4 py-14">

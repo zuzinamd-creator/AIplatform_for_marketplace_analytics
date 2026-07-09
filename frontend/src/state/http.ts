@@ -82,7 +82,7 @@ export type CostImportResultResponse = {
   invalid_sku_count: number;
   issues: CostImportIssue[];
 };
-import type { Token, UserCreate, UserResponse } from "./types-auth";
+import type { RegistrationStatusResponse, Token, UserCreate, UserResponse } from "./types-auth";
 import type {
   CostCreateRequest,
   CostListParams,
@@ -136,7 +136,13 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
-const AUTH_PUBLIC_PATHS = ["/auth/login", "/auth/register", "/auth/forgot-password", "/auth/reset-password"];
+const AUTH_PUBLIC_PATHS = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/registration-status",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+];
 
 http.interceptors.response.use(
   (response) => response,
@@ -193,6 +199,10 @@ export function formatApiError(err: unknown): string {
 
 export const api = {
   auth: {
+    async registrationStatus() {
+      const { data } = await http.get("/auth/registration-status");
+      return unwrap<RegistrationStatusResponse>(data);
+    },
     async register(payload: UserCreate) {
       const { data } = await http.post("/auth/register", payload);
       return unwrap<UserResponse>(data);

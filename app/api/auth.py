@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,18 +9,30 @@ from app.schemas.auth import (
     ChangePasswordRequest,
     ForgotPasswordRequest,
     MessageResponse,
+    RegistrationStatusResponse,
     ResetPasswordRequest,
     Token,
     UserCreate,
     UserResponse,
 )
+from app.core.registration import REGISTRATION_UNAVAILABLE_MESSAGE, is_registration_open
 from app.services.auth_service import AuthService
 
 router = APIRouter()
 
 
+@router.get("/registration-status", response_model=RegistrationStatusResponse)
+async def registration_status() -> RegistrationStatusResponse:
+    return RegistrationStatusResponse(available=is_registration_open())
+
+
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(data: UserCreate, db: AsyncSession = Depends(get_db)) -> User:
+    if not is_registration_open():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=REGISTRATION_UNAVAILABLE_MESSAGE,
+        )
     return await AuthService(db).register(data)
 
 

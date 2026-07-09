@@ -15,6 +15,7 @@ Archived full list from pre-v0.6 README: [docs/archive/README_pre_v06.md](../arc
 | `SECRET_KEY` | JWT signing key (≥ 32 random chars) |
 | `ALGORITHM` | JWT algorithm (default `HS256`) |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT TTL |
+| `REGISTRATION_MODE` | `open` \| `invite_only` \| `disabled` — controls public signup (default `invite_only`) |
 | `LOG_LEVEL` | JSON log level (`INFO`, `DEBUG`, …) |
 | `DEBUG` | FastAPI debug mode |
 | `MAINTENANCE_MODE` | Kill switch for non-health endpoints |

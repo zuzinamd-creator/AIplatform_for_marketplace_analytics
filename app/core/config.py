@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     # Optional extra CA (e.g. corporate SSL inspection root); verification stays enabled
     database_ssl_extra_ca_file: str = ""
     environment_mode: str = "LOCAL_DEV"  # LOCAL_DEV | INTEGRATION | MAIN
+    registration_mode: str = "invite_only"  # open | invite_only | disabled
 
     secret_key: str
     algorithm: str = "HS256"

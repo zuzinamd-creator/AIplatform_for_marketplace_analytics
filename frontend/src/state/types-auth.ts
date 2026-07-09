@@ -14,3 +14,7 @@ export type UserResponse = {
   created_at: string;
 };
 
+export type RegistrationStatusResponse = {
+  available: boolean;
+};
+

@@ -10,7 +10,7 @@ It is **not yet MVP-ready** as a full **financial analytics product** (revenue/p
 
 | Capability | Classification | External users? | Notes |
 |------------|----------------|-----------------|-------|
-| Auth (register/login/JWT) | **Stable** | Yes | Tenant isolation via RLS |
+| Auth (login/JWT; register gated) | **Stable** | Yes (existing users) | `REGISTRATION_MODE=invite_only` in production; tenant isolation via RLS |
 | Report upload + lifecycle | **Stable** | Yes | Duplicate checksum handling |
 | Report history | **Stable** | Yes | Filters + saved views (local) |
 | Cost import | **Stable** | Yes | Enables profitability path |

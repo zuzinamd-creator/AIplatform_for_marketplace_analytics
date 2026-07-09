@@ -8,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.registration import registration_mode_error
 from app.core.environment import (
     detect_environment,
     is_supabase_direct_host,
@@ -79,6 +80,10 @@ def validate_environment() -> StartupValidationReport:
         errors.append("SECRET_KEY must be set to a non-default value")
     if not settings.database_url:
         errors.append("DATABASE_URL is required")
+
+    mode_error = registration_mode_error(settings.registration_mode)
+    if mode_error:
+        errors.append(mode_error)
 
     if settings.ai_enabled:
         provider = settings.ai_provider.lower().strip()
