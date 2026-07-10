@@ -46,6 +46,7 @@ import { ReconciliationPage } from "./views/finance/ReconciliationPage";
 import { CostCoveragePage } from "./views/finance/CostCoveragePage";
 import { EconomicsPage } from "./views/economics/EconomicsPage";
 import { WeeklyAnalysisPage } from "./views/analytics/WeeklyAnalysisPage";
+import { AnalyticsHubPage } from "./views/analytics/AnalyticsHubPage";
 import { SkuDrilldownPage } from "./views/economics/SkuDrilldownPage";
 import { InventoryEconomicsPage } from "./views/economics/InventoryEconomicsPage";
 
@@ -87,6 +88,7 @@ export const router = createBrowserRouter([
       { path: "finance/reconciliation", element: withBoundary(<ReconciliationPage />) },
       { path: "finance/cost-coverage", element: withBoundary(<CostCoveragePage />) },
       { path: "economics", element: withBoundary(<EconomicsPage />) },
+      { path: "analytics", element: withBoundary(<AnalyticsHubPage />) },
       { path: "analytics/weekly", element: withBoundary(<WeeklyAnalysisPage />) },
       { path: "economics/sku/:sku", element: withBoundary(<SkuDrilldownPage />) },
       { path: "economics/inventory", element: withBoundary(<InventoryEconomicsPage />) },

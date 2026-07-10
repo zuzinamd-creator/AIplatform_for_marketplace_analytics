@@ -95,4 +95,18 @@ describe("DashboardPage trust integration", () => {
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Нет себестоимости/i).length).toBeGreaterThan(0);
   });
+
+  it("does not show inline period compare teaser on overview", async () => {
+    renderPage();
+    await screen.findByText(/Финансовая аналитика продавца/i);
+    expect(screen.queryByText(/Δвыручка/i)).toBeNull();
+    expect(dashboardSummary).toHaveBeenCalledWith(
+      expect.objectContaining({
+        marketplace: "wildberries",
+        start: "2026-05-01",
+        end: "2026-05-14",
+      }),
+    );
+    expect(dashboardSummary.mock.calls[0][0]).not.toHaveProperty("compare_start");
+  });
 });

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Bot, Database, LineChart as LineChartIcon, Server, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { api } from "../../state/http";
@@ -27,7 +27,7 @@ import { ProfitTrustBadge } from "../../ui/profit-trust-badge";
 import { StatusBadge } from "../../ui/status-badge";
 import { WarnCallout } from "../../ui/warn-callout";
 import { PeriodSelector } from "../../ui/period-selector";
-import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
+import { loadPeriodSelection, type PeriodSelection } from "../../state/period";
 import { toast } from "../../ui/toast";
 import { FirstRunChecklist } from "../../ui/first-run-checklist";
 
@@ -42,21 +42,14 @@ export function DashboardPage() {
   const [periodSel, setPeriodSel] = useState<PeriodSelection>(() => loadPeriodSelection());
   const start = periodSel.range.start;
   const end = periodSel.range.end;
-  const compare = useMemo(() => {
-    if (!periodSel.compareEnabled) return null;
-    if (periodSel.comparePreset === "custom" && periodSel.compareRange) return periodSel.compareRange;
-    return previousPeriod(periodSel.range);
-  }, [periodSel]);
 
   const summary = useQuery({
-    queryKey: ["dashboard", "summary", marketplace, start, end, compare?.start, compare?.end],
+    queryKey: ["dashboard", "summary", marketplace, start, end],
     queryFn: () =>
       api.dashboard.summary({
         marketplace,
         start,
         end,
-        compare_start: compare?.start,
-        compare_end: compare?.end,
       }),
   });
 
@@ -87,10 +80,6 @@ export function DashboardPage() {
   const integrityWarnings = data?.revenue_summary.integrity?.warnings ?? [];
   const completeness = data?.revenue_summary.integrity?.financial_completeness_score ?? null;
   const trustCtx = useProfitTrust(data?.revenue_summary.integrity, data?.cost_coverage ?? null);
-  const aRevenue = Number(data?.revenue_summary.kpis.total_revenue ?? "0");
-  const bRevenue = Number(data?.revenue_summary_compare?.kpis.total_revenue ?? "0");
-  const deltaRevenue = compare ? aRevenue - bRevenue : null;
-  const pct = (delta: number, base: number) => (base !== 0 ? (delta / base) * 100 : null);
   const promotionExpenses = Number(data?.finance_summary.kpis.promotion_expenses ?? "0");
   const hasPromotion = promotionExpenses > 0;
 
@@ -109,7 +98,8 @@ export function DashboardPage() {
             ) : null}
           </div>
           <p className="page-subtitle">
-            Обзор бизнеса и операционной ситуации: KPI, риски, задачи и доверие к данным за период.
+            Обзор бизнеса и операционной ситуации: KPI, риски, задачи и доверие к данным за период. Для сравнения с прошлым периодом
+            используйте «Сравнение периодов».
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -249,15 +239,6 @@ export function DashboardPage() {
                 {" · "}Маржинальность: {formatMarginValue(data?.revenue_summary.kpis.margin_pct, trustCtx.trust)}
                 {" · "}Рентабельность:{" "}
                 {formatProfitabilityValue(data?.revenue_summary.kpis.profitability_pct, trustCtx.trust)}
-                {compare && deltaRevenue !== null ? (
-                  <>
-                    {" "}
-                    · Δвыручка: {formatRub(deltaRevenue)}{" "}
-                    {pct(deltaRevenue, bRevenue) !== null
-                      ? `(${formatPct(pct(deltaRevenue, bRevenue))})`
-                      : ""}
-                  </>
-                ) : null}
               </span>
             }
           />

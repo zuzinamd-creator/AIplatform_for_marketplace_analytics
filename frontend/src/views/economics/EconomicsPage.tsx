@@ -10,6 +10,7 @@ import { formatMetric, formatPct, formatRub, chartRubTooltip } from "../../utils
 import {
   computeClientMarginDelta,
   computeClientProfitDelta,
+  COST_COVERAGE_ROUTE,
   formatProfitValue,
   showInlineCostTrustBanner,
   skuProfitabilityBadge,
@@ -155,6 +156,9 @@ export function EconomicsPage() {
           <p className="page-subtitle">Прибыльность, маржа и то, что «съедает» прибыль по SKU.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <Link className="btn-secondary" to={COST_COVERAGE_ROUTE}>
+            Покрытие себестоимости →
+          </Link>
           <Select
             value={marketplace}
             onChange={(e) => setMarketplace(e.target.value)}

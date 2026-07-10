@@ -59,7 +59,12 @@ export function CostCoveragePage() {
             Доля продаваемых SKU с загруженной себестоимостью. Определяет уровень доверия к прибыли и марже на dashboard и в аналитике.
           </p>
         </div>
-        <StatusBadge tone={stale ? "warn" : "info"}>{stale ? "данные устарели" : "актуально"}</StatusBadge>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link className="link-muted" to="/app/analytics">
+            ← Аналитика
+          </Link>
+          <StatusBadge tone={stale ? "warn" : "info"}>{stale ? "данные устарели" : "актуально"}</StatusBadge>
+        </div>
       </div>
 
       <PeriodSelector onChange={(s) => setRange(s.range)} />

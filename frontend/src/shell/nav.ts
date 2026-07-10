@@ -39,6 +39,7 @@ const dashboardItems: NavItem[] = [
 ];
 
 const analyticsItems: NavItem[] = [
+  { to: "/app/analytics", label: "Обзор аналитики", icon: BarChart3 },
   { to: "/app/analytics/weekly", label: "Сравнение периодов", icon: BarChart3 },
   { to: "/app/economics", label: "Экономика SKU", icon: LineChart },
   { to: "/app/economics/inventory", label: "Склад и оборот", icon: Package },
@@ -86,9 +87,9 @@ const systemItems: NavItem[] = [
 ];
 
 const sellerSections: NavSection[] = [
-  { id: "dashboard", label: "Dashboard", items: dashboardItems },
-  { id: "analytics", label: "Analytics", items: analyticsItems },
-  { id: "reports", label: "Reports", items: reportsItems },
+  { id: "dashboard", label: "Обзор", items: dashboardItems },
+  { id: "analytics", label: "Аналитика", items: analyticsItems },
+  { id: "reports", label: "Отчеты", items: reportsItems },
   { id: "ai", label: "AI", items: aiItems },
   { id: "account", label: "Аккаунт", items: accountItems },
 ];

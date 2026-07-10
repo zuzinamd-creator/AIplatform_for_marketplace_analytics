@@ -1,10 +1,9 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
-**Version:** Phase 9.7-B (trust UX pilot validation) · Phase 9.7-A (backend trust hardening) · Phase 9.6B-3 (trust UX)  
-**Certified baseline:** git tag `certified-production` → `ed9ede1`  
-**Frontend bundle (production):** `index-CZkr1sTA.js` @ 2026-07-11  
-**Alembic head:** `0035_registration_invites`  
-**Status:** Trust UX validated (FULL + INSUFFICIENT live) · Hub readiness 76/100 · Conditional GO for 9.7-C  
+**Version:** Phase 9.7-C (Analytics Hub Step 2) · Phase 9.7-B (trust pilot) · Phase 9.7-A (backend trust)  
+**Certified baseline:** git tag `certified-production` → `ed9ede1` (pending 9.7-C deploy)  
+**Frontend bundle (production):** pending 9.7-C deploy  
+**Status:** Analytics Hub Step 2 implemented — `/app/analytics` entry, journey CTAs, nav RU labels  
 **Last updated:** 2026-07-11
 
 ---

@@ -216,3 +216,14 @@ Validation report: [docs/product/trust_ux_validation_report.md](../product/trust
 
 **Analytics Hub readiness:** 76/100 — Conditional GO for 9.7-C.
 
+## Phase 9.7-C Analytics Hub Step 2
+
+IA refactoring without physical merge. See [docs/product/analytics_hub_step2.md](../product/analytics_hub_step2.md).
+
+| Change | Detail |
+|--------|--------|
+| `/app/analytics` | Analytics hub entry page |
+| Dashboard | Overview only — no inline compare teaser |
+| Comparison | CTAs to Economics + Cost Coverage |
+| Nav | Section labels: Обзор / Аналитика / Отчеты |
+

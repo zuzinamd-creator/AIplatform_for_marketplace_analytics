@@ -1,5 +1,23 @@
 # Changelog
 
+## [9.7-C] — 2026-07-11 — Analytics Hub Step 2 (IA Refactoring)
+
+### Added
+- `/app/analytics` — `AnalyticsHubPage` entry with links to Overview, Comparison, Economics, Cost Coverage.
+- Comparison → Economics and Cost Coverage header CTAs.
+- Economics → Cost Coverage header CTA.
+- Cost Coverage → Analytics back-link.
+
+### Changed
+- Dashboard overview: removed inline Δвыручка compare teaser; no compare API params.
+- Nav section headers: Обзор / Аналитика / Отчеты (Russian).
+- Analytics nav: «Обзор аналитики» → `/app/analytics`.
+
+### Docs
+- `docs/product/analytics_hub_step2.md`
+
+---
+
 ## [9.7-B] — 2026-07-11 — Trust UX Pilot Validation
 
 ### Added

@@ -17,10 +17,12 @@ describe("buildNavSections", () => {
   it("shows seller sections with account at the bottom", () => {
     const sections = buildNavSections(user(USER_ROLE_SELLER));
     const labels = sections.map((s) => s.label);
-    expect(labels).toEqual(["Dashboard", "Analytics", "Reports", "AI", "Аккаунт"]);
+    expect(labels).toEqual(["Обзор", "Аналитика", "Отчеты", "AI", "Аккаунт"]);
 
     const analytics = sections.find((s) => s.id === "analytics");
+    expect(analytics?.items.map((i) => i.to)).toContain("/app/analytics");
     expect(analytics?.items.map((i) => i.to)).toContain("/app/analytics/weekly");
+    expect(analytics?.items.find((i) => i.to === "/app/analytics")?.label).toBe("Обзор аналитики");
     expect(analytics?.items.find((i) => i.to === "/app/analytics/weekly")?.label).toBe(
       "Сравнение периодов",
     );
@@ -45,9 +47,9 @@ describe("buildNavSections", () => {
     const sections = buildNavSections(user(USER_ROLE_PLATFORM_ADMIN));
     const labels = sections.map((s) => s.label);
     expect(labels).toEqual([
-      "Dashboard",
-      "Analytics",
-      "Reports",
+      "Обзор",
+      "Аналитика",
+      "Отчеты",
       "AI",
       "Аккаунт",
       "Администрирование",
