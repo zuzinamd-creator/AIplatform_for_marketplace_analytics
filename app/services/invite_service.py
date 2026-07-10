@@ -13,7 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.user_roles import DEFAULT_USER_ROLE, USER_ROLE_SELLER
+from app.core.user_roles import USER_ROLE_SELLER
 from app.models.auth_audit import AuthAuditEventType
 from app.models.registration_invite import RegistrationInvite
 from app.models.user import User
@@ -108,6 +108,7 @@ class InviteService:
             detail=f"Registration invite created for {normalized_email}",
             payload={"invite_id": str(invite.id), "email": normalized_email, "role": USER_ROLE_SELLER},
         )
+        await self.db.commit()
         return invite, raw_token
 
     async def list_invites(self, *, skip: int = 0, limit: int = 50) -> tuple[list[RegistrationInvite], int]:
@@ -140,6 +141,7 @@ class InviteService:
             payload={"invite_id": str(invite.id), "email": invite.email},
         )
         await self.db.flush()
+        await self.db.commit()
         return invite
 
     async def _get_invite_by_id(self, invite_id: UUID) -> RegistrationInvite | None:

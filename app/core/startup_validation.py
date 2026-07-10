@@ -8,13 +8,13 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.registration import registration_mode_error
 from app.core.environment import (
     detect_environment,
     is_supabase_direct_host,
     is_supabase_pooler_host,
 )
 from app.core.observability import get_logger
+from app.core.registration import registration_mode_error
 
 logger = get_logger("startup_validation")
 

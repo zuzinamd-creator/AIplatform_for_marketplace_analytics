@@ -23,6 +23,7 @@ def _settings(**overrides: object) -> SimpleNamespace:
         "storage_backend": "local",
         "supabase_url": "",
         "allow_local_storage_fallback": True,
+        "registration_mode": "invite_only",
     }
     base.update(overrides)
     return SimpleNamespace(**base)

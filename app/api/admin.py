@@ -81,7 +81,6 @@ async def create_invite(
         email=str(body.email),
         expires_in_hours=body.expires_in_hours,
     )
-    await db.commit()
     return AdminInviteCreateResponse(
         email=invite.email,
         role="seller",
@@ -99,4 +98,3 @@ async def revoke_invite(
     admin: User = Depends(require_platform_admin),
 ) -> None:
     await InviteService(db).revoke_invite(invite_id=invite_id, admin=admin)
-    await db.commit()

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -20,7 +21,6 @@ from app.main import app
 from app.models.user import User
 from fastapi import HTTPException
 from httpx import ASGITransport, AsyncClient
-from pathlib import Path
 
 
 @pytest.mark.parametrize(

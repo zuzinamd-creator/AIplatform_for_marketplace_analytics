@@ -6,9 +6,9 @@ from datetime import UTC, date, datetime
 from uuid import uuid4
 
 import pytest
-from app.core.user_roles import USER_ROLE_PLATFORM_ADMIN
 from app.core.security import create_access_token
 from app.core.security_context import TenantSession
+from app.core.user_roles import USER_ROLE_PLATFORM_ADMIN
 from app.models.etl.anomaly import EtlAnomaly, EtlAnomalySeverity, EtlAnomalyType, EtlParserStage
 from app.models.inventory.integrity import SnapshotConsistencyCheck
 from app.models.job import EtlJob, JobStatus

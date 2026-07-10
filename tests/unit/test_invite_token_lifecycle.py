@@ -112,6 +112,7 @@ async def test_revoke_pending_invite() -> None:
     id_result.scalar_one_or_none.return_value = invite
     db.execute = AsyncMock(return_value=id_result)
     db.flush = AsyncMock()
+    db.commit = AsyncMock()
 
     with patch("app.services.invite_service.record_auth_audit", new_callable=AsyncMock):
         service = InviteService(db)
