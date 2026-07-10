@@ -11,7 +11,8 @@ GUARD = ROOT / "scripts" / "lib" / "deploy-guard.sh"
 
 
 def _run_guard(repo: Path, *, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
-    full_env = {**os.environ, **(env or {})}
+    base_env = {k: v for k, v in os.environ.items() if k != "GITHUB_ACTIONS"}
+    full_env = {**base_env, **(env or {})}
     script = f"""
 set -euo pipefail
 source "{GUARD}"

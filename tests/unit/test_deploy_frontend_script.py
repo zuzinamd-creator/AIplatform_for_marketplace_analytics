@@ -78,7 +78,7 @@ def _run_deploy(
     *,
     env: Mapping[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    run_env = os.environ.copy()
+    run_env = {k: v for k, v in os.environ.items() if k != "GITHUB_ACTIONS"}
     run_env["PATH"] = f"{fake_bin}:{run_env.get('PATH', '')}"
     run_env["LOCK_FILE"] = f"/tmp/frontend-deploy-test-{os.getpid()}-{id(tmp_path)}.lock"
     run_env["FRONTEND_SERVICE"] = "marketplace-frontend.service"
