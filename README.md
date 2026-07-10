@@ -1,10 +1,10 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
 **Version:** Phase 9.7-A (backend trust hardening) · Phase 9.6B-3 (trust UX) · Phase 9.3A (invite system)  
-**Certified baseline:** git tag `certified-production` → `255bd2a` (pending 9.7-A deploy)  
-**Frontend bundle (production):** `index-B1kahpoB.js` @ 2026-07-10  
+**Certified baseline:** git tag `certified-production` → `ed9ede1`  
+**Frontend bundle (production):** `index-CZkr1sTA.js` @ 2026-07-11  
 **Alembic head:** `0035_registration_invites`  
-**Status:** Phase 9.7-A in progress — `delta_profit` null contract + client-side guards  
+**Status:** Production = Git HEAD · smoke PASS · `delta_profit` null contract live  
 **Last updated:** 2026-07-11
 
 ---
@@ -13,8 +13,9 @@
 
 | Field | Value |
 |-------|-------|
-| **Certified baseline (VPS)** | git tag `certified-production` → `255bd2a` (Phase 9.6B-3) |
-| **Frontend bundle** | `index-B1kahpoB.js` @ 2026-07-10 |
+| **Certified baseline (VPS)** | git tag `certified-production` → `ed9ede1` (Phase 9.7-A) |
+| **Frontend bundle** | `index-CZkr1sTA.js` @ 2026-07-11 |
+| **Phase 9.7-A certification** | [docs/release/phase_97a_deployment_certification.md](docs/release/phase_97a_deployment_certification.md) |
 | **Phase 9.6B-3 certification** | [docs/release/phase_96b3_deployment_certification.md](docs/release/phase_96b3_deployment_certification.md) |
 | **Phase 9.6B-2A certification** | [docs/release/phase_96b2a_deployment_certification.md](docs/release/phase_96b2a_deployment_certification.md) |
 | **Historical safety baseline** | `11731e9` — 8.2.1a recovery stabilization |
