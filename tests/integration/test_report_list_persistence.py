@@ -8,6 +8,7 @@ from uuid import uuid4
 import pytest
 from app.core.security import create_access_token
 from app.core.security_context import TenantSession
+from app.core.user_roles import USER_ROLE_PLATFORM_ADMIN
 from app.models.job import EtlJob, JobStatus
 from app.models.report import Marketplace, Report, ReportType
 from app.models.user import User
@@ -25,6 +26,7 @@ async def test_uploaded_report_survives_list_api(
         email=f"reports-{user_id}@example.com",
         hashed_password="not-used",
         is_active=True,
+        role=USER_ROLE_PLATFORM_ADMIN,
     )
     report_id = uuid4()
     headers = {"Authorization": f"Bearer {create_access_token(user_id)}"}
