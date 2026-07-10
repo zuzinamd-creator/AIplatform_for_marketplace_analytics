@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -34,7 +35,7 @@ def test_preflight_env_unreadable(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
             ["bash", str(PREFLIGHT_SH), "--check"],
             capture_output=True,
             text=True,
-            env={"ENV_FILE": str(env_file)},
+            env={**os.environ, "ENV_FILE": str(env_file)},
             check=False,
             cwd=ROOT,
         )
