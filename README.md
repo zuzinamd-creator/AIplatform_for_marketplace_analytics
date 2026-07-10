@@ -1,9 +1,9 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
-**Version:** Phase 9.7-D (trust closure) · Phase 9.7-C (Analytics Hub Step 2) · Phase 9.7-B (trust pilot)  
-**Certified baseline:** git tag `certified-production` → `73e9597` (pre-9.7-D deploy)  
-**Frontend bundle (production):** `index-BAYe4Vly.js` @ 2026-07-11  
-**Status:** Trust closure + Analytics Hub preparation · reconciliation backend gate pending deploy  
+**Version:** Phase 9.7-D (trust closure) · Phase 9.7-C (Analytics Hub Step 2)  
+**Certified baseline:** git tag `certified-production` → `0a59676`  
+**Frontend bundle (production):** `index-BxNJPr4A.js` @ 2026-07-11  
+**Status:** Trust closure deployed · reconciliation gate live · smoke PASS  
 **Last updated:** 2026-07-11
 
 ---
@@ -12,8 +12,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Certified baseline (VPS)** | git tag `certified-production` → `73e9597` (Phase 9.7-C; 9.7-D deploy pending) |
-| **Frontend bundle** | `index-BAYe4Vly.js` @ 2026-07-11 |
+| **Certified baseline (VPS)** | git tag `certified-production` → `0a59676` (Phase 9.7-D) |
+| **Frontend bundle** | `index-BxNJPr4A.js` @ 2026-07-11 |
 | **Phase 9.7-D certification** | [docs/release/phase_97d_certification.md](docs/release/phase_97d_certification.md) |
 | **Trust matrix** | [docs/product/trust_matrix_certification.md](docs/product/trust_matrix_certification.md) |
 | **Analytics Hub master spec** | [docs/product/analytics_hub_master_spec.md](docs/product/analytics_hub_master_spec.md) |

@@ -2,7 +2,9 @@
 
 | Release | Document | Status |
 |---------|----------|--------|
-| **Phase 9.7-C — Analytics Hub Step 2** | [phase_97c_deployment_certification.md](phase_97c_deployment_certification.md) | **CERTIFIED** (`73e9597`, bundle `index-BAYe4Vly.js`) |
+| **Phase 9.7-D — Trust Closure & Hub Prep** | [phase_97d_certification.md](phase_97d_certification.md) | **CERTIFIED** (`0a59676`, bundle `index-BxNJPr4A.js`) |
+| Scope | Reconciliation profit gate, trust matrix, partial validation proc, hub master spec | 2026-07-11 |
+| **Phase 9.7-C — Analytics Hub Step 2** | [phase_97c_deployment_certification.md](phase_97c_deployment_certification.md) | Superseded by 9.7-D |
 | Scope | `/app/analytics` hub, journey CTAs, nav RU labels, dashboard overview-only | 2026-07-11 |
 | **Phase 9.7-B — Trust UX Pilot Validation** | [phase_97b_validation_certification.md](phase_97b_validation_certification.md) | Complete (read-only) |
 | **Phase 9.6B-3 — Trust UX Completion** | [phase_96b3_deployment_certification.md](phase_96b3_deployment_certification.md) | Superseded by 9.7-A |
