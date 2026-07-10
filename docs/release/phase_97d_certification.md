@@ -3,6 +3,8 @@
 **Date:** 2026-07-11  
 **Host:** `321997.fornex.cloud`  
 **Git HEAD (deployed):** `0a59676a45cac97001349d55d8b583e47e9b3d74`  
+**Git HEAD (repo):** `f150a3c` (docs certification commit)  
+**`certified-production` tag:** `0a59676` (deployed feature)  
 **Previous certified baseline:** `73e959717406593cfe185e68a89c8a8213e79363` (9.7-C)  
 **Frontend bundle:** `index-BxNJPr4A.js` (1 048 923 bytes)  
 **CSS bundle:** `index-DpOBduLP.css`  
