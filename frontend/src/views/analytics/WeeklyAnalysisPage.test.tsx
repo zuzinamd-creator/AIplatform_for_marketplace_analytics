@@ -10,6 +10,7 @@ const abcAnalysis = vi.fn();
 const inventoryRisk = vi.fn();
 const inventoryEconomics = vi.fn();
 const warehouseAnalytics = vi.fn();
+const costCoverage = vi.fn();
 
 vi.mock("../../state/http", () => ({
   api: {
@@ -19,6 +20,7 @@ vi.mock("../../state/http", () => ({
       inventoryRisk: (...args: unknown[]) => inventoryRisk(...args),
       inventoryEconomics: (...args: unknown[]) => inventoryEconomics(...args),
       warehouseAnalytics: (...args: unknown[]) => warehouseAnalytics(...args),
+      costCoverage: (...args: unknown[]) => costCoverage(...args),
     },
   },
 }));
@@ -66,6 +68,13 @@ describe("WeeklyAnalysisPage", () => {
       delta_profit: "50",
       delta_margin_pct: "2",
       freshness: { stale_data_warning: false },
+      integrity: { warnings: [], profit_metrics_trust: "full", sku_cost_coverage_pct: "100" },
+    });
+    costCoverage.mockResolvedValue({
+      total_skus: 10,
+      covered_skus: 10,
+      sku_cost_coverage_pct: "100",
+      missing_skus: [],
     });
     abcAnalysis.mockResolvedValue({
       buckets: [
@@ -128,6 +137,7 @@ describe("WeeklyAnalysisPage", () => {
 
     await waitFor(() => {
       expect(periodCompare).toHaveBeenCalled();
+      expect(costCoverage).toHaveBeenCalled();
       expect(abcAnalysis).toHaveBeenCalled();
       expect(inventoryRisk).toHaveBeenCalled();
       expect(inventoryEconomics).toHaveBeenCalled();
@@ -142,5 +152,33 @@ describe("WeeklyAnalysisPage", () => {
     expect(await screen.findByText("Группа B")).toBeTruthy();
     expect(await screen.findByText("Группа C")).toBeTruthy();
     expect(await screen.findByText("WH-1")).toBeTruthy();
+  });
+
+  it("shows trust banner and blocks profit priority when COGS trust is insufficient", async () => {
+    periodCompare.mockResolvedValue({
+      marketplace: "wildberries",
+      a_start: "2026-05-01",
+      a_end: "2026-05-14",
+      b_start: "2026-04-17",
+      b_end: "2026-04-30",
+      a: { total_revenue: "1000", total_profit: null, margin_pct: null, units_sold: 50 },
+      b: { total_revenue: "800", total_profit: null, margin_pct: null, units_sold: 40 },
+      delta_revenue: "200",
+      delta_profit: "0",
+      delta_margin_pct: null,
+      freshness: { stale_data_warning: false },
+      integrity: { warnings: [], profit_metrics_trust: "insufficient" },
+    });
+    costCoverage.mockResolvedValue({
+      total_skus: 5,
+      covered_skus: 0,
+      sku_cost_coverage_pct: "0",
+      missing_skus: ["SKU-1"],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText(/Нет себестоимости/i)).toBeTruthy();
+    expect(screen.queryByText(/Прибыль снизилась относительно предыдущего периода/i)).toBeNull();
   });
 });

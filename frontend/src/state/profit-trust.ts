@@ -152,3 +152,81 @@ export function marginTrustTooltip(trust: ProfitTrustLevel): string {
   }
   return "Маржа недоступна без себестоимости.";
 }
+
+function profitSourceMissing(value: unknown): boolean {
+  return value == null || value === "";
+}
+
+/**
+ * Guard period-compare delta_profit against backend null→0 coercion.
+ * Backend: `(a.total_profit or 0) - (b.total_profit or 0)` — masks missing COGS as zero change.
+ */
+export function guardPeriodCompareDeltaProfit(
+  delta: unknown,
+  trust: ProfitTrustLevel,
+  aProfit: unknown,
+  bProfit: unknown,
+): unknown | null {
+  if (trust === "insufficient") {
+    return null;
+  }
+  if (profitSourceMissing(aProfit) && profitSourceMissing(bProfit)) {
+    return null;
+  }
+  if (profitSourceMissing(aProfit) || profitSourceMissing(bProfit)) {
+    return null;
+  }
+  return delta;
+}
+
+export function guardPeriodCompareDeltaMargin(
+  delta: unknown,
+  trust: ProfitTrustLevel,
+  aMargin: unknown,
+  bMargin: unknown,
+): unknown | null {
+  if (trust !== "full") {
+    return null;
+  }
+  if (aMargin == null || bMargin == null || aMargin === "" || bMargin === "") {
+    return null;
+  }
+  return delta;
+}
+
+export type SkuProfitabilityBadge = {
+  label: string;
+  tone: "ok" | "warn" | "bad" | "info";
+};
+
+/** SKU profitability status with trust gating — no false profitable/unprofitable labels. */
+export function skuProfitabilityBadge(
+  row: {
+    contribution_margin: string;
+    margin_pct?: string | null;
+    return_rate?: string | null;
+  },
+  trust: ProfitTrustLevel,
+): SkuProfitabilityBadge {
+  if (trust === "insufficient") {
+    return { label: "Недостаточно данных", tone: "info" };
+  }
+
+  const cm = Number(row.contribution_margin);
+  const m = row.margin_pct ? Number(row.margin_pct) : null;
+  const rr = row.return_rate ? Number(row.return_rate) : null;
+
+  if (Number.isFinite(cm) && cm < 0) {
+    return { label: trust === "partial" ? "Оценка: убыточный" : "Убыточный", tone: trust === "partial" ? "warn" : "bad" };
+  }
+  if (m !== null && Number.isFinite(m) && m < 5) {
+    return { label: "Низкая маржа", tone: "warn" };
+  }
+  if (rr !== null && Number.isFinite(rr) && rr >= 20) {
+    return { label: "Риск (возвраты)", tone: "warn" };
+  }
+  return {
+    label: trust === "partial" ? "Оценка: прибыльный" : "Прибыльный",
+    tone: trust === "partial" ? "warn" : "ok",
+  };
+}

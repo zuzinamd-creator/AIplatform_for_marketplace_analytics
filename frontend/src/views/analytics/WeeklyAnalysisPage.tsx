@@ -15,37 +15,19 @@ import { Link } from "react-router-dom";
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
+import { formatProfitValue, useProfitTrust } from "../../state/profit-trust";
 import { formatInteger, formatPct, formatRub, parseNumeric } from "../../utils/format";
 import { Card } from "../../ui/card";
 import { CollapsibleSection } from "../../ui/collapsible-section";
+import { CostCoverageIndicator } from "../../ui/cost-coverage-indicator";
+import { CostTrustBanner } from "../../ui/cost-trust-banner";
 import { KpiCard } from "../../ui/kpi-card";
 import { Select } from "../../ui/field";
 import { PeriodSelector } from "../../ui/period-selector";
+import { ProfitTrustBadge } from "../../ui/profit-trust-badge";
 import { StatusBadge } from "../../ui/status-badge";
+import { TrustDeltaBadge } from "../../ui/trust-delta-badge";
 import { WarnCallout } from "../../ui/warn-callout";
-
-function DeltaBadge(props: { value: unknown; format?: "rub" | "pct" | "int" }) {
-  const n = parseNumeric(props.value);
-  if (n === null) return <span className="text-ink-muted">—</span>;
-  const positive = n > 0;
-  const negative = n < 0;
-  const tone = positive ? "ok" : negative ? "bad" : "info";
-  const Icon = positive ? TrendingUp : negative ? TrendingDown : BarChart3;
-  const formatted =
-    props.format === "pct"
-      ? formatPct(n)
-      : props.format === "int"
-        ? (n > 0 ? "+" : "") + formatInteger(n)
-        : (n > 0 ? "+" : "") + formatRub(n);
-  return (
-    <StatusBadge tone={tone}>
-      <span className="inline-flex items-center gap-1">
-        <Icon className="h-3 w-3" />
-        {formatted}
-      </span>
-    </StatusBadge>
-  );
-}
 
 function SectionState(props: { loading: boolean; error: Error | null; empty: boolean; emptyText: string; children: React.ReactNode }) {
   if (props.loading) {
@@ -132,6 +114,13 @@ export function WeeklyAnalysisPage() {
     queryFn: () => api.analytics.warehouseAnalytics({ snapshot_date: snapshotDate }),
   });
 
+  const costCoverage = useQuery({
+    queryKey: ["analytics", "costCoverage", marketplace, rangeA.start, rangeA.end],
+    queryFn: () => api.analytics.costCoverage({ marketplace, start: rangeA.start, end: rangeA.end, limit: 1 }),
+  });
+
+  const trustCtx = useProfitTrust(compare.data?.integrity, costCoverage.data ?? null);
+
   const deltaOrders = useMemo(() => {
     if (!compare.data) return null;
     return compare.data.a.units_sold - compare.data.b.units_sold;
@@ -169,14 +158,25 @@ export function WeeklyAnalysisPage() {
     if (riskSkus.overstock.length > 0) {
       list.push({ tone: "warn", text: `Снизьте закупку: ${riskSkus.overstock.length} SKU с риском затоваривания` });
     }
-    if (parseNumeric(compare.data?.delta_profit) !== null && (parseNumeric(compare.data?.delta_profit) ?? 0) < 0) {
-      list.push({ tone: "warn", text: "Прибыль снизилась относительно предыдущего периода — проверьте ABC-группу C" });
+    if (trustCtx.trust === "partial") {
+      list.push({
+        tone: "warn",
+        text: "Прибыль рассчитана не для всех SKU — не используйте её как единственный критерий решений",
+      });
+    } else if (trustCtx.trust === "full" && trustCtx.canShowProfitAction) {
+      const deltaProfit = parseNumeric(compare.data?.delta_profit);
+      if (deltaProfit !== null && deltaProfit < 0) {
+        list.push({
+          tone: "warn",
+          text: "Прибыль снизилась относительно предыдущего периода — проверьте ABC-группу C",
+        });
+      }
     }
     if (list.length === 0) {
       list.push({ tone: "info", text: "Критичных складских рисков не обнаружено за выбранный период" });
     }
     return list;
-  }, [compare.data, inventoryRisk.data, riskSkus]);
+  }, [compare.data, inventoryRisk.data, riskSkus, trustCtx]);
 
   return (
     <div className="page-shell">
@@ -205,6 +205,28 @@ export function WeeklyAnalysisPage() {
 
       <PeriodSelector onChange={setPeriodSel} />
 
+      {trustCtx.trust !== "full" ? (
+        <CostTrustBanner
+          trust={trustCtx.trust}
+          variant="inline"
+          coveragePct={trustCtx.coveragePct}
+          coveredSkus={trustCtx.coveredSkus}
+          totalSkus={trustCtx.totalSkus}
+          missingSkusSample={trustCtx.missingSkus.slice(0, 5)}
+          storageKey={`weekly-${rangeA.start}-${rangeA.end}`}
+        />
+      ) : null}
+
+      {trustCtx.coveredSkus !== null && trustCtx.totalSkus !== null ? (
+        <CostCoverageIndicator
+          coveredSkus={trustCtx.coveredSkus}
+          totalSkus={trustCtx.totalSkus}
+          coveragePct={trustCtx.coveragePct}
+          variant="bar"
+          showCta={trustCtx.trust !== "full"}
+        />
+      ) : null}
+
       <CollapsibleSection
         title="Сравнение периодов"
         subtitle={`Период A: ${rangeA.start} → ${rangeA.end} · Период B: ${rangeB.start} → ${rangeB.end}`}
@@ -223,25 +245,51 @@ export function WeeklyAnalysisPage() {
                   variant="hero"
                   icon={<BarChart3 className="h-5 w-5" />}
                   label="Изменение выручки"
-                  value={<DeltaBadge value={compare.data.delta_revenue} format="rub" />}
+                  value={<TrustDeltaBadge value={compare.data.delta_revenue} format="rub" />}
                   sub={`A: ${formatRub(compare.data.a.total_revenue)} · B: ${formatRub(compare.data.b.total_revenue)}`}
                 />
                 <KpiCard
                   icon={<TrendingUp className="h-5 w-5" />}
-                  label="Изменение прибыли"
-                  value={<DeltaBadge value={compare.data.delta_profit} format="rub" />}
-                  sub={`A: ${formatRub(compare.data.a.total_profit)} · B: ${formatRub(compare.data.b.total_profit)}`}
+                  label={
+                    <span className="inline-flex flex-wrap items-center gap-2">
+                      Изменение прибыли
+                      <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
+                    </span>
+                  }
+                  value={
+                    <TrustDeltaBadge
+                      value={compare.data.delta_profit}
+                      format="rub"
+                      trust={trustCtx.trust}
+                      aProfit={compare.data.a.total_profit}
+                      bProfit={compare.data.b.total_profit}
+                    />
+                  }
+                  sub={`A: ${formatProfitValue(compare.data.a.total_profit, trustCtx.trust)} · B: ${formatProfitValue(compare.data.b.total_profit, trustCtx.trust)}`}
                 />
                 <KpiCard
                   icon={<Layers3 className="h-5 w-5" />}
-                  label="Изменение маржинальности"
-                  value={<DeltaBadge value={compare.data.delta_margin_pct} format="pct" />}
-                  sub={`A: ${formatPct(compare.data.a.margin_pct)} · B: ${formatPct(compare.data.b.margin_pct)}`}
+                  label={
+                    <span className="inline-flex flex-wrap items-center gap-2">
+                      Изменение маржинальности
+                      <ProfitTrustBadge trust={trustCtx.trust} metric="margin" />
+                    </span>
+                  }
+                  value={
+                    <TrustDeltaBadge
+                      value={compare.data.delta_margin_pct}
+                      format="pct"
+                      trust={trustCtx.trust}
+                      aMargin={compare.data.a.margin_pct}
+                      bMargin={compare.data.b.margin_pct}
+                    />
+                  }
+                  sub={`A: ${trustCtx.canShowMargin ? formatPct(compare.data.a.margin_pct) : "—"} · B: ${trustCtx.canShowMargin ? formatPct(compare.data.b.margin_pct) : "—"}`}
                 />
                 <KpiCard
                   icon={<PackageSearch className="h-5 w-5" />}
                   label="Изменение заказов (ед.)"
-                  value={<DeltaBadge value={deltaOrders} format="int" />}
+                  value={<TrustDeltaBadge value={deltaOrders} format="int" />}
                   sub={`A: ${formatInteger(compare.data.a.units_sold)} · B: ${formatInteger(compare.data.b.units_sold)}`}
                 />
               </div>

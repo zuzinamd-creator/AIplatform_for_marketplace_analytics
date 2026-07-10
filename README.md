@@ -102,8 +102,10 @@ Backend computes `profit_metrics_trust` from COGS coverage over selling SKUs in 
 
 **Frontend modules:** `useProfitTrust` (hook + formatters) · `ProfitTrustBadge` · `CostCoverageIndicator` · `CostTrustBanner`
 
+**Integrated surfaces (9.6B-2):** Сравнение периодов · Экономика SKU · SKU drilldown — inline banners, trust badges, gated deltas.
+
 Source: `frontend/src/state/profit-trust.ts`, `frontend/src/ui/profit-trust-badge.tsx`, `frontend/src/ui/cost-coverage-indicator.tsx`, `frontend/src/ui/cost-trust-banner.tsx`  
-Architecture: [docs/frontend/frontend_architecture.md](docs/frontend/frontend_architecture.md#phase-96b-1-trust-foundation)
+Architecture: [docs/frontend/frontend_architecture.md](docs/frontend/frontend_architecture.md#phase-96b-2-trust-integration) · Trust docs: [docs/product/cost_trust_system.md](docs/product/cost_trust_system.md)
 
 ## Current AI Capabilities
 

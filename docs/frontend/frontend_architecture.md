@@ -125,3 +125,33 @@ Seller-facing **Cost Trust System** — UI primitives that consume backend `prof
 - `frontend/src/ui/cost-coverage-indicator.test.tsx`
 - `frontend/src/ui/cost-trust-banner.test.tsx`
 
+## Phase 9.6B-2 Trust Integration
+
+Trust primitives integrated into critical financial surfaces. All trust reads use backend `integrity.profit_metrics_trust` + `GET /analytics/cost-coverage` — never client-side derivation.
+
+### Surfaces
+
+| Page | Route | Integration |
+|------|-------|-------------|
+| **WeeklyAnalysisPage** | `/app/analytics/weekly` | Inline `CostTrustBanner`, `CostCoverageIndicator`, `ProfitTrustBadge` on profit/margin KPIs, `TrustDeltaBadge` for deltas, profit priorities gated |
+| **EconomicsPage** | `/app/economics` | Page banner, column badges, `skuProfitabilityBadge` gating |
+| **SkuDrilldownPage** | `/app/economics/sku/:sku` | KPI badges, banner, margin chart hidden when trust ≠ full |
+
+### Additional modules
+
+| Module | Path | Role |
+|--------|------|------|
+| **`TrustDeltaBadge`** | `frontend/src/ui/trust-delta-badge.tsx` | Trust-aware period-compare delta display |
+| **`guardPeriodCompareDeltaProfit`** | `frontend/src/state/profit-trust.ts` | Frontend guard against backend null→0 delta coercion |
+| **`useCostTrustShellData`** | `frontend/src/state/use-cost-trust-shell.ts` | AppShell global banner data fetch |
+
+### Navigation label (UX review)
+
+Nav item `/app/finance/cost-coverage` renamed from «Покрытие cost» → **«Покрытие себестоимости»** — seller-facing Russian, consistent with «Себестоимость» sibling item.
+
+### Global banner
+
+`FEATURE_FLAGS.costTrustBannerGlobal` remains **`false`**. `CostTrustBannerMount` is wired to live data; enable flag in 9.6B-3.
+
+Full trust system reference: [docs/product/cost_trust_system.md](../product/cost_trust_system.md)
+

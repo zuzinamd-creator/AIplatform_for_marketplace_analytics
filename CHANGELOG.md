@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased] — Phase 9.6B-2 Trust Integration (2026-07-10)
+
+### Added
+- **9.6B-2 Trust Integration** — trust layer on WeeklyAnalysisPage, EconomicsPage, SkuDrilldownPage; `TrustDeltaBadge`, `guardPeriodCompareDeltaProfit`, `useCostTrustShellData`; nav label «Покрытие себестоимости»; `docs/product/cost_trust_system.md`.
+
+---
+
 ## [Unreleased] — Phase 9.6B-1 Trust Foundation (2026-07-10)
 
 ### Added

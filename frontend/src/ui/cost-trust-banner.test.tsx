@@ -39,7 +39,7 @@ describe("CostTrustBanner", () => {
     expect(screen.getByRole("link", { name: /Загрузить себестоимость/i }).getAttribute("href")).toBe(
       "/app/costs",
     );
-    expect(screen.getByRole("link", { name: /Покрытие cost/i }).getAttribute("href")).toBe(
+    expect(screen.getByRole("link", { name: /Покрытие себестоимости/i }).getAttribute("href")).toBe(
       "/app/finance/cost-coverage",
     );
   });

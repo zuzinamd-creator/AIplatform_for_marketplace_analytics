@@ -7,27 +7,16 @@ import { Filter, Search, TrendingUp } from "lucide-react";
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { formatMetric, formatPct, formatRub, chartRubTooltip } from "../../utils/format";
+import { formatProfitValue, skuProfitabilityBadge, useProfitTrust } from "../../state/profit-trust";
 import { CHART } from "../../ui/chart-theme";
 import { Card } from "../../ui/card";
 import { CollapsibleSection } from "../../ui/collapsible-section";
+import { CostTrustBanner } from "../../ui/cost-trust-banner";
 import { Input, Select } from "../../ui/field";
 import { PeriodSelector } from "../../ui/period-selector";
+import { ProfitTrustBadge } from "../../ui/profit-trust-badge";
 import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
 import { StatusBadge } from "../../ui/status-badge";
-
-function badgeForSku(row: {
-  contribution_margin: string;
-  margin_pct?: string | null;
-  return_rate?: string | null;
-}): { label: string; tone: "ok" | "warn" | "bad" | "info" } {
-  const cm = Number(row.contribution_margin);
-  const m = row.margin_pct ? Number(row.margin_pct) : null;
-  const rr = row.return_rate ? Number(row.return_rate) : null;
-  if (Number.isFinite(cm) && cm < 0) return { label: "Убыточный", tone: "bad" };
-  if (m !== null && Number.isFinite(m) && m < 5) return { label: "Низкая маржа", tone: "warn" };
-  if (rr !== null && Number.isFinite(rr) && rr >= 20) return { label: "Риск (возвраты)", tone: "warn" };
-  return { label: "Прибыльный", tone: "ok" };
-}
 
 function integrityBanner(integrity?: { warnings: Array<{ code: string; severity: string; message: string }>; financial_completeness_score?: string | null } | null) {
   const warnings = integrity?.warnings ?? [];
@@ -96,6 +85,13 @@ export function EconomicsPage() {
         order,
       }),
   });
+
+  const costCoverage = useQuery({
+    queryKey: ["analytics", "costCoverage", marketplace, start, end],
+    queryFn: () => api.analytics.costCoverage({ marketplace, start, end, limit: 1 }),
+  });
+
+  const trustCtx = useProfitTrust(a.data?.integrity, costCoverage.data ?? null);
 
   const b = useQuery({
     enabled: !!compare,
@@ -173,6 +169,18 @@ export function EconomicsPage() {
 
       {integrityBanner(a.data?.integrity ?? null)}
 
+      {trustCtx.trust !== "full" ? (
+        <CostTrustBanner
+          trust={trustCtx.trust}
+          variant="inline"
+          coveragePct={trustCtx.coveragePct}
+          coveredSkus={trustCtx.coveredSkus}
+          totalSkus={trustCtx.totalSkus}
+          missingSkusSample={trustCtx.missingSkus.slice(0, 5)}
+          storageKey={`economics-${start}-${end}`}
+        />
+      ) : null}
+
       <CollapsibleSection
         title="Таблица SKU"
         subtitle="Фильтры, сортировка и сравнение с предыдущим периодом"
@@ -218,10 +226,25 @@ export function EconomicsPage() {
                 <th className="py-2">SKU</th>
                 <th className="py-2">Статус</th>
                 <th className="py-2">Выручка</th>
-                <th className="py-2">Валовая прибыль</th>
+                <th className="py-2">
+                  <span className="inline-flex items-center gap-1.5">
+                    Валовая прибыль
+                    <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" showLabel={false} />
+                  </span>
+                </th>
                 <th className="py-2">Себестоимость</th>
-                <th className="py-2">Маржинальный вклад</th>
-                <th className="py-2">Маржа</th>
+                <th className="py-2">
+                  <span className="inline-flex items-center gap-1.5">
+                    Маржинальный вклад
+                    <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" showLabel={false} />
+                  </span>
+                </th>
+                <th className="py-2">
+                  <span className="inline-flex items-center gap-1.5">
+                    Маржа
+                    <ProfitTrustBadge trust={trustCtx.trust} metric="margin" showLabel={false} />
+                  </span>
+                </th>
                 <th className="py-2">Логистика</th>
                 <th className="py-2">Реклама</th>
                 <th className="py-2">Штрафы</th>
@@ -232,7 +255,7 @@ export function EconomicsPage() {
             <tbody>
               {(a.data?.items ?? []).map((r) => {
                 const bRow = compareBySku.get(r.sku);
-                const status = badgeForSku(r);
+                const status = skuProfitabilityBadge(r, trustCtx.trust);
                 const spark = sparkBySku.get(r.sku) ?? [];
                 return (
                   <tr key={r.sku}>
@@ -245,22 +268,22 @@ export function EconomicsPage() {
                       <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
                     </td>
                     <td className="px-3 py-3">{formatRub(r.revenue)}</td>
-                    <td className="px-3 py-3">{formatRub(r.gross_profit)}</td>
+                    <td className="px-3 py-3">{formatProfitValue(r.gross_profit, trustCtx.trust)}</td>
                     <td className="px-3 py-3">{formatRub(r.cogs)}</td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
-                        <span>{formatRub(r.contribution_margin)}</span>
-                        {compare ? (
+                        <span>{formatProfitValue(r.contribution_margin, trustCtx.trust)}</span>
+                        {compare && trustCtx.canShowProfit ? (
                           <span className="text-xs text-ink-muted">
-                            Δ {formatRub(Number(r.contribution_margin) - (bRow?.cm ?? 0))}
+                            Δ {formatProfitValue(Number(r.contribution_margin) - (bRow?.cm ?? 0), trustCtx.trust)}
                           </span>
                         ) : null}
                       </div>
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
-                        <span>{formatPct(r.margin_pct ?? null)}</span>
-                        {compare && bRow?.m !== null ? (
+                        <span>{trustCtx.canShowMargin ? formatPct(r.margin_pct ?? null) : "—"}</span>
+                        {compare && trustCtx.canShowMargin && bRow?.m !== null ? (
                           <span className="text-xs text-ink-muted">
                             Δ {formatMetric(Number(r.margin_pct ?? 0) - (bRow?.m ?? 0), { suffix: " %" })}
                           </span>

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { X } from "lucide-react";
 
 import { FEATURE_FLAGS } from "../state/feature-flags";
+import { useCostTrustShellData } from "../state/use-cost-trust-shell";
 import {
   COST_COVERAGE_ROUTE,
   COSTS_WORKFLOW_ROUTE,
@@ -162,7 +163,7 @@ export function CostTrustBanner({
           </Link>
           {!isCompact ? (
             <Link to={coverageHref} className="btn-secondary h-9 px-3 text-xs">
-              Покрытие cost
+              Покрытие себестоимости
             </Link>
           ) : null}
           {dismissible ? (
@@ -181,15 +182,30 @@ export function CostTrustBanner({
   );
 }
 
+function CostTrustBannerGlobal() {
+  const trustCtx = useCostTrustShellData();
+
+  return (
+    <CostTrustBanner
+      variant="global"
+      trust={trustCtx.trust}
+      coveragePct={trustCtx.coveragePct}
+      coveredSkus={trustCtx.coveredSkus}
+      totalSkus={trustCtx.totalSkus}
+      missingSkusSample={trustCtx.missingSkus.slice(0, 5)}
+      storageKey={`global-${trustCtx.trust}`}
+    />
+  );
+}
+
 /**
  * AppShell mounting point for the global cost trust banner.
- * Disabled by default via FEATURE_FLAGS until Phase 9.6B-2 wires live integrity data.
+ * Wired to live integrity data; disabled by default via FEATURE_FLAGS.
  */
 export function CostTrustBannerMount() {
   if (!FEATURE_FLAGS.costTrustBannerGlobal) {
     return null;
   }
 
-  // Phase 9.6B-2: fetch dashboard integrity / cost coverage and render CostTrustBanner variant="global".
-  return null;
+  return <CostTrustBannerGlobal />;
 }

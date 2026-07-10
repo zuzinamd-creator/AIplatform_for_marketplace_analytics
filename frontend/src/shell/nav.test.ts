@@ -34,6 +34,9 @@ describe("buildNavSections", () => {
 
     const reports = sections.find((s) => s.id === "reports");
     expect(reports?.items.map((i) => i.to)).toContain("/app/finance/cost-coverage");
+    expect(reports?.items.find((i) => i.to === "/app/finance/cost-coverage")?.label).toBe(
+      "Покрытие себестоимости",
+    );
 
     expect(sections.flatMap((s) => s.items).some((i) => i.to.startsWith("/app/admin"))).toBe(false);
   });

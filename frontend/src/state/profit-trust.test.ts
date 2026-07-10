@@ -6,7 +6,10 @@ import {
   deriveProfitTrustContext,
   formatDeltaWithTrust,
   formatProfitValue,
+  guardPeriodCompareDeltaMargin,
+  guardPeriodCompareDeltaProfit,
   normalizeProfitTrust,
+  skuProfitabilityBadge,
   useProfitTrust,
 } from "./profit-trust";
 
@@ -106,5 +109,43 @@ describe("formatDeltaWithTrust", () => {
 
   it("shows full-trust pct delta", () => {
     expect(formatDeltaWithTrust("2.5", "full", "pct")).toBe("+2,5 %");
+  });
+});
+
+describe("guardPeriodCompareDeltaProfit", () => {
+  it("blocks delta when trust is insufficient", () => {
+    expect(guardPeriodCompareDeltaProfit("0", "insufficient", "100", "100")).toBeNull();
+  });
+
+  it("blocks misleading zero delta when both periods lack profit data", () => {
+    expect(guardPeriodCompareDeltaProfit("0", "partial", null, null)).toBeNull();
+  });
+
+  it("blocks delta when only one period has profit (backend null→0 coercion)", () => {
+    expect(guardPeriodCompareDeltaProfit("200", "full", "200", null)).toBeNull();
+  });
+
+  it("passes through valid delta when both periods have profit", () => {
+    expect(guardPeriodCompareDeltaProfit("50", "full", "200", "150")).toBe("50");
+  });
+});
+
+describe("guardPeriodCompareDeltaMargin", () => {
+  it("blocks margin delta unless trust is full", () => {
+    expect(guardPeriodCompareDeltaMargin("2", "partial", "20", "18")).toBeNull();
+  });
+});
+
+describe("skuProfitabilityBadge", () => {
+  it("returns unavailable label when trust is insufficient", () => {
+    expect(
+      skuProfitabilityBadge({ contribution_margin: "-100", margin_pct: "5" }, "insufficient"),
+    ).toEqual({ label: "Недостаточно данных", tone: "info" });
+  });
+
+  it("downgrades profitable label under partial trust", () => {
+    expect(
+      skuProfitabilityBadge({ contribution_margin: "100", margin_pct: "15" }, "partial"),
+    ).toEqual({ label: "Оценка: прибыльный", tone: "warn" });
   });
 });

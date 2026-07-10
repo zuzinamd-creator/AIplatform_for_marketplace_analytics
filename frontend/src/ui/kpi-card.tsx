@@ -4,7 +4,7 @@ import { Card } from "./card";
 import { cx } from "./cx";
 
 type Props = {
-  label: string;
+  label: React.ReactNode;
   value: React.ReactNode;
   sub?: React.ReactNode;
   icon?: React.ReactNode;

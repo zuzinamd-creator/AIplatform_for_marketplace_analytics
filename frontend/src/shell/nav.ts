@@ -49,7 +49,7 @@ const reportsItems: NavItem[] = [
   { to: "/app/reports", label: "Отчёты", icon: Database },
   { to: "/app/reports/upload", label: "Загрузка", icon: Upload },
   { to: "/app/costs", label: "Себестоимость", icon: Database },
-  { to: "/app/finance/cost-coverage", label: "Покрытие cost", icon: Shield },
+  { to: "/app/finance/cost-coverage", label: "Покрытие себестоимости", icon: Shield },
 ];
 
 const aiItems: NavItem[] = [

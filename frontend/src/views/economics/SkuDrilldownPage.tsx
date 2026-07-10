@@ -7,6 +7,11 @@ import { ArrowLeft, AlertTriangle, Info } from "lucide-react";
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import {
+  formatProfitValue,
+  formatDeltaWithTrust,
+  useProfitTrust,
+} from "../../state/profit-trust";
+import {
   chartPctTooltip,
   chartRubTooltip,
   formatMetric,
@@ -16,19 +21,21 @@ import {
 import { CHART } from "../../ui/chart-theme";
 import { Card } from "../../ui/card";
 import { CollapsibleSection } from "../../ui/collapsible-section";
+import { CostTrustBanner } from "../../ui/cost-trust-banner";
 import { Select } from "../../ui/field";
 import { KpiCard } from "../../ui/kpi-card";
 import { PeriodSelector } from "../../ui/period-selector";
+import { ProfitTrustBadge } from "../../ui/profit-trust-badge";
 import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
 import { StatusBadge } from "../../ui/status-badge";
 
-function deltaMetric(a: number, b: number): string {
-  const d = a - b;
-  const sign = d > 0 ? "+" : "";
-  return sign + formatMetric(d);
-}
-
-function explainLoss(points: Array<{ gross_profit: string; revenue: string; logistics: string; ads: string; penalties: string; returns_amount: string }>) {
+function explainLoss(
+  points: Array<{ gross_profit: string; revenue: string; logistics: string; ads: string; penalties: string; returns_amount: string }>,
+  trust: "full" | "partial" | "insufficient",
+) {
+  if (trust === "insufficient") {
+    return "Недостаточно данных для оценки прибыльности — загрузите себестоимость по этому SKU.";
+  }
   const sum = (key: keyof (typeof points)[number]) => points.reduce((acc, p) => acc + Number(p[key] ?? 0), 0);
   const profit = sum("gross_profit");
   const rev = sum("revenue");
@@ -41,8 +48,13 @@ function explainLoss(points: Array<{ gross_profit: string; revenue: string; logi
 
   const top = drivers.find((d) => d.v > 0);
   if (rev <= 0) return "Нет выручки в выбранный период — проверьте отчёты или период.";
-  if (profit >= 0) return "Товар прибыльный в выбранный период. Смотрите, что можно улучшить по логистике/рекламе/возвратам.";
-  return `Товар убыточен: прибыль ${formatRub(profit)} при выручке ${formatRub(rev)}. Сильнее всего съедает прибыль: ${top ? `${top.k} (${formatRub(top.v)})` : "затраты/возвраты"}.`;
+  if (profit >= 0) {
+    return trust === "partial"
+      ? "Прибыль показана как оценка (не у всех SKU указана себестоимость). Смотрите логистику, рекламу и возвраты."
+      : "Товар прибыльный в выбранный период. Смотрите, что можно улучшить по логистике/рекламе/возвратам.";
+  }
+  const profitLabel = trust === "partial" ? `оценочная прибыль ${formatProfitValue(profit, trust)}` : `прибыль ${formatRub(profit)}`;
+  return `Товар убыточен: ${profitLabel} при выручке ${formatRub(rev)}. Сильнее всего съедает прибыль: ${top ? `${top.k} (${formatRub(top.v)})` : "затраты/возвраты"}.`;
 }
 
 export function SkuDrilldownPage() {
@@ -71,6 +83,13 @@ export function SkuDrilldownPage() {
     queryKey: ["analytics", "skuDrilldown", "compare", marketplace, compare?.start, compare?.end, sku],
     queryFn: () => api.analytics.skuDrilldown({ marketplace, start: compare!.start, end: compare!.end, sku }),
   });
+
+  const costCoverage = useQuery({
+    queryKey: ["analytics", "costCoverage", marketplace, start, end],
+    queryFn: () => api.analytics.costCoverage({ marketplace, start, end, limit: 1 }),
+  });
+
+  const trustCtx = useProfitTrust(a.data?.integrity, costCoverage.data ?? null);
 
   const points = a.data?.points ?? [];
   const pointsB = b.data?.points ?? [];
@@ -131,6 +150,18 @@ export function SkuDrilldownPage() {
 
       <PeriodSelector onChange={setPeriodSel} />
 
+      {trustCtx.trust !== "full" ? (
+        <CostTrustBanner
+          trust={trustCtx.trust}
+          variant="inline"
+          coveragePct={trustCtx.coveragePct}
+          coveredSkus={trustCtx.coveredSkus}
+          totalSkus={trustCtx.totalSkus}
+          missingSkusSample={trustCtx.missingSkus.slice(0, 5)}
+          storageKey={`sku-${sku}-${start}-${end}`}
+        />
+      ) : null}
+
       {warnings.length ? (
         <Card className="p-4">
           <div className="flex items-center gap-2 text-sm font-semibold">
@@ -161,14 +192,45 @@ export function SkuDrilldownPage() {
 
       <div className="kpi-row">
         <KpiCard variant="hero" label="Выручка" value={formatRub(kpis.rev)} sub={compare ? `Δ ${formatRub(kpis.rev - kpis.revB)}` : undefined} />
-        <KpiCard label="Валовая прибыль" value={formatRub(kpis.profit)} sub={compare ? `Δ ${formatRub(kpis.profit - kpis.profitB)}` : undefined} />
-        <KpiCard label="Маржинальный вклад" value={formatRub(kpis.cm)} sub={compare ? `Δ ${formatRub(kpis.cm - kpis.cmB)}` : undefined} />
         <KpiCard
-          label="Маржа"
-          value={formatPct(kpis.margin)}
+          label={
+            <span className="inline-flex flex-wrap items-center gap-2">
+              Валовая прибыль
+              <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
+            </span>
+          }
+          value={formatProfitValue(kpis.profit, trustCtx.trust)}
           sub={
-            compare && kpis.marginB !== null && kpis.margin !== null
-              ? `Δ ${deltaMetric(kpis.margin, kpis.marginB)} %`
+            compare && trustCtx.canShowProfit
+              ? `Δ ${formatDeltaWithTrust(kpis.profit - kpis.profitB, trustCtx.trust, "rub")}`
+              : undefined
+          }
+        />
+        <KpiCard
+          label={
+            <span className="inline-flex flex-wrap items-center gap-2">
+              Маржинальный вклад
+              <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
+            </span>
+          }
+          value={formatProfitValue(kpis.cm, trustCtx.trust)}
+          sub={
+            compare && trustCtx.canShowProfit
+              ? `Δ ${formatDeltaWithTrust(kpis.cm - kpis.cmB, trustCtx.trust, "rub")}`
+              : undefined
+          }
+        />
+        <KpiCard
+          label={
+            <span className="inline-flex flex-wrap items-center gap-2">
+              Маржа
+              <ProfitTrustBadge trust={trustCtx.trust} metric="margin" />
+            </span>
+          }
+          value={trustCtx.canShowMargin ? formatPct(kpis.margin) : "—"}
+          sub={
+            compare && trustCtx.canShowMargin && kpis.marginB !== null && kpis.margin !== null
+              ? `Δ ${formatDeltaWithTrust(kpis.margin - kpis.marginB, trustCtx.trust, "pct")}`
               : undefined
           }
         />
@@ -176,7 +238,7 @@ export function SkuDrilldownPage() {
 
       <Card className="p-4">
         <div className="text-sm font-semibold">Почему товар убыточен</div>
-        <div className="mt-2 text-sm text-ink-secondary">{explainLoss(points)}</div>
+        <div className="mt-2 text-sm text-ink-secondary">{explainLoss(points, trustCtx.trust)}</div>
         <div className="mt-3 flex items-start gap-2 text-xs text-ink-muted">
           <Info className="mt-0.5 h-4 w-4" />
           <div>
@@ -186,6 +248,13 @@ export function SkuDrilldownPage() {
       </Card>
 
       <CollapsibleSection title="Графики по дням" subtitle="Выручка, затраты, маржа и возвраты" defaultOpen>
+      {trustCtx.trust !== "full" ? (
+        <p className="mb-3 text-xs text-ink-muted">
+          {trustCtx.trust === "insufficient"
+            ? "График прибыли недоступен без себестоимости."
+            : "Прибыль на графике — оценка; маржа скрыта при неполном покрытии себестоимости."}
+        </p>
+      ) : null}
       <div className="grid gap-3 lg:grid-cols-2">
         <Card className="p-4">
           <div className="section-title">Выручка vs прибыль</div>
@@ -196,7 +265,9 @@ export function SkuDrilldownPage() {
                 <YAxis hide />
                 <Tooltip contentStyle={CHART.tooltip} formatter={chartRubTooltip} />
                 <Line type="monotone" dataKey="revenue" stroke={CHART.series.revenue} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="profit" stroke={CHART.series.profit} strokeWidth={2} dot={false} />
+                {trustCtx.canShowProfit ? (
+                  <Line type="monotone" dataKey="profit" stroke={CHART.series.profit} strokeWidth={2} dot={false} strokeDasharray={trustCtx.trust === "partial" ? "4 4" : undefined} />
+                ) : null}
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -218,6 +289,7 @@ export function SkuDrilldownPage() {
           </div>
         </Card>
 
+        {trustCtx.canShowMargin ? (
         <Card className="p-4">
           <div className="section-title">Маржа (дневная)</div>
           <div className="chart-panel mt-3">
@@ -231,6 +303,14 @@ export function SkuDrilldownPage() {
             </ResponsiveContainer>
           </div>
         </Card>
+        ) : (
+        <Card className="p-4">
+          <div className="section-title">Маржа (дневная)</div>
+          <div className="mt-3 flex h-[180px] items-center justify-center text-sm text-ink-muted">
+            Маржа недоступна — загрузите себестоимость для всех SKU.
+          </div>
+        </Card>
+        )}
 
         <Card className="p-4">
           <div className="section-title">Возвраты (динамика)</div>
@@ -250,12 +330,16 @@ export function SkuDrilldownPage() {
 
       <Card className="p-4">
         <div className="section-title">Что ухудшилось относительно прошлого периода</div>
-        {compare ? (
+        {compare && trustCtx.canShowProfit ? (
           <div className="mt-2 text-sm text-ink-secondary">
-            Прибыль: {formatRub(kpis.profit)} (Δ {formatRub(kpis.profit - kpis.profitB)}), выручка: {formatRub(kpis.rev)} (Δ{" "}
-            {formatRub(kpis.rev - kpis.revB)}), маржа: {formatPct(kpis.margin)}{" "}
-            {kpis.marginB === null || kpis.margin === null ? "" : `(Δ ${deltaMetric(kpis.margin, kpis.marginB)} %)`}.
+            Прибыль: {formatProfitValue(kpis.profit, trustCtx.trust)} (Δ {formatDeltaWithTrust(kpis.profit - kpis.profitB, trustCtx.trust, "rub")}), выручка: {formatRub(kpis.rev)} (Δ{" "}
+            {formatRub(kpis.rev - kpis.revB)}), маржа: {trustCtx.canShowMargin ? formatPct(kpis.margin) : "—"}{" "}
+            {trustCtx.canShowMargin && kpis.marginB !== null && kpis.margin !== null
+              ? `(Δ ${formatDeltaWithTrust(kpis.margin - kpis.marginB, trustCtx.trust, "pct")})`
+              : ""}.
           </div>
+        ) : compare ? (
+          <div className="mt-2 text-sm text-ink-muted">Сравнение прибыли недоступно без себестоимости.</div>
         ) : (
           <div className="mt-2 text-sm text-ink-muted">Включите сравнение периодов в селекторе периода, чтобы увидеть, что изменилось.</div>
         )}
