@@ -9,6 +9,7 @@ import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { cx } from "../ui/cx";
 import { TrustBanners } from "../ui/trust-banners";
+import { CostTrustBannerMount } from "../ui/cost-trust-banner";
 import { buildNavSections } from "./nav";
 
 export function AppShell() {
@@ -94,6 +95,7 @@ export function AppShell() {
 
           <main className="min-w-0 flex-1 space-y-6 pb-10">
             <TrustBanners />
+            <CostTrustBannerMount />
             <Outlet />
           </main>
         </div>

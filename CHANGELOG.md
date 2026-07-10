@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased] — Phase 9.6B-1 Trust Foundation (2026-07-10)
+
+### Added
+- **9.6B-1 Trust Foundation** — frontend Cost Trust System: `useProfitTrust`, `ProfitTrustBadge`, `CostCoverageIndicator`, `CostTrustBanner`; trust-gated profit/margin formatting; unit tests; README and frontend architecture docs.
+
+---
+
 ## [Unreleased] — Phase 5 (2026-06-06)
 
 ### Fixed

@@ -92,3 +92,36 @@ VITE_API_BASE_URL=http://localhost:8080
 VITE_API_PREFIX=/api/v1
 ```
 
+## Phase 9.6B-1 Trust Foundation
+
+Seller-facing **Cost Trust System** — UI primitives that consume backend `profit_metrics_trust` and cost-coverage metadata from analytics integrity responses. Trust is **never computed on the client**; the frontend only normalizes, formats, and gates display.
+
+### Components
+
+| Module | Path | Role |
+|--------|------|------|
+| **`useProfitTrust`** | `frontend/src/state/profit-trust.ts` | React hook wrapping `deriveProfitTrustContext`; exposes `trust`, coverage counts, and capability flags (`canShowProfit`, `canShowMargin`, `canShowProfitAction`). Includes `formatProfitValue` / `formatDeltaWithTrust` formatters. |
+| **`ProfitTrustBadge`** | `frontend/src/ui/profit-trust-badge.tsx` | Inline status badge (`Проверено` / `Оценка` / `Нет себестоимости`) with tone and tooltip for profit or margin context. |
+| **`CostCoverageIndicator`** | `frontend/src/ui/cost-coverage-indicator.tsx` | Visual SKU cost coverage (`pill`, `ring`, or `bar` variants) with optional CTA to `/app/costs`. |
+| **`CostTrustBanner`** | `frontend/src/ui/cost-trust-banner.tsx` | Contextual banner for `partial` / `insufficient` trust — coverage message, dismiss (session), links to cost upload and coverage drilldown. Hidden when trust is `full`. |
+
+### Trust contract
+
+| Level | Backend signal | UI behavior |
+|-------|----------------|-------------|
+| `full` | 100% COGS coverage | Exact profit/margin; no banner |
+| `partial` | 1–99% coverage | Approximate profit (`~` prefix); margin hidden; banner + badge |
+| `insufficient` | 0% coverage | Profit/margin hidden; banner prompts COGS import |
+
+### AppShell integration
+
+- `CostTrustBannerMount` is wired in `AppShell.tsx` behind `FEATURE_FLAGS.costTrustBannerGlobal` (default `false`).
+- **Phase 9.6B-2** will enable the global banner and fetch live integrity / cost-coverage data.
+
+### Tests
+
+- `frontend/src/state/profit-trust.test.ts`
+- `frontend/src/ui/profit-trust-badge.test.tsx`
+- `frontend/src/ui/cost-coverage-indicator.test.tsx`
+- `frontend/src/ui/cost-trust-banner.test.tsx`
+

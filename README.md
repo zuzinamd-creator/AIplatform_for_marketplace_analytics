@@ -90,6 +90,21 @@ UI: `frontend/src/views/reports/PromotionExpensesCell.tsx`, `DashboardPage.tsx`
 
 Full release specification: [docs/release/phase_81_production_release.md](docs/release/phase_81_production_release.md)
 
+## Cost Trust System *(Phase 9.6B-1)*
+
+Backend computes `profit_metrics_trust` from COGS coverage over selling SKUs in the analytics period. The frontend **never derives trust locally** — it normalizes the API contract and gates profit/margin display accordingly.
+
+| Trust level | Coverage | Profit KPI | Margin KPI | Display |
+|-------------|----------|------------|------------|---------|
+| **`full`** | 100% of selling SKUs have cost | Shown as verified | Shown | Exact values; badge «Проверено» |
+| **`partial`** | 1–99% coverage | Shown as estimate | Hidden | Values prefixed with `~`; badge «Оценка»; banner with coverage CTA |
+| **`insufficient`** | 0% coverage | Hidden (`—`) | Hidden | Deltas blocked (`н/д`); badge «Нет себестоимости»; banner prompts COGS upload |
+
+**Frontend modules:** `useProfitTrust` (hook + formatters) · `ProfitTrustBadge` · `CostCoverageIndicator` · `CostTrustBanner`
+
+Source: `frontend/src/state/profit-trust.ts`, `frontend/src/ui/profit-trust-badge.tsx`, `frontend/src/ui/cost-coverage-indicator.tsx`, `frontend/src/ui/cost-trust-banner.tsx`  
+Architecture: [docs/frontend/frontend_architecture.md](docs/frontend/frontend_architecture.md#phase-96b-1-trust-foundation)
+
 ## Current AI Capabilities
 
 ### Revenue Intelligence

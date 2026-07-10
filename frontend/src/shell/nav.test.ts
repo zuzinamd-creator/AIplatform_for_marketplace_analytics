@@ -32,6 +32,9 @@ describe("buildNavSections", () => {
     const account = sections.find((s) => s.id === "account");
     expect(account?.items.map((i) => i.to)).toEqual(["/app/onboarding", "/app/settings", "/app/support"]);
 
+    const reports = sections.find((s) => s.id === "reports");
+    expect(reports?.items.map((i) => i.to)).toContain("/app/finance/cost-coverage");
+
     expect(sections.flatMap((s) => s.items).some((i) => i.to.startsWith("/app/admin"))).toBe(false);
   });
 
