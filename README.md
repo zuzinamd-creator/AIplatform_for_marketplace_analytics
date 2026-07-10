@@ -1,9 +1,9 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
 **Version:** Phase 9.7-C (Analytics Hub Step 2) · Phase 9.7-B (trust pilot) · Phase 9.7-A (backend trust)  
-**Certified baseline:** git tag `certified-production` → `ed9ede1` (pending 9.7-C deploy)  
-**Frontend bundle (production):** pending 9.7-C deploy  
-**Status:** Analytics Hub Step 2 implemented — `/app/analytics` entry, journey CTAs, nav RU labels  
+**Certified baseline:** git tag `certified-production` → `73e9597`  
+**Frontend bundle (production):** `index-BAYe4Vly.js` @ 2026-07-11  
+**Status:** Analytics Hub Step 2 deployed · smoke PASS · `/app/analytics` live  
 **Last updated:** 2026-07-11
 
 ---
@@ -12,9 +12,9 @@
 
 | Field | Value |
 |-------|-------|
-| **Certified baseline (VPS)** | git tag `certified-production` → `ed9ede1` (Phase 9.7-A) |
-| **Frontend bundle** | `index-CZkr1sTA.js` @ 2026-07-11 |
-| **Phase 9.7-A certification** | [docs/release/phase_97a_deployment_certification.md](docs/release/phase_97a_deployment_certification.md) |
+| **Certified baseline (VPS)** | git tag `certified-production` → `73e9597` (Phase 9.7-C) |
+| **Frontend bundle** | `index-BAYe4Vly.js` @ 2026-07-11 |
+| **Phase 9.7-C certification** | [docs/release/phase_97c_deployment_certification.md](docs/release/phase_97c_deployment_certification.md) |
 | **Phase 9.7-B validation** | [docs/product/trust_ux_validation_report.md](docs/product/trust_ux_validation_report.md) |
 | **Phase 9.6B-3 certification** | [docs/release/phase_96b3_deployment_certification.md](docs/release/phase_96b3_deployment_certification.md) |
 | **Phase 9.6B-2A certification** | [docs/release/phase_96b2a_deployment_certification.md](docs/release/phase_96b2a_deployment_certification.md) |
