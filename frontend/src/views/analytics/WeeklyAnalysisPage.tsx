@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Warehouse,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
@@ -181,12 +182,15 @@ export function WeeklyAnalysisPage() {
     <div className="page-shell">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="page-title">Недельный анализ</h1>
+          <h1 className="page-title">Сравнение периодов</h1>
           <p className="page-subtitle">
-            Сравнение периодов, ABC-структура выручки, складские риски и остатки — на основе уже загруженных отчётов.
+            Сравнение показателей между двумя периодами: выручка, прибыль, маржа, ABC и складские риски.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Link className="btn-secondary" to="/app/dashboard">
+            Вернуться к обзору бизнеса
+          </Link>
           <StatusBadge tone={stale ? "warn" : "info"}>{stale ? "данные устарели" : "актуально"}</StatusBadge>
           <Select
             value={marketplace}

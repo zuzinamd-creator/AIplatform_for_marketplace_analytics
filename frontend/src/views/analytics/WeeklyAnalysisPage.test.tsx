@@ -119,8 +119,9 @@ describe("WeeklyAnalysisPage", () => {
   it("renders weekly analysis sections and calls analytics APIs", async () => {
     renderPage();
 
-    expect(await screen.findByText("Недельный анализ")).toBeTruthy();
-    expect(await screen.findByText("Сравнение периодов")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Сравнение периодов", level: 1 })).toBeTruthy();
+    const backLink = screen.getByRole("link", { name: "Вернуться к обзору бизнеса" });
+    expect(backLink.getAttribute("href")).toBe("/app/dashboard");
     expect(await screen.findByText("ABC-анализ")).toBeTruthy();
     expect(await screen.findByText("Риски запасов")).toBeTruthy();
     expect(await screen.findByText("Складская аналитика")).toBeTruthy();

@@ -21,6 +21,9 @@ describe("buildNavSections", () => {
 
     const analytics = sections.find((s) => s.id === "analytics");
     expect(analytics?.items.map((i) => i.to)).toContain("/app/analytics/weekly");
+    expect(analytics?.items.find((i) => i.to === "/app/analytics/weekly")?.label).toBe(
+      "Сравнение периодов",
+    );
 
     const ai = sections.find((s) => s.id === "ai");
     expect(ai?.items.map((i) => i.to)).toEqual(["/app/ai/recommendations", "/app/ai/digest"]);

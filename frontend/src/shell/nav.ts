@@ -39,7 +39,7 @@ const dashboardItems: NavItem[] = [
 ];
 
 const analyticsItems: NavItem[] = [
-  { to: "/app/analytics/weekly", label: "Недельный анализ", icon: BarChart3 },
+  { to: "/app/analytics/weekly", label: "Сравнение периодов", icon: BarChart3 },
   { to: "/app/economics", label: "Экономика SKU", icon: LineChart },
   { to: "/app/economics/inventory", label: "Склад и оборот", icon: Package },
   { to: "/app/finance/reconciliation", label: "Сверка выплат", icon: Shield },

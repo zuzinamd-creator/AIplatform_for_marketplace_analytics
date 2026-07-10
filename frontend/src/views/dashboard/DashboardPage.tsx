@@ -101,9 +101,14 @@ export function DashboardPage() {
               </StatusBadge>
             ) : null}
           </div>
-          <p className="page-subtitle">Периодная аналитика с прозрачностью, полнотой и предупреждениями.</p>
+          <p className="page-subtitle">
+            Обзор бизнеса и операционной ситуации: KPI, риски, задачи и доверие к данным за период.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link className="btn-secondary" to="/app/analytics/weekly">
+            Подробное сравнение периодов
+          </Link>
           <Link
             className="btn-primary"
             to="/app/reports/upload"
