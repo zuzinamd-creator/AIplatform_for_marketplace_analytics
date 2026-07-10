@@ -9,6 +9,9 @@ import { Label, Textarea } from "../../ui/field";
 import { StatusBadge } from "../../ui/status-badge";
 import { AiTrustNotice } from "../../ui/trust-banners";
 import { AiTrustPanel } from "../../ui/ai-trust-panel";
+import { CostTrustDisclosure } from "../../ui/cost-trust-disclosure";
+import { useProfitTrust } from "../../state/profit-trust";
+import { loadWorkspaceProfile } from "../../state/onboarding";
 import { toast } from "../../ui/toast";
 import { trackUsage } from "../../state/usage";
 import {
@@ -147,6 +150,25 @@ export function RecommendationDetailPage() {
 
   const periodDecision = pickPeriodDecision(plan);
   const driverCards = pickDriverCards(plan);
+
+  const workspace = loadWorkspaceProfile();
+  const marketplace = workspace.marketplace === "unknown" ? "wildberries" : workspace.marketplace;
+  const recPeriodStart = String(u.source_period_start ?? plan.source_period_start ?? "");
+  const recPeriodEnd = String(u.source_period_end ?? plan.source_period_end ?? "");
+
+  const recRevenue = useQuery({
+    enabled: Boolean(recPeriodStart && recPeriodEnd),
+    queryKey: ["costTrust", "recDetail", marketplace, recPeriodStart, recPeriodEnd],
+    queryFn: () =>
+      api.analytics.revenueSummary({ marketplace, start: recPeriodStart, end: recPeriodEnd }),
+  });
+  const recCoverage = useQuery({
+    enabled: Boolean(recPeriodStart && recPeriodEnd),
+    queryKey: ["costTrust", "recDetailCoverage", marketplace, recPeriodStart, recPeriodEnd],
+    queryFn: () =>
+      api.analytics.costCoverage({ marketplace, start: recPeriodStart, end: recPeriodEnd, limit: 1 }),
+  });
+  const recCostTrust = useProfitTrust(recRevenue.data?.integrity, recCoverage.data ?? null);
   const todayAction =
     periodDecision?.action ||
     String(u.what_to_do_today ?? u.concrete_next_action ?? plan.recommended_action ?? "");
@@ -493,6 +515,16 @@ export function RecommendationDetailPage() {
 
           <Card className="p-5">
             <div className="text-sm font-semibold">Доверие и доказательства</div>
+            {recPeriodStart && recPeriodEnd ? (
+              <div className="mt-3">
+                <CostTrustDisclosure
+                  marketplace={marketplace}
+                  start={recPeriodStart}
+                  end={recPeriodEnd}
+                  className="border-0 bg-transparent p-0 shadow-none"
+                />
+              </div>
+            ) : null}
             {explain.isLoading ? (
               <div className="mt-3 text-sm text-ink-secondary">Загрузка объяснимости…</div>
             ) : e ? (
@@ -503,6 +535,7 @@ export function RecommendationDetailPage() {
                       ...(e.trust_context as Parameters<typeof AiTrustPanel>[0]["trust"]),
                       limitations: [],
                     }}
+                    costTrust={recCostTrust}
                   />
                 </div>
                 <div className="mt-4 rounded-lg border border-surface-subtle bg-surface-inset p-3">

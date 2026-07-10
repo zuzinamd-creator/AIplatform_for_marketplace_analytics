@@ -7,7 +7,7 @@ import { Filter, Search, TrendingUp } from "lucide-react";
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { formatMetric, formatPct, formatRub, chartRubTooltip } from "../../utils/format";
-import { formatProfitValue, skuProfitabilityBadge, useProfitTrust } from "../../state/profit-trust";
+import { formatProfitValue, showInlineCostTrustBanner, skuProfitabilityBadge, useProfitTrust } from "../../state/profit-trust";
 import { CHART } from "../../ui/chart-theme";
 import { Card } from "../../ui/card";
 import { CollapsibleSection } from "../../ui/collapsible-section";
@@ -169,7 +169,7 @@ export function EconomicsPage() {
 
       {integrityBanner(a.data?.integrity ?? null)}
 
-      {trustCtx.trust !== "full" ? (
+      {showInlineCostTrustBanner() && trustCtx.trust !== "full" ? (
         <CostTrustBanner
           trust={trustCtx.trust}
           variant="inline"

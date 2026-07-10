@@ -21,6 +21,20 @@ Seller-facing trust layer for profit and margin KPIs. Trust is **computed on the
 | `TrustDeltaBadge` | `frontend/src/ui/trust-delta-badge.tsx` | Period-compare deltas with trust guard |
 | `useCostTrustShellData` | `frontend/src/state/use-cost-trust-shell.ts` | AppShell global banner data (when enabled) |
 
+| `CostTrustDisclosure` | `frontend/src/ui/cost-trust-disclosure.tsx` | AI pages COGS trust disclosure |
+| `chartTrustNumeric` | `frontend/src/state/profit-trust.ts` | Chart values — null stays null, never zero |
+| `showInlineCostTrustBanner` | `frontend/src/state/profit-trust.ts` | Inline banner when global flag is off |
+
+## Integrated surfaces (9.6B-3)
+
+| Route | Page | Trust UI |
+|-------|------|----------|
+| `/app/dashboard` | DashboardPage | Badges, coverage bar, chart hardening, finance summary |
+| `/app/finance/reconciliation` | ReconciliationPage | Profit KPI badge |
+| `/app/finance/cost-coverage` | CostCoveragePage | Full trust context + CTA |
+| `/app/ai/recommendations` | RecommendationsPage | CostTrustDisclosure |
+| `/app/ai/recommendations/:id` | RecommendationDetailPage | CostTrustDisclosure + AiTrustPanel badge |
+
 ## Integrated surfaces (9.6B-2)
 
 | Route | Page | Trust UI |
@@ -38,9 +52,13 @@ Seller-facing trust layer for profit and margin KPIs. Trust is **computed on the
 
 ## Global banner rollout
 
-`FEATURE_FLAGS.costTrustBannerGlobal` defaults to `false`. When set to `true`, `CostTrustBannerMount` in AppShell fetches live integrity via `useCostTrustShellData` and renders `CostTrustBanner variant="global"`.
+`FEATURE_FLAGS.costTrustBannerGlobal` is **`true`** (Phase 9.6B-3). `CostTrustBannerMount` renders in AppShell; page-level inline banners use `showInlineCostTrustBanner()` to avoid duplication.
 
-**Status (9.6B-2):** Global banner **wired but disabled** — enable in 9.6B-3 after production validation.
+**Status (9.6B-3):** Global banner **enabled** in production.
+
+## Chart null safety (dashboard)
+
+`chartTrustNumeric()` returns `null` for missing profit or insufficient trust — Recharts `connectNulls={false}` prevents drawing false zero lines.
 
 ## delta_profit safety (period-compare)
 
@@ -48,4 +66,4 @@ Seller-facing trust layer for profit and margin KPIs. Trust is **computed on the
 
 **Frontend guard:** `guardPeriodCompareDeltaProfit()` suppresses delta when trust is `insufficient`, both periods lack profit, or either period has null profit (masks misleading non-zero deltas).
 
-**Residual backend risk:** Backend may still emit `delta_profit: "0"` for API consumers that bypass the frontend guard. Fix belongs in `analytics_service.period_compare` (Phase 9.6B-3+).
+**Residual backend risk:** Backend may still emit `delta_profit: "0"` for API consumers that bypass the frontend guard. Fix belongs in `analytics_service.period_compare` (Phase 9.7+).

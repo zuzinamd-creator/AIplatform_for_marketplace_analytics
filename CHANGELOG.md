@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.6B-3] — 2026-07-10 — Trust UX Completion
+
+### Added
+- **9.6B-3 Trust UX Completion** — dashboard trust integration, global banner enabled, reconciliation/cost-coverage/AI disclosure, chart null→0 hardening, `CostTrustDisclosure`, `chartTrustNumeric`.
+
+---
+
 ## [9.6B-2A] — 2026-07-10 — Production Deployment & Trust Validation
 
 ### Deployed

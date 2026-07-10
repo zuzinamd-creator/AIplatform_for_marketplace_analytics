@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import { FEATURE_FLAGS } from "./feature-flags";
 import type { AnalyticsIntegrityMeta, CostCoverageResponse } from "./types-analytics";
 import { formatMetric, formatPct, formatRub, parseNumeric } from "../utils/format";
 
@@ -229,4 +230,32 @@ export function skuProfitabilityBadge(
     label: trust === "partial" ? "Оценка: прибыльный" : "Прибыльный",
     tone: trust === "partial" ? "warn" : "ok",
   };
+}
+
+/** Inline page banner — suppressed when AppShell global banner is active. */
+export function showInlineCostTrustBanner(): boolean {
+  return !FEATURE_FLAGS.costTrustBannerGlobal;
+}
+
+/** Chart numeric: null when profit must not render (never coerce API null to zero). */
+export function chartTrustNumeric(value: unknown, trust: ProfitTrustLevel): number | null {
+  if (trust === "insufficient") {
+    return null;
+  }
+  return parseNumeric(value);
+}
+
+/** Margin / profitability % display per trust matrix. */
+export function formatMarginValue(value: unknown, trust: ProfitTrustLevel): string {
+  if (trust !== "full") {
+    return "—";
+  }
+  return formatPct(value);
+}
+
+export function formatProfitabilityValue(value: unknown, trust: ProfitTrustLevel): string {
+  if (trust !== "full") {
+    return "—";
+  }
+  return formatPct(value);
 }

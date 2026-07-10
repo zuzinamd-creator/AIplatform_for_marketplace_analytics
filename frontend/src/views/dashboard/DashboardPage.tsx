@@ -8,11 +8,22 @@ import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { isDemoMode } from "../../state/settings";
 import { trackUsage } from "../../state/usage";
+import {
+  chartTrustNumeric,
+  formatMarginValue,
+  formatProfitValue,
+  formatProfitabilityValue,
+  showInlineCostTrustBanner,
+  useProfitTrust,
+} from "../../state/profit-trust";
 import { formatMetric, formatPct, formatRub, chartRubTooltip } from "../../utils/format";
 import { CHART } from "../../ui/chart-theme";
 import { Card } from "../../ui/card";
 import { CollapsibleSection } from "../../ui/collapsible-section";
+import { CostCoverageIndicator } from "../../ui/cost-coverage-indicator";
+import { CostTrustBanner } from "../../ui/cost-trust-banner";
 import { KpiCard } from "../../ui/kpi-card";
+import { ProfitTrustBadge } from "../../ui/profit-trust-badge";
 import { StatusBadge } from "../../ui/status-badge";
 import { WarnCallout } from "../../ui/warn-callout";
 import { PeriodSelector } from "../../ui/period-selector";
@@ -75,11 +86,7 @@ export function DashboardPage() {
   const stale = freshness?.stale_data_warning ?? false;
   const integrityWarnings = data?.revenue_summary.integrity?.warnings ?? [];
   const completeness = data?.revenue_summary.integrity?.financial_completeness_score ?? null;
-  const costCoveragePct = data?.cost_coverage?.sku_cost_coverage_pct ?? null;
-  const coveredSkus = data?.cost_coverage?.covered_skus ?? null;
-  const totalSkusCov = data?.cost_coverage?.total_skus ?? null;
-  const profitTrust = data?.revenue_summary.integrity?.profit_metrics_trust;
-  const missingCostSkus = data?.cost_coverage?.missing_skus ?? [];
+  const trustCtx = useProfitTrust(data?.revenue_summary.integrity, data?.cost_coverage ?? null);
   const aRevenue = Number(data?.revenue_summary.kpis.total_revenue ?? "0");
   const bRevenue = Number(data?.revenue_summary_compare?.kpis.total_revenue ?? "0");
   const deltaRevenue = compare ? aRevenue - bRevenue : null;
@@ -137,6 +144,28 @@ export function DashboardPage() {
 
       <PeriodSelector onChange={setPeriodSel} />
 
+      {showInlineCostTrustBanner() && trustCtx.trust !== "full" ? (
+        <CostTrustBanner
+          trust={trustCtx.trust}
+          variant="inline"
+          coveragePct={trustCtx.coveragePct}
+          coveredSkus={trustCtx.coveredSkus}
+          totalSkus={trustCtx.totalSkus}
+          missingSkusSample={trustCtx.missingSkus.slice(0, 5)}
+          storageKey={`dashboard-${start}-${end}`}
+        />
+      ) : null}
+
+      {trustCtx.coveredSkus !== null && trustCtx.totalSkus !== null ? (
+        <CostCoverageIndicator
+          coveredSkus={trustCtx.coveredSkus}
+          totalSkus={trustCtx.totalSkus}
+          coveragePct={trustCtx.coveragePct}
+          variant="bar"
+          showCta={trustCtx.trust !== "full"}
+        />
+      ) : null}
+
       <CollapsibleSection
         title="Что требует внимания сегодня"
         subtitle="Ежедневное рабочее место продавца: риски, утечки прибыли, задачи и доверие к данным."
@@ -152,23 +181,42 @@ export function DashboardPage() {
           <Card className="p-4">
             <div className="text-xs font-medium text-ink-muted">Утечки прибыли</div>
             <div className="mt-2 text-sm text-ink-secondary">
-              Проверьте маржу и затраты по SKU в экономике.
+              {trustCtx.canShowProfitAction
+                ? "Проверьте маржу и затраты по SKU в экономике."
+                : trustCtx.trust === "partial"
+                  ? "Прибыль оценочная — проверяйте SKU с загруженной себестоимостью."
+                  : "Загрузите себестоимость, чтобы увидеть утечки прибыли."}
             </div>
-            <Link to="/app/finance/reconciliation" className="link-muted mt-3 inline-block text-xs">
-              Сверка выплат →
-            </Link>
+            {trustCtx.canShowProfit ? (
+              <Link to="/app/economics" className="link-muted mt-3 inline-block text-xs">
+                Экономика SKU →
+              </Link>
+            ) : null}
           </Card>
           <Card className="p-4">
-            <div className="text-xs font-medium text-ink-muted">Себестоимость</div>
-            <div className="mt-2 text-sm text-ink-secondary">
-              {totalSkusCov && coveredSkus !== null
-                ? `${coveredSkus} из ${totalSkusCov} товаров с себестоимостью (${formatPct(costCoveragePct)})`
-                : costCoveragePct !== null
-                  ? formatPct(costCoveragePct)
-                  : completeness
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-xs font-medium text-ink-muted">Себестоимость</div>
+              <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
+            </div>
+            <div className="mt-2">
+              {trustCtx.coveredSkus !== null && trustCtx.totalSkus !== null ? (
+                <CostCoverageIndicator
+                  coveredSkus={trustCtx.coveredSkus}
+                  totalSkus={trustCtx.totalSkus}
+                  coveragePct={trustCtx.coveragePct}
+                  variant="pill"
+                  showCta={trustCtx.trust !== "full"}
+                />
+              ) : (
+                <div className="text-sm text-ink-secondary">
+                  {completeness
                     ? `Полнота аналитики: ${formatPct(completeness)}`
                     : "Укажите себестоимость для точной прибыли"}
-              {(data?.ai_ops as Record<string, unknown>)?.degraded_intelligence_mode ? " · ИИ осторожен" : ""}
+                </div>
+              )}
+              {(data?.ai_ops as Record<string, unknown>)?.degraded_intelligence_mode ? (
+                <div className="mt-1 text-xs text-ink-muted">ИИ осторожен</div>
+              ) : null}
             </div>
             <Link to="/app/costs" className="link-muted mt-3 inline-block text-xs">
               Себестоимость →
@@ -182,19 +230,25 @@ export function DashboardPage() {
           <KpiCard
             variant="hero"
             icon={<Database className="h-5 w-5" />}
-            label="Продажи (выбранный период)"
+            label={
+              <span className="inline-flex flex-wrap items-center gap-2">
+                Продажи (выбранный период)
+                <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
+              </span>
+            }
             value={isLoading ? "…" : formatRub(data?.revenue_summary.kpis.total_revenue)}
             sub={
               <span>
-                Чистая прибыль: {formatRub(data?.revenue_summary.kpis.total_profit)}
-                {profitTrust && profitTrust !== "full" ? " (неточно — не у всех товаров указана себестоимость)" : ""}
-                {hasPromotion ? (
+                Чистая прибыль: {formatProfitValue(data?.revenue_summary.kpis.total_profit, trustCtx.trust)}
+                {hasPromotion && trustCtx.canShowProfit ? (
                   <>
-                    {" · "}Прибыль до учёта продвижения: {formatRub(data?.finance_summary.kpis.seller_profit_raw)}
+                    {" · "}Прибыль до учёта продвижения:{" "}
+                    {formatProfitValue(data?.finance_summary.kpis.seller_profit_raw, trustCtx.trust)}
                   </>
                 ) : null}
-                {" · "}Маржинальность: {formatPct(data?.revenue_summary.kpis.margin_pct)}
-                {" · "}Рентабельность: {formatPct(data?.revenue_summary.kpis.profitability_pct)}
+                {" · "}Маржинальность: {formatMarginValue(data?.revenue_summary.kpis.margin_pct, trustCtx.trust)}
+                {" · "}Рентабельность:{" "}
+                {formatProfitabilityValue(data?.revenue_summary.kpis.profitability_pct, trustCtx.trust)}
                 {compare && deltaRevenue !== null ? (
                   <>
                     {" "}
@@ -239,10 +293,11 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card className="p-6 md:col-span-2">
           <div className="flex items-center justify-between gap-3">
-            <div className="text-sm font-semibold text-ink">
+            <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">
               {hasPromotion
                 ? "Тренд продаж и прибыли до учёта продвижения (по дням)"
                 : "Тренд продаж и прибыли (по дням)"}
+              <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
             </div>
             <StatusBadge tone={stale ? "warn" : "info"}>
               <LineChartIcon className="mr-1 inline h-3 w-3" />
@@ -255,7 +310,7 @@ export function DashboardPage() {
                 data={(data?.revenue_trend_daily.points ?? []).map((p) => ({
                   date: p.date.slice(5),
                   revenue: Number(p.revenue),
-                  profit: Number(p.seller_profit ?? p.net_profit),
+                  profit: chartTrustNumeric(p.seller_profit ?? p.net_profit, trustCtx.trust),
                 }))}
               >
                 <XAxis dataKey="date" tick={CHART.axis} />
@@ -272,14 +327,18 @@ export function DashboardPage() {
                   strokeWidth={2}
                   dot={false}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="profit"
-                  name={hasPromotion ? "Прибыль до учёта продвижения" : "Прибыль"}
-                  stroke={CHART.series.profit}
-                  strokeWidth={2}
-                  dot={false}
-                />
+                {trustCtx.canShowProfit ? (
+                  <Line
+                    type="monotone"
+                    dataKey="profit"
+                    name={hasPromotion ? "Прибыль до учёта продвижения" : "Прибыль"}
+                    stroke={CHART.series.profit}
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls={false}
+                    strokeDasharray={trustCtx.trust === "partial" ? "4 4" : undefined}
+                  />
+                ) : null}
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -289,7 +348,11 @@ export function DashboardPage() {
               {freshness?.data_as_of ?? "—"}
               {completeness ? <> · Полнота аналитики: {formatPct(completeness)}</> : null}
             </div>
-            {hasPromotion ? (
+            {trustCtx.trust === "insufficient" ? (
+              <div>График прибыли скрыт — загрузите себестоимость.</div>
+            ) : trustCtx.trust === "partial" ? (
+              <div>Прибыль на графике — оценка (пунктир); маржа недоступна при неполном покрытии COGS.</div>
+            ) : hasPromotion ? (
               <div>
                 График показывает прибыль до учёта затрат на продвижение. Чистая прибыль после
                 продвижения отображается в карточке продаж и финансовой сводке.
@@ -298,21 +361,12 @@ export function DashboardPage() {
               <div>Прибыль на графике — settlement-прибыль продавца по дням.</div>
             )}
           </div>
-          {integrityWarnings.length || (costCoveragePct !== null && Number(costCoveragePct) < 100) ? (
+          {integrityWarnings.length ? (
             <WarnCallout title="Предупреждения целостности" className="mt-4">
               <ul className="list-disc space-y-1 pl-5 text-xs">
                 {integrityWarnings.slice(0, 4).map((w) => (
                   <li key={w.code}>{w.message}</li>
                 ))}
-                {costCoveragePct !== null && Number(costCoveragePct) < 100 ? (
-                  <li>
-                    Для периода {start} → {end} не указана себестоимость у {missingCostSkus.length || "некоторых"} SKU
-                    {missingCostSkus.length
-                      ? `: ${missingCostSkus.slice(0, 5).join(", ")}${missingCostSkus.length > 5 ? "…" : ""}`
-                      : ""}
-                    . Прибыль и маржа могут быть скрыты или неточны.
-                  </li>
-                ) : null}
               </ul>
             </WarnCallout>
           ) : null}
@@ -384,7 +438,10 @@ export function DashboardPage() {
         </Card>
 
         <Card className="p-6">
-          <div className="text-sm font-semibold text-ink">Финансовая сводка</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="text-sm font-semibold text-ink">Финансовая сводка</div>
+            <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
+          </div>
           <div className="mt-2 text-xs text-ink-muted">Период: {start} → {end}</div>
           <div className="mt-5 space-y-2.5 text-sm text-ink-secondary">
             <div className="flex justify-between gap-3"><span>Выручка</span><span>{formatRub(data?.revenue_summary.kpis.total_revenue)}</span></div>
@@ -401,24 +458,37 @@ export function DashboardPage() {
               </div>
             ) : null}
             <div className="flex justify-between gap-3"><span>Себестоимость</span><span>{formatRub(data?.finance_summary.kpis.cogs)}</span></div>
-            {hasPromotion ? (
+            {hasPromotion && trustCtx.canShowProfit ? (
               <div className="flex justify-between gap-3 text-ink-muted">
                 <span>Прибыль до учёта продвижения</span>
-                <span>{formatRub(data?.finance_summary.kpis.seller_profit_raw)}</span>
+                <span>{formatProfitValue(data?.finance_summary.kpis.seller_profit_raw, trustCtx.trust)}</span>
               </div>
             ) : null}
             <div className="mt-3 flex justify-between gap-3 border-t border-surface-subtle pt-3 font-semibold text-ink">
-              <span>Чистая прибыль</span><span>{formatRub(data?.finance_summary.kpis.gross_profit)}</span>
+              <span className="inline-flex items-center gap-2">
+                Чистая прибыль
+                <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" showLabel={false} />
+              </span>
+              <span>{formatProfitValue(data?.finance_summary.kpis.gross_profit, trustCtx.trust)}</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span>Маржинальность</span><span>{formatPct(data?.finance_summary.kpis.margin_pct)}</span>
+              <span className="inline-flex items-center gap-2">
+                Маржинальность
+                <ProfitTrustBadge trust={trustCtx.trust} metric="margin" showLabel={false} />
+              </span>
+              <span>{formatMarginValue(data?.finance_summary.kpis.margin_pct, trustCtx.trust)}</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span>Рентабельность</span><span>{formatPct(data?.finance_summary.kpis.profitability_pct)}</span>
+              <span>Рентабельность</span>
+              <span>{formatProfitabilityValue(data?.finance_summary.kpis.profitability_pct, trustCtx.trust)}</span>
             </div>
           </div>
           <div className="mt-4 text-xs text-ink-muted">
-            Некоторые показатели могут быть неполными, если не загружены нужные отчёты или себестоимость.
+            {trustCtx.trust === "insufficient"
+              ? "Прибыль и маржа недоступны без себестоимости."
+              : trustCtx.trust === "partial"
+                ? "Прибыль показана как оценка; маржа скрыта при неполном покрытии COGS."
+                : "Показатели проверены при полном покрытии себестоимости."}
           </div>
         </Card>
       </div>

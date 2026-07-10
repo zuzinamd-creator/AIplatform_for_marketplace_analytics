@@ -1,5 +1,7 @@
 import { StatusBadge } from "./status-badge";
+import { ProfitTrustBadge } from "./profit-trust-badge";
 import { t } from "../i18n";
+import type { ProfitTrustContext } from "../state/profit-trust";
 
 export function AiTrustPanel(props: {
   trust?: {
@@ -10,9 +12,11 @@ export function AiTrustPanel(props: {
     advisory_only?: boolean;
     seller_workflow_state?: string;
   };
+  costTrust?: Pick<ProfitTrustContext, "trust" | "coveragePct" | "coveredSkus" | "totalSkus">;
 }) {
   const trust = props.trust ?? {};
   const limitations = trust.limitations ?? [];
+  const costTrust = props.costTrust;
 
   return (
     <div className="rounded-lg border border-amber-900/40 bg-amber-950/20 p-3 text-xs text-ink-secondary">
@@ -20,6 +24,9 @@ export function AiTrustPanel(props: {
         <span className="font-medium text-amber-100/90">{t("trust.trust_transparency")}</span>
         {trust.advisory_only !== false ? <StatusBadge tone="warn">{t("trust.advisory_only")}</StatusBadge> : null}
         {trust.urgency ? <StatusBadge tone="info">{t("trust.urgency")}: {trust.urgency}</StatusBadge> : null}
+        {costTrust ? (
+          <ProfitTrustBadge trust={costTrust.trust} trustContext={costTrust} metric="profit" size="sm" />
+        ) : null}
       </div>
       {trust.confidence_explanation ? (
         <p className="mt-2 text-ink-secondary">{trust.confidence_explanation}</p>

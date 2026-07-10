@@ -9,6 +9,7 @@ import { Card } from "../../ui/card";
 import { StatusBadge } from "../../ui/status-badge";
 import { Button } from "../../ui/button";
 import { AiTrustNotice } from "../../ui/trust-banners";
+import { CostTrustDisclosure } from "../../ui/cost-trust-disclosure";
 import { InsightPreview, parseInsightJson } from "../../ui/insight-preview";
 import { toast } from "../../ui/toast";
 import { confidenceLabelRu, priorityTierLabelRu, workflowStateLabelRu } from "../../ui/seller-display";
@@ -338,6 +339,8 @@ export function RecommendationsPage() {
           <RecommendationRow key={String(r.id)} r={r} onWorkflow={(action) => workflow.mutate({ id: String(r.id), action })} />
         ))
       )}
+
+      <CostTrustDisclosure className="p-4" />
 
       <AiTrustNotice />
     </div>

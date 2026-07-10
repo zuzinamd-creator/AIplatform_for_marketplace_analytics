@@ -115,8 +115,7 @@ Seller-facing **Cost Trust System** — UI primitives that consume backend `prof
 
 ### AppShell integration
 
-- `CostTrustBannerMount` is wired in `AppShell.tsx` behind `FEATURE_FLAGS.costTrustBannerGlobal` (default `false`).
-- **Phase 9.6B-2** will enable the global banner and fetch live integrity / cost-coverage data.
+- `CostTrustBannerMount` is wired in `AppShell.tsx` behind `FEATURE_FLAGS.costTrustBannerGlobal` (default `true` since 9.6B-3).
 
 ### Tests
 
@@ -151,7 +150,35 @@ Nav item `/app/finance/cost-coverage` renamed from «Покрытие cost» →
 
 ### Global banner
 
-`FEATURE_FLAGS.costTrustBannerGlobal` remains **`false`**. `CostTrustBannerMount` is wired to live data; enable flag in 9.6B-3.
+`FEATURE_FLAGS.costTrustBannerGlobal` is **`true`** (Phase 9.6B-3). Inline page banners are suppressed via `showInlineCostTrustBanner()` to avoid duplicates.
 
 Full trust system reference: [docs/product/cost_trust_system.md](../product/cost_trust_system.md)
+
+## Phase 9.6B-3 Trust UX Completion
+
+Completes Cost Trust rollout across all financial surfaces.
+
+### Surfaces added
+
+| Page | Route | Integration |
+|------|-------|-------------|
+| **DashboardPage** | `/app/dashboard` | Hero/finance KPI badges, coverage bar, chart `chartTrustNumeric`, finance summary trust formatting |
+| **ReconciliationPage** | `/app/finance/reconciliation` | Profit KPI badge, trust-gated contribution row |
+| **CostCoveragePage** | `/app/finance/cost-coverage` | Trust badge, coverage bar, CTA consistency |
+| **RecommendationsPage** | `/app/ai/recommendations` | `CostTrustDisclosure` |
+| **RecommendationDetailPage** | `/app/ai/recommendations/:id` | `CostTrustDisclosure` + `AiTrustPanel` cost badge |
+
+### New modules
+
+| Module | Path | Role |
+|--------|------|------|
+| **`CostTrustDisclosure`** | `frontend/src/ui/cost-trust-disclosure.tsx` | AI-facing COGS trust UI (no prompt changes) |
+| **`chartTrustNumeric`** | `frontend/src/state/profit-trust.ts` | Prevents null→0 on dashboard charts |
+| **`showInlineCostTrustBanner`** | `frontend/src/state/profit-trust.ts` | Dedupes inline vs global banner |
+
+### Tests (9.6B-3)
+
+- `frontend/src/views/dashboard/DashboardPage.test.tsx`
+- `frontend/src/ui/ai-trust-panel.test.tsx`
+- Extended `profit-trust.test.ts`, `cost-trust-banner.test.tsx`
 

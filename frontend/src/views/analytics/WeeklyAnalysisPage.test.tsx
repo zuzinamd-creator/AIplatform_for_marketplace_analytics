@@ -154,7 +154,7 @@ describe("WeeklyAnalysisPage", () => {
     expect(await screen.findByText("WH-1")).toBeTruthy();
   });
 
-  it("shows trust banner and blocks profit priority when COGS trust is insufficient", async () => {
+  it("blocks profit priority and shows trust badge when COGS trust is insufficient", async () => {
     periodCompare.mockResolvedValue({
       marketplace: "wildberries",
       a_start: "2026-05-01",
@@ -178,7 +178,7 @@ describe("WeeklyAnalysisPage", () => {
 
     renderPage();
 
-    expect(await screen.findByText(/Нет себестоимости/i)).toBeTruthy();
+    expect(await screen.findByLabelText(/Загрузите себестоимость/i)).toBeTruthy();
     expect(screen.queryByText(/Прибыль снизилась относительно предыдущего периода/i)).toBeNull();
   });
 });

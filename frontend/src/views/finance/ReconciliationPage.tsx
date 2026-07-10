@@ -1,22 +1,37 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { loadPeriodSelection } from "../../state/period";
+import {
+  COSTS_WORKFLOW_ROUTE,
+  COST_COVERAGE_ROUTE,
+  formatProfitValue,
+  showInlineCostTrustBanner,
+  useProfitTrust,
+  type ProfitTrustContext,
+} from "../../state/profit-trust";
 import { formatRub } from "../../utils/format";
 import { Card } from "../../ui/card";
 import { CollapsibleSection } from "../../ui/collapsible-section";
+import { CostTrustBanner } from "../../ui/cost-trust-banner";
 import { KpiCard } from "../../ui/kpi-card";
 import { PeriodSelector } from "../../ui/period-selector";
+import { ProfitTrustBadge } from "../../ui/profit-trust-badge";
 import { StatusBadge } from "../../ui/status-badge";
 import { WarnCallout } from "../../ui/warn-callout";
 
-function Row(props: { label: string; value: unknown }) {
+function Row(props: { label: string; value: unknown; trustValue?: boolean; trust?: ProfitTrustContext }) {
+  const display =
+    props.trustValue && props.trust
+      ? formatProfitValue(props.value, props.trust.trust)
+      : formatRub(props.value);
   return (
     <div className="flex items-center justify-between gap-3 border-t border-surface-subtle py-2.5 text-sm">
       <div className="text-ink-secondary">{props.label}</div>
-      <div className="font-medium text-ink">{formatRub(props.value)}</div>
+      <div className="font-medium text-ink">{display}</div>
     </div>
   );
 }
@@ -31,6 +46,18 @@ export function ReconciliationPage() {
     queryKey: ["analytics", "reconciliationPeriod", marketplace, range.start, range.end],
     queryFn: () => api.analytics.reconciliationPeriod({ marketplace, start: range.start, end: range.end }),
   });
+
+  const revenue = useQuery({
+    queryKey: ["analytics", "revenueSummary", "reconciliation", marketplace, range.start, range.end],
+    queryFn: () => api.analytics.revenueSummary({ marketplace, start: range.start, end: range.end }),
+  });
+
+  const costCoverage = useQuery({
+    queryKey: ["analytics", "costCoverage", "reconciliation", marketplace, range.start, range.end],
+    queryFn: () => api.analytics.costCoverage({ marketplace, start: range.start, end: range.end, limit: 1 }),
+  });
+
+  const trustCtx = useProfitTrust(revenue.data?.integrity, costCoverage.data ?? null);
 
   const stale = rec.data?.freshness?.stale_data_warning ?? false;
   const w = rec.data?.warnings ?? [];
@@ -52,10 +79,30 @@ export function ReconciliationPage() {
 
       <PeriodSelector onChange={(s) => setRange(s.range)} />
 
+      {showInlineCostTrustBanner() && trustCtx.trust !== "full" ? (
+        <CostTrustBanner
+          trust={trustCtx.trust}
+          variant="inline"
+          coveragePct={trustCtx.coveragePct}
+          coveredSkus={trustCtx.coveredSkus}
+          totalSkus={trustCtx.totalSkus}
+          missingSkusSample={trustCtx.missingSkus.slice(0, 5)}
+          storageKey={`reconciliation-${range.start}-${range.end}`}
+        />
+      ) : null}
+
       {b ? (
         <div className="kpi-row md:grid-cols-3">
           <KpiCard variant="hero" label="Фактическая выплата" value={formatRub(b.actual_payout)} />
-          <KpiCard label="Прибыль (contribution)" value={formatRub(b.profit)} />
+          <KpiCard
+            label={
+              <span className="inline-flex flex-wrap items-center gap-2">
+                Прибыль (contribution)
+                <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
+              </span>
+            }
+            value={formatProfitValue(b.profit, trustCtx.trust)}
+          />
           <KpiCard label="Разница выплат" value={formatRub(b.payout_difference)} />
         </div>
       ) : null}
@@ -94,7 +141,7 @@ export function ReconciliationPage() {
                 <Row label="Расчётная выплата" value={b.expected_payout} />
                 <Row label="Фактическая выплата" value={b.actual_payout} />
                 <Row label="Разница выплат" value={b.payout_difference} />
-                <Row label="Прибыль (contribution margin)" value={b.profit} />
+                <Row label="Прибыль (contribution margin)" value={b.profit} trustValue trust={trustCtx} />
               </div>
             </div>
           ) : (
@@ -108,8 +155,19 @@ export function ReconciliationPage() {
             {b?.payout_is_not_profit_explanation ?? "—"}
           </div>
           <div className="mt-4 rounded-lg border border-surface-subtle bg-surface-inset p-3 text-xs text-ink-secondary">
-            Если себестоимость отсутствует, прибыль и маржа будут неполными. Проверьте страницу “Себестоимость и покрытие
-            затрат”.
+            {trustCtx.trust === "insufficient"
+              ? "Прибыль недоступна без себестоимости. Загрузите cost-данные для contribution margin."
+              : trustCtx.trust === "partial"
+                ? "Прибыль показана как оценка — себестоимость указана не для всех SKU."
+                : "Прибыль проверена при полном покрытии себестоимости."}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-3 text-xs">
+            <Link to={COSTS_WORKFLOW_ROUTE} className="link-muted">
+              Себестоимость →
+            </Link>
+            <Link to={COST_COVERAGE_ROUTE} className="link-muted">
+              Покрытие себестоимости →
+            </Link>
           </div>
         </Card>
       </div>
@@ -117,4 +175,3 @@ export function ReconciliationPage() {
     </div>
   );
 }
-

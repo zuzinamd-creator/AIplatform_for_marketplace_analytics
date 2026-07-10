@@ -1,8 +1,8 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
-**Version:** Phase 9.6B-2A (trust integration deployed) · Phase 9.3A (invite system) · Phase 8.1–8.3 (finance + safety)  
-**Certified baseline:** git tag `certified-production` → `7aedd90` (Phase 9.6B-2A, 2026-07-10)  
-**Frontend bundle (production):** `index-BqjAbDai.js`  
+**Version:** Phase 9.6B-3 (trust UX complete) · Phase 9.3A (invite system) · Phase 8.1–8.3 (finance + safety)  
+**Certified baseline:** git tag `certified-production` → `7aedd90` (pending 9.6B-3 deploy)  
+**Frontend bundle (production):** pending 9.6B-3 deploy  
 **Alembic head:** `0035_registration_invites`  
 **Status:** Production frontend = Git HEAD · smoke PASS · trust certified (insufficient live + unit matrix)  
 **Last updated:** 2026-07-10

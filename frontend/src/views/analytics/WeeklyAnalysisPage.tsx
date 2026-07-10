@@ -15,7 +15,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
-import { formatProfitValue, useProfitTrust } from "../../state/profit-trust";
+import { formatProfitValue, showInlineCostTrustBanner, useProfitTrust } from "../../state/profit-trust";
 import { formatInteger, formatPct, formatRub, parseNumeric } from "../../utils/format";
 import { Card } from "../../ui/card";
 import { CollapsibleSection } from "../../ui/collapsible-section";
@@ -205,7 +205,7 @@ export function WeeklyAnalysisPage() {
 
       <PeriodSelector onChange={setPeriodSel} />
 
-      {trustCtx.trust !== "full" ? (
+      {showInlineCostTrustBanner() && trustCtx.trust !== "full" ? (
         <CostTrustBanner
           trust={trustCtx.trust}
           variant="inline"

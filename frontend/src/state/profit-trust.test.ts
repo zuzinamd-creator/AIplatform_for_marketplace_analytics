@@ -10,6 +10,9 @@ import {
   guardPeriodCompareDeltaProfit,
   normalizeProfitTrust,
   skuProfitabilityBadge,
+  showInlineCostTrustBanner,
+  chartTrustNumeric,
+  formatMarginValue,
   useProfitTrust,
 } from "./profit-trust";
 
@@ -147,5 +150,34 @@ describe("skuProfitabilityBadge", () => {
     expect(
       skuProfitabilityBadge({ contribution_margin: "100", margin_pct: "15" }, "partial"),
     ).toEqual({ label: "Оценка: прибыльный", tone: "warn" });
+  });
+});
+
+describe("showInlineCostTrustBanner", () => {
+  it("returns false when global banner is enabled", () => {
+    expect(showInlineCostTrustBanner()).toBe(false);
+  });
+});
+
+describe("chartTrustNumeric", () => {
+  it("returns null for insufficient trust even when API sends zero", () => {
+    expect(chartTrustNumeric("0", "insufficient")).toBeNull();
+    expect(chartTrustNumeric(null, "insufficient")).toBeNull();
+  });
+
+  it("returns null for missing API values without coercing to zero", () => {
+    expect(chartTrustNumeric(null, "full")).toBeNull();
+    expect(chartTrustNumeric("", "partial")).toBeNull();
+  });
+
+  it("parses numeric profit for full trust", () => {
+    expect(chartTrustNumeric("150.5", "full")).toBe(150.5);
+  });
+});
+
+describe("formatMarginValue", () => {
+  it("hides margin unless trust is full", () => {
+    expect(formatMarginValue("12", "partial")).toBe("—");
+    expect(formatMarginValue("12", "full")).toContain("%");
   });
 });

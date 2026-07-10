@@ -4,6 +4,19 @@ import { MemoryRouter } from "react-router-dom";
 
 import { CostTrustBanner, CostTrustBannerMount } from "./cost-trust-banner";
 
+vi.mock("../state/use-cost-trust-shell", () => ({
+  useCostTrustShellData: () => ({
+    trust: "partial" as const,
+    coveragePct: 72,
+    coveredSkus: 18,
+    totalSkus: 25,
+    missingSkus: ["SKU-1"],
+    canShowProfit: true,
+    canShowMargin: false,
+    canShowProfitAction: false,
+  }),
+}));
+
 function renderBanner(ui: React.ReactElement) {
   return render(<MemoryRouter>{ui}</MemoryRouter>);
 }
@@ -63,8 +76,13 @@ describe("CostTrustBanner", () => {
 });
 
 describe("CostTrustBannerMount", () => {
-  it("renders nothing while global feature flag is disabled", () => {
-    const { container } = render(<CostTrustBannerMount />);
-    expect(container.firstChild).toBeNull();
+  it("renders global banner when feature flag is enabled", () => {
+    render(
+      <MemoryRouter>
+        <CostTrustBannerMount />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("status")).toBeTruthy();
+    expect(screen.getByText(/Оценка/)).toBeTruthy();
   });
 });

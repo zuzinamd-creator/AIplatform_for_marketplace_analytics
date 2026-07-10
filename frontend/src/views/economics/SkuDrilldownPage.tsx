@@ -9,6 +9,7 @@ import { loadWorkspaceProfile } from "../../state/onboarding";
 import {
   formatProfitValue,
   formatDeltaWithTrust,
+  showInlineCostTrustBanner,
   useProfitTrust,
 } from "../../state/profit-trust";
 import {
@@ -150,7 +151,7 @@ export function SkuDrilldownPage() {
 
       <PeriodSelector onChange={setPeriodSel} />
 
-      {trustCtx.trust !== "full" ? (
+      {showInlineCostTrustBanner() && trustCtx.trust !== "full" ? (
         <CostTrustBanner
           trust={trustCtx.trust}
           variant="inline"
