@@ -227,3 +227,21 @@ IA refactoring without physical merge. See [docs/product/analytics_hub_step2.md]
 | Comparison | CTAs to Economics + Cost Coverage |
 | Nav | Section labels: Обзор / Аналитика / Отчеты |
 
+## Phase 9.7-D Trust Closure & Analytics Hub Preparation
+
+Trust matrix certification and reconciliation backend profit gate. See:
+
+| Doc | Purpose |
+|-----|---------|
+| [trust_matrix_certification.md](../product/trust_matrix_certification.md) | FULL / PARTIAL / INSUFFICIENT per surface |
+| [partial_trust_live_validation.md](../product/partial_trust_live_validation.md) | PARTIAL live validation procedure |
+| [analytics_hub_master_spec.md](../product/analytics_hub_master_spec.md) | Hub architecture, 9.8 scope, rollback |
+
+### Reconciliation trust (9.7-D)
+
+- Backend: `ReconciliationService` gates `breakdown.profit` via `apply_profit_trust_to_kpis`
+- Response includes `integrity.profit_metrics_trust`
+- Frontend: `ReconciliationPage` uses `rec.data?.integrity` for `useProfitTrust`
+
+**Hub readiness:** 78/100 — Conditional GO for 9.8 after PARTIAL live session.
+

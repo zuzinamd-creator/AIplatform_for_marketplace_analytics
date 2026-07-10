@@ -47,17 +47,12 @@ export function ReconciliationPage() {
     queryFn: () => api.analytics.reconciliationPeriod({ marketplace, start: range.start, end: range.end }),
   });
 
-  const revenue = useQuery({
-    queryKey: ["analytics", "revenueSummary", "reconciliation", marketplace, range.start, range.end],
-    queryFn: () => api.analytics.revenueSummary({ marketplace, start: range.start, end: range.end }),
-  });
-
   const costCoverage = useQuery({
     queryKey: ["analytics", "costCoverage", "reconciliation", marketplace, range.start, range.end],
     queryFn: () => api.analytics.costCoverage({ marketplace, start: range.start, end: range.end, limit: 1 }),
   });
 
-  const trustCtx = useProfitTrust(revenue.data?.integrity, costCoverage.data ?? null);
+  const trustCtx = useProfitTrust(rec.data?.integrity, costCoverage.data ?? null);
 
   const stale = rec.data?.freshness?.stale_data_warning ?? false;
   const w = rec.data?.warnings ?? [];

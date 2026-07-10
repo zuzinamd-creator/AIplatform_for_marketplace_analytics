@@ -9,6 +9,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.analytics.profit_trust import apply_profit_trust_to_kpis
 from app.domain.economics.reconciliation_math import expected_payout
 from app.models.economics.sku_unit_economics import SkuUnitEconomicsDaily
 from app.models.finance.enums import LedgerOperationType
@@ -21,6 +22,7 @@ from app.schemas.analytics import (
     ReconciliationResponse,
 )
 from app.services.base import TenantScopedService
+from app.services.financial_integrity_service import FinancialIntegrityService, IntegrityPeriod
 from app.services.ops_service import OpsService
 
 
@@ -136,6 +138,18 @@ class ReconciliationService(TenantScopedService):
             "Поэтому выплата почти никогда не равна прибыли."
         )
 
+        integrity = await FinancialIntegrityService(self.db, self.user_id).validate_period(
+            marketplace=marketplace,
+            period=IntegrityPeriod(start=period.start, end=period.end),
+            semantics_version=freshness.semantics_version,
+        )
+        trust = integrity.profit_metrics_trust if integrity else "insufficient"
+        profit_value, _ = apply_profit_trust_to_kpis(
+            trust=trust or "insufficient",
+            total_profit=profit,
+            margin_pct=None,
+        )
+
         return ReconciliationResponse(
             marketplace=marketplace,
             period_start=period.start,
@@ -155,10 +169,11 @@ class ReconciliationService(TenantScopedService):
                 expected_payout=expected_payout_value,
                 actual_payout=payout_actual,
                 payout_difference=payout_diff,
-                profit=profit,
+                profit=profit_value,
                 payout_is_not_profit_explanation=explanation,
             ),
             freshness=freshness,
+            integrity=integrity,
             warnings=warnings,
         )
 

@@ -71,4 +71,10 @@ Seller-facing trust layer for profit and margin KPIs. Trust is **computed on the
 - `computeClientProfitDelta()` — client-side SKU/Economics compare deltas (no `?? 0`)
 - `computeClientMarginDelta()` — margin deltas at full trust only
 
-**Residual risk:** Reconciliation backend may still return ungated profit aggregates — frontend masks display only.
+## Reconciliation profit gating — Phase 9.7-D
+
+**Backend:** `ReconciliationService` applies `apply_profit_trust_to_kpis` to `breakdown.profit` and attaches `integrity` to `ReconciliationResponse`.
+
+**API contract:** `breakdown.profit: Decimal | None`; `integrity.profit_metrics_trust` on response.
+
+**Frontend:** `ReconciliationPage` reads trust from reconciliation `integrity` (no separate revenue fetch for trust).

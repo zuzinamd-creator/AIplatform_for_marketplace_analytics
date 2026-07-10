@@ -1,5 +1,23 @@
 # Changelog
 
+## [9.7-D] — 2026-07-11 — Trust Closure & Analytics Hub Preparation
+
+### Fixed
+- **Reconciliation profit trust gate** — `ReconciliationService` applies `apply_profit_trust_to_kpis`; `breakdown.profit` is `null` when trust is insufficient.
+- **Reconciliation integrity** — `GET /analytics/reconciliation/period` now returns `integrity` with `profit_metrics_trust`.
+
+### Changed
+- **ReconciliationPage** — trust sourced from reconciliation API (removed redundant revenue summary fetch for trust).
+- **API contract:** `ReconciliationBreakdown.profit: Decimal | None`.
+
+### Added
+- `docs/product/trust_matrix_certification.md` — consolidated FULL / PARTIAL / INSUFFICIENT surface matrix.
+- `docs/product/partial_trust_live_validation.md` — production-safe PARTIAL validation procedure.
+- `docs/product/analytics_hub_master_spec.md` — unified hub architecture, 9.8 scope, rollback strategy.
+- `tests/unit/test_reconciliation_trust.py` — reconciliation profit gating contract tests.
+
+---
+
 ## [9.7-C] — 2026-07-11 — Analytics Hub Step 2 (IA Refactoring)
 
 ### Added

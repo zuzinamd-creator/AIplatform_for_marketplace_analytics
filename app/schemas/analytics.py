@@ -375,7 +375,7 @@ class ReconciliationBreakdown(BaseModel):
     actual_payout: Decimal
     payout_difference: Decimal
 
-    profit: Decimal
+    profit: Decimal | None = None
     payout_is_not_profit_explanation: str
 
 
@@ -387,6 +387,7 @@ class ReconciliationResponse(BaseModel):
     period_end: date
     breakdown: ReconciliationBreakdown
     freshness: AnalyticsFreshnessMeta
+    integrity: AnalyticsIntegrityMeta | None = None
     warnings: list[IntegrityWarning] = Field(default_factory=list)
 
 

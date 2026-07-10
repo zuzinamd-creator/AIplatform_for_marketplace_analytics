@@ -205,10 +205,11 @@ export type ReconciliationResponse = {
     expected_payout: string;
     actual_payout: string;
     payout_difference: string;
-    profit: string;
+    profit: string | null;
     payout_is_not_profit_explanation: string;
   };
   freshness: AnalyticsFreshnessMeta;
+  integrity?: AnalyticsIntegrityMeta | null;
   warnings: IntegrityWarning[];
 };
 
