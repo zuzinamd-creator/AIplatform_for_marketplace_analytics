@@ -204,3 +204,15 @@ Eliminates false profit delta display when COGS is missing.
 
 [docs/product/pilot_trust_validation.md](../product/pilot_trust_validation.md) — FULL / PARTIAL / INSUFFICIENT scenarios.
 
+## Phase 9.7-B Trust UX Pilot Validation
+
+Validation report: [docs/product/trust_ux_validation_report.md](../product/trust_ux_validation_report.md)
+
+| Trust level | Tenant | Status |
+|-------------|--------|--------|
+| INSUFFICIENT | `mvp-e2e-test@mail.ru` | Live API PASS |
+| FULL | `margarita.zuzina@mail.ru` | Live API PASS (46/46 COGS) |
+| PARTIAL | Staging procedure | Code/unit PASS; live pending |
+
+**Analytics Hub readiness:** 76/100 — Conditional GO for 9.7-C.
+

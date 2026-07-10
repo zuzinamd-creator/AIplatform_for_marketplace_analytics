@@ -1,5 +1,20 @@
 # Changelog
 
+## [9.7-B] — 2026-07-11 — Trust UX Pilot Validation
+
+### Added
+- `docs/product/trust_ux_validation_report.md` — FULL/INSUFFICIENT live validation, PARTIAL staging procedure, hub readiness 76/100.
+
+### Validated
+- **INSUFFICIENT** live tenant `mvp-e2e-test@mail.ru` — API + trust UX PASS.
+- **FULL** live tenant `margarita.zuzina@mail.ru` — 46/46 COGS, profit/margin/delta PASS.
+- **PARTIAL** — unit/code path PASS; live staging procedure documented (no production tenant).
+
+### Decision
+- **Conditional GO** for Phase 9.7-C (Analytics Hub Step 2) after PARTIAL staging walkthrough.
+
+---
+
 ## [9.7-A] — 2026-07-11 — Backend Trust Hardening
 
 ### Fixed

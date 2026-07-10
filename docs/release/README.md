@@ -2,8 +2,9 @@
 
 | Release | Document | Status |
 |---------|----------|--------|
+| **Phase 9.7-B — Trust UX Pilot Validation** | [phase_97b_validation_certification.md](phase_97b_validation_certification.md) | **CERTIFIED** (read-only validation) |
+| Scope | FULL + INSUFFICIENT live PASS; PARTIAL staging; hub readiness 76/100 | 2026-07-11 |
 | **Phase 9.7-A — Backend Trust Hardening** | [phase_97a_deployment_certification.md](phase_97a_deployment_certification.md) | **CERTIFIED** (`ed9ede1`, bundle `index-CZkr1sTA.js`) |
-| Scope | `delta_profit` null contract, client-side profit delta guards, pilot validation plan | 2026-07-11 |
 | **Phase 9.6B-3 — Trust UX Completion** | [phase_96b3_deployment_certification.md](phase_96b3_deployment_certification.md) | Superseded by 9.7-A |
 | **Phase 9.6B-2A — Trust Integration Deploy** | [phase_96b2a_deployment_certification.md](phase_96b2a_deployment_certification.md) | Superseded by 9.6B-3 |
 | **Phase 9.3A — Invite System** | *(this index)* | **Runtime deployed** — commit pending 9.3X-C |

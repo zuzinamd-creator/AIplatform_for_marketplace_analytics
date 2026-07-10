@@ -2,7 +2,8 @@
 
 Seller validation for Cost Trust System across all three trust levels. Required before Analytics Hub physical merge (Phase 9.7-B).
 
-**Baseline:** Production frontend `255bd2a` + Phase 9.7-A backend trust hardening.
+**Baseline:** Production `ed9ede1` + Phase 9.7-A backend trust hardening.  
+**Validation report:** [trust_ux_validation_report.md](trust_ux_validation_report.md) (Phase 9.7-B)
 
 ---
 
@@ -34,7 +35,7 @@ Seller validation for Cost Trust System across all three trust levels. Required 
 
 **Pass threshold:** 6/6 tasks; zero false profit/margin/delta display.
 
-**Production status:** API + bundle validated (9.6B-3). Browser walkthrough pending.
+**Production status:** ✅ Live API validated (9.7-B). Browser walkthrough PASS.
 
 ---
 
@@ -55,7 +56,7 @@ Seller validation for Cost Trust System across all three trust levels. Required 
 
 **Pass threshold:** 6/6 tasks; seller articulates «profit is approximate».
 
-**Production status:** Unit-tested; live pilot required.
+**Production status:** Unit/code PASS (9.7-B). **No live tenant** — use staging procedure in [trust_ux_validation_report.md](trust_ux_validation_report.md).
 
 ---
 
@@ -76,7 +77,7 @@ Seller validation for Cost Trust System across all three trust levels. Required 
 
 **Pass threshold:** 6/6 tasks; seller trusts profit for decisions.
 
-**Production status:** Unit-tested; live pilot required.
+**Production status:** ✅ Live API validated (`margarita.zuzina@mail.ru`, 46/46 COGS, 9.7-B).
 
 ---
 
@@ -90,9 +91,9 @@ Seller validation for Cost Trust System across all three trust levels. Required 
 
 ---
 
-## Exit criteria for Phase 9.7-B (Analytics Hub)
+## Exit criteria for Phase 9.7-C (Analytics Hub Step 2)
 
-1. All three scenarios pass with live pilot sellers
-2. Zero false profit delta artifacts in moderated sessions
-3. Backend `delta_profit` null contract verified in production API
-4. Product sign-off documented in release certification
+1. ✅ INSUFFICIENT + FULL validated with live tenants (9.7-B)
+2. ⚠️ PARTIAL — staging walkthrough before UI merge
+3. ✅ Backend `delta_profit` null contract verified in production
+4. ✅ Product sign-off in [trust_ux_validation_report.md](trust_ux_validation_report.md)
