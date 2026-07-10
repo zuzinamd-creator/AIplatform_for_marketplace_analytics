@@ -7,7 +7,14 @@ import { Filter, Search, TrendingUp } from "lucide-react";
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { formatMetric, formatPct, formatRub, chartRubTooltip } from "../../utils/format";
-import { formatProfitValue, showInlineCostTrustBanner, skuProfitabilityBadge, useProfitTrust } from "../../state/profit-trust";
+import {
+  computeClientMarginDelta,
+  computeClientProfitDelta,
+  formatProfitValue,
+  showInlineCostTrustBanner,
+  skuProfitabilityBadge,
+  useProfitTrust,
+} from "../../state/profit-trust";
 import { CHART } from "../../ui/chart-theme";
 import { Card } from "../../ui/card";
 import { CollapsibleSection } from "../../ui/collapsible-section";
@@ -273,21 +280,35 @@ export function EconomicsPage() {
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
                         <span>{formatProfitValue(r.contribution_margin, trustCtx.trust)}</span>
-                        {compare && trustCtx.canShowProfit ? (
-                          <span className="text-xs text-ink-muted">
-                            Δ {formatProfitValue(Number(r.contribution_margin) - (bRow?.cm ?? 0), trustCtx.trust)}
-                          </span>
-                        ) : null}
+                        {compare && trustCtx.canShowProfit ? (() => {
+                          const cmDelta = computeClientProfitDelta(
+                            r.contribution_margin,
+                            bRow?.cm,
+                            trustCtx.trust,
+                          );
+                          return cmDelta !== null ? (
+                            <span className="text-xs text-ink-muted">
+                              Δ {formatProfitValue(cmDelta, trustCtx.trust)}
+                            </span>
+                          ) : null;
+                        })() : null}
                       </div>
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
                         <span>{trustCtx.canShowMargin ? formatPct(r.margin_pct ?? null) : "—"}</span>
-                        {compare && trustCtx.canShowMargin && bRow?.m !== null ? (
-                          <span className="text-xs text-ink-muted">
-                            Δ {formatMetric(Number(r.margin_pct ?? 0) - (bRow?.m ?? 0), { suffix: " %" })}
-                          </span>
-                        ) : null}
+                        {compare && trustCtx.canShowMargin ? (() => {
+                          const marginDelta = computeClientMarginDelta(
+                            r.margin_pct,
+                            bRow?.m,
+                            trustCtx.trust,
+                          );
+                          return marginDelta !== null ? (
+                            <span className="text-xs text-ink-muted">
+                              Δ {formatMetric(marginDelta, { suffix: " %" })}
+                            </span>
+                          ) : null;
+                        })() : null}
                       </div>
                     </td>
                     <td className="px-3 py-3">{formatRub(r.logistics)}</td>

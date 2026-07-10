@@ -3,6 +3,8 @@ import { renderHook } from "@testing-library/react";
 
 import { formatRub } from "../utils/format";
 import {
+  computeClientMarginDelta,
+  computeClientProfitDelta,
   deriveProfitTrustContext,
   formatDeltaWithTrust,
   formatProfitValue,
@@ -136,6 +138,36 @@ describe("guardPeriodCompareDeltaProfit", () => {
 describe("guardPeriodCompareDeltaMargin", () => {
   it("blocks margin delta unless trust is full", () => {
     expect(guardPeriodCompareDeltaMargin("2", "partial", "20", "18")).toBeNull();
+  });
+});
+
+describe("computeClientProfitDelta", () => {
+  it("returns null for insufficient trust", () => {
+    expect(computeClientProfitDelta("100", "50", "insufficient")).toBeNull();
+  });
+
+  it("returns null when B-period value is missing (no ?? 0 coercion)", () => {
+    expect(computeClientProfitDelta("100", null, "partial")).toBeNull();
+    expect(computeClientProfitDelta("100", undefined, "full")).toBeNull();
+  });
+
+  it("computes delta when trust allows and both values exist", () => {
+    expect(computeClientProfitDelta("200", "150", "full")).toBe(50);
+    expect(computeClientProfitDelta("100", "120", "partial")).toBe(-20);
+  });
+});
+
+describe("computeClientMarginDelta", () => {
+  it("returns null unless trust is full", () => {
+    expect(computeClientMarginDelta("20", "18", "partial")).toBeNull();
+  });
+
+  it("returns null when either margin is missing", () => {
+    expect(computeClientMarginDelta("20", null, "full")).toBeNull();
+  });
+
+  it("computes margin delta at full trust", () => {
+    expect(computeClientMarginDelta("22", "18", "full")).toBe(4);
   });
 });
 

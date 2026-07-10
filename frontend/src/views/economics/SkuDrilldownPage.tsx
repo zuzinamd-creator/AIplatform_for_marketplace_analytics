@@ -7,6 +7,8 @@ import { ArrowLeft, AlertTriangle, Info } from "lucide-react";
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import {
+  computeClientMarginDelta,
+  computeClientProfitDelta,
   formatProfitValue,
   formatDeltaWithTrust,
   showInlineCostTrustBanner,
@@ -203,7 +205,12 @@ export function SkuDrilldownPage() {
           value={formatProfitValue(kpis.profit, trustCtx.trust)}
           sub={
             compare && trustCtx.canShowProfit
-              ? `Δ ${formatDeltaWithTrust(kpis.profit - kpis.profitB, trustCtx.trust, "rub")}`
+              ? (() => {
+                  const delta = computeClientProfitDelta(kpis.profit, kpis.profitB, trustCtx.trust);
+                  return delta !== null
+                    ? `Δ ${formatDeltaWithTrust(delta, trustCtx.trust, "rub")}`
+                    : undefined;
+                })()
               : undefined
           }
         />
@@ -217,7 +224,12 @@ export function SkuDrilldownPage() {
           value={formatProfitValue(kpis.cm, trustCtx.trust)}
           sub={
             compare && trustCtx.canShowProfit
-              ? `Δ ${formatDeltaWithTrust(kpis.cm - kpis.cmB, trustCtx.trust, "rub")}`
+              ? (() => {
+                  const delta = computeClientProfitDelta(kpis.cm, kpis.cmB, trustCtx.trust);
+                  return delta !== null
+                    ? `Δ ${formatDeltaWithTrust(delta, trustCtx.trust, "rub")}`
+                    : undefined;
+                })()
               : undefined
           }
         />
@@ -230,8 +242,13 @@ export function SkuDrilldownPage() {
           }
           value={trustCtx.canShowMargin ? formatPct(kpis.margin) : "—"}
           sub={
-            compare && trustCtx.canShowMargin && kpis.marginB !== null && kpis.margin !== null
-              ? `Δ ${formatDeltaWithTrust(kpis.margin - kpis.marginB, trustCtx.trust, "pct")}`
+            compare && trustCtx.canShowMargin
+              ? (() => {
+                  const delta = computeClientMarginDelta(kpis.margin, kpis.marginB, trustCtx.trust);
+                  return delta !== null
+                    ? `Δ ${formatDeltaWithTrust(delta, trustCtx.trust, "pct")}`
+                    : undefined;
+                })()
               : undefined
           }
         />

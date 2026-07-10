@@ -60,10 +60,15 @@ Seller-facing trust layer for profit and margin KPIs. Trust is **computed on the
 
 `chartTrustNumeric()` returns `null` for missing profit or insufficient trust — Recharts `connectNulls={false}` prevents drawing false zero lines.
 
-## delta_profit safety (period-compare)
+## delta_profit safety (period-compare) — Phase 9.7-A
 
-**Backend behavior:** `delta_profit = (a.total_profit or 0) - (b.total_profit or 0)` — null profit coerced to zero.
+**Backend (9.7-A):** `compute_period_compare_delta_profit()` returns `null` when either period `total_profit` is `null`. No null→0 coercion.
 
-**Frontend guard:** `guardPeriodCompareDeltaProfit()` suppresses delta when trust is `insufficient`, both periods lack profit, or either period has null profit (masks misleading non-zero deltas).
+**API contract:** `PeriodComparisonResponse.delta_profit: Decimal | None`.
 
-**Residual backend risk:** Backend may still emit `delta_profit: "0"` for API consumers that bypass the frontend guard. Fix belongs in `analytics_service.period_compare` (Phase 9.7+).
+**Frontend guards:**
+- `guardPeriodCompareDeltaProfit()` — period-compare API deltas (Weekly Analysis, `TrustDeltaBadge`)
+- `computeClientProfitDelta()` — client-side SKU/Economics compare deltas (no `?? 0`)
+- `computeClientMarginDelta()` — margin deltas at full trust only
+
+**Residual risk:** Reconciliation backend may still return ungated profit aggregates — frontend masks display only.

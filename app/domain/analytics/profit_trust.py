@@ -111,3 +111,17 @@ def gate_profitability_decimal(profitability_pct: Decimal | None, *, trust: str)
     if trust == "full":
         return profitability_pct
     return None
+
+
+def compute_period_compare_delta_profit(
+    a_profit: Decimal | None,
+    b_profit: Decimal | None,
+) -> Decimal | None:
+    """
+    Period-compare profit delta — null when either period profit is unavailable.
+
+    Prevents null→0 coercion that would mask missing COGS as zero change.
+    """
+    if a_profit is None or b_profit is None:
+        return None
+    return a_profit - b_profit

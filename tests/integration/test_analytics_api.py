@@ -186,3 +186,76 @@ async def test_analytics_kpis_endpoints(
     assert "freshness" in cov
     assert "uploaded_report_types" in cov
 
+
+@pytest.mark.integration
+async def test_period_compare_delta_profit_null_when_profit_unavailable(
+    api_client: AsyncClient,
+    session_factory,
+) -> None:
+    """9.7-A: delta_profit must be null (not 0) when either period profit is unavailable."""
+    user_id = uuid4()
+    user = User(
+        id=user_id,
+        email=f"period-compare-{user_id}@example.com",
+        hashed_password="not-used",
+        is_active=True,
+    )
+    headers = {"Authorization": f"Bearer {create_access_token(user_id)}"}
+
+    async with session_factory() as session:
+        async with session.begin():
+            session.add(user)
+            await session.flush()
+
+        async with TenantSession.transaction(session, user.id):
+            session.add(
+                Report(
+                    id=uuid4(),
+                    user_id=user.id,
+                    marketplace=Marketplace.WILDBERRIES,
+                    report_type=ReportType.FINANCE,
+                    original_filename="wb_finance.xlsx",
+                    file_checksum="chk-pc-1",
+                )
+            )
+            session.add_all(
+                [
+                    DailyAggregate(
+                        user_id=user.id,
+                        aggregate_date=date(2026, 2, 1),
+                        marketplace=Marketplace.WILDBERRIES,
+                        revenue=Decimal("1000"),
+                        net_profit=Decimal("200"),
+                        margin=Decimal("20"),
+                        units_sold=10,
+                    ),
+                    DailyAggregate(
+                        user_id=user.id,
+                        aggregate_date=date(2026, 2, 15),
+                        marketplace=Marketplace.WILDBERRIES,
+                        revenue=Decimal("800"),
+                        net_profit=Decimal("100"),
+                        margin=Decimal("12"),
+                        units_sold=8,
+                    ),
+                ]
+            )
+
+    compare = await api_client.get(
+        "/api/v1/analytics/kpis/period-compare",
+        params={
+            "marketplace": "wildberries",
+            "a_start": "2026-02-01",
+            "a_end": "2026-02-07",
+            "b_start": "2026-02-15",
+            "b_end": "2026-02-21",
+        },
+        headers=headers,
+    )
+    assert compare.status_code == 200
+    body = compare.json()
+    assert body["a"]["total_profit"] is None
+    assert body["b"]["total_profit"] is None
+    assert body["delta_profit"] is None
+    assert body["integrity"]["profit_metrics_trust"] == "insufficient"
+

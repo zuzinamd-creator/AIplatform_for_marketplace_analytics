@@ -1,11 +1,11 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
-**Version:** Phase 9.6B-3 (trust UX complete) · Phase 9.3A (invite system) · Phase 8.1–8.3 (finance + safety)  
-**Certified baseline:** git tag `certified-production` → `255bd2a`  
+**Version:** Phase 9.7-A (backend trust hardening) · Phase 9.6B-3 (trust UX) · Phase 9.3A (invite system)  
+**Certified baseline:** git tag `certified-production` → `255bd2a` (pending 9.7-A deploy)  
 **Frontend bundle (production):** `index-B1kahpoB.js` @ 2026-07-10  
 **Alembic head:** `0035_registration_invites`  
-**Status:** Production frontend = Git HEAD · smoke PASS · trust UX complete (9.6B-3)  
-**Last updated:** 2026-07-10
+**Status:** Phase 9.7-A in progress — `delta_profit` null contract + client-side guards  
+**Last updated:** 2026-07-11
 
 ---
 

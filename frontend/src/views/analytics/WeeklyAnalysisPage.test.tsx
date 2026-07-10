@@ -164,7 +164,7 @@ describe("WeeklyAnalysisPage", () => {
       a: { total_revenue: "1000", total_profit: null, margin_pct: null, units_sold: 50 },
       b: { total_revenue: "800", total_profit: null, margin_pct: null, units_sold: 40 },
       delta_revenue: "200",
-      delta_profit: "0",
+      delta_profit: null,
       delta_margin_pct: null,
       freshness: { stale_data_warning: false },
       integrity: { warnings: [], profit_metrics_trust: "insufficient" },

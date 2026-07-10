@@ -291,7 +291,7 @@ export type PeriodComparisonResponse = {
     average_check?: string | null;
   };
   delta_revenue: string;
-  delta_profit: string;
+  delta_profit: string | null;
   delta_margin_pct?: string | null;
   freshness: AnalyticsFreshnessMeta;
   integrity?: AnalyticsIntegrityMeta | null;

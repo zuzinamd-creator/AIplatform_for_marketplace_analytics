@@ -4,6 +4,7 @@ from app.domain.analytics.profit_trust import (
     apply_profit_trust_to_ai_metrics,
     apply_profit_trust_to_kpis,
     classify_profit_trust,
+    compute_period_compare_delta_profit,
 )
 from app.dto.analytics_dto import TopSKUSummaryDTO
 
@@ -23,6 +24,13 @@ def test_apply_profit_trust_to_kpis() -> None:
     assert apply_profit_trust_to_kpis(trust="full", total_profit=profit, margin_pct=margin) == (profit, margin)
     assert apply_profit_trust_to_kpis(trust="partial", total_profit=profit, margin_pct=margin) == (profit, None)
     assert apply_profit_trust_to_kpis(trust="insufficient", total_profit=profit, margin_pct=margin) == (None, None)
+
+
+def test_compute_period_compare_delta_profit() -> None:
+    assert compute_period_compare_delta_profit(Decimal("200"), Decimal("150")) == Decimal("50")
+    assert compute_period_compare_delta_profit(None, Decimal("150")) is None
+    assert compute_period_compare_delta_profit(Decimal("200"), None) is None
+    assert compute_period_compare_delta_profit(None, None) is None
 
 
 def test_apply_profit_trust_to_ai_metrics() -> None:

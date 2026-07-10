@@ -156,7 +156,7 @@ class PeriodComparisonResponse(BaseModel):
     a: RevenueKpiSummary
     b: RevenueKpiSummary
     delta_revenue: Decimal
-    delta_profit: Decimal
+    delta_profit: Decimal | None = None
     delta_margin_pct: Decimal | None = None
     freshness: AnalyticsFreshnessMeta
     integrity: AnalyticsIntegrityMeta | None = None

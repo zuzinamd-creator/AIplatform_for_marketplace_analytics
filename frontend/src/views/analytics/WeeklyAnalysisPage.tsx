@@ -15,7 +15,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
-import { formatProfitValue, showInlineCostTrustBanner, useProfitTrust } from "../../state/profit-trust";
+import { formatProfitValue, guardPeriodCompareDeltaProfit, showInlineCostTrustBanner, useProfitTrust } from "../../state/profit-trust";
 import { formatInteger, formatPct, formatRub, parseNumeric } from "../../utils/format";
 import { Card } from "../../ui/card";
 import { CollapsibleSection } from "../../ui/collapsible-section";
@@ -164,7 +164,13 @@ export function WeeklyAnalysisPage() {
         text: "Прибыль рассчитана не для всех SKU — не используйте её как единственный критерий решений",
       });
     } else if (trustCtx.trust === "full" && trustCtx.canShowProfitAction) {
-      const deltaProfit = parseNumeric(compare.data?.delta_profit);
+      const guardedDelta = guardPeriodCompareDeltaProfit(
+        compare.data?.delta_profit,
+        trustCtx.trust,
+        compare.data?.a.total_profit,
+        compare.data?.b.total_profit,
+      );
+      const deltaProfit = parseNumeric(guardedDelta);
       if (deltaProfit !== null && deltaProfit < 0) {
         list.push({
           tone: "warn",

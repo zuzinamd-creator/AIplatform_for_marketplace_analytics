@@ -1,5 +1,24 @@
 # Changelog
 
+## [9.7-A] — 2026-07-11 — Backend Trust Hardening
+
+### Fixed
+- **`period_compare` `delta_profit` null→0 coercion** — backend returns `null` when either period profit is unavailable (`compute_period_compare_delta_profit`).
+- **Client-side profit deltas** — `computeClientProfitDelta` / `computeClientMarginDelta` guard Economics and SKU Drilldown compare modes (no `?? 0` coercion).
+- **Weekly Analysis priorities** — profit-decline alert uses guarded `delta_profit`.
+
+### Changed
+- **API contract:** `PeriodComparisonResponse.delta_profit` is now `Decimal | None`.
+- **Frontend types:** `delta_profit: string | null`.
+
+### Added
+- `docs/product/pilot_trust_validation.md` — FULL / PARTIAL / INSUFFICIENT pilot scenarios.
+- Backend unit test `test_compute_period_compare_delta_profit`.
+- Integration test `test_period_compare_delta_profit_null_when_profit_unavailable`.
+- Frontend tests for `computeClientProfitDelta` / `computeClientMarginDelta`.
+
+---
+
 ## [9.6B-3] — 2026-07-10 — Trust UX Completion
 
 ### Added

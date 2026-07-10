@@ -182,3 +182,25 @@ Completes Cost Trust rollout across all financial surfaces.
 - `frontend/src/ui/ai-trust-panel.test.tsx`
 - Extended `profit-trust.test.ts`, `cost-trust-banner.test.tsx`
 
+## Phase 9.7-A Backend Trust Hardening
+
+Eliminates false profit delta display when COGS is missing.
+
+### Backend
+
+- `compute_period_compare_delta_profit()` in `app/domain/analytics/profit_trust.py`
+- `analytics_service.period_compare` returns `delta_profit: null` when either period profit is null
+- `PeriodComparisonResponse.delta_profit` nullable in Pydantic schema
+
+### Frontend guards
+
+| Function | Usage |
+|----------|-------|
+| `computeClientProfitDelta` | EconomicsPage, SkuDrilldownPage compare deltas |
+| `computeClientMarginDelta` | EconomicsPage, SkuDrilldownPage margin deltas |
+| `guardPeriodCompareDeltaProfit` | WeeklyAnalysisPage priorities + TrustDeltaBadge |
+
+### Pilot validation
+
+[docs/product/pilot_trust_validation.md](../product/pilot_trust_validation.md) — FULL / PARTIAL / INSUFFICIENT scenarios.
+

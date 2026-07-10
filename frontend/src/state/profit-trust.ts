@@ -159,8 +159,8 @@ function profitSourceMissing(value: unknown): boolean {
 }
 
 /**
- * Guard period-compare delta_profit against backend null→0 coercion.
- * Backend: `(a.total_profit or 0) - (b.total_profit or 0)` — masks missing COGS as zero change.
+ * Guard period-compare delta_profit — null when trust or source profit is unavailable.
+ * Backend (9.7-A): returns null delta when either period profit is null.
  */
 export function guardPeriodCompareDeltaProfit(
   delta: unknown,
@@ -171,13 +171,49 @@ export function guardPeriodCompareDeltaProfit(
   if (trust === "insufficient") {
     return null;
   }
-  if (profitSourceMissing(aProfit) && profitSourceMissing(bProfit)) {
-    return null;
-  }
   if (profitSourceMissing(aProfit) || profitSourceMissing(bProfit)) {
     return null;
   }
   return delta;
+}
+
+/**
+ * Client-side profit delta — never coerces missing values to zero.
+ * Returns null when trust is insufficient or either operand is missing.
+ */
+export function computeClientProfitDelta(
+  aValue: unknown,
+  bValue: unknown,
+  trust: ProfitTrustLevel,
+): number | null {
+  if (trust === "insufficient") {
+    return null;
+  }
+  const a = parseNumeric(aValue);
+  const b = parseNumeric(bValue);
+  if (a === null || b === null) {
+    return null;
+  }
+  return a - b;
+}
+
+/**
+ * Client-side margin delta — only at full trust with both values present.
+ */
+export function computeClientMarginDelta(
+  aValue: unknown,
+  bValue: unknown,
+  trust: ProfitTrustLevel,
+): number | null {
+  if (trust !== "full") {
+    return null;
+  }
+  const a = parseNumeric(aValue);
+  const b = parseNumeric(bValue);
+  if (a === null || b === null) {
+    return null;
+  }
+  return a - b;
 }
 
 export function guardPeriodCompareDeltaMargin(

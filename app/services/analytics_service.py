@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.analytics.profit_trust import (
     apply_profit_trust_to_kpis,
+    compute_period_compare_delta_profit,
     gate_margin_decimal,
     gate_profit_decimal,
     gate_profitability_decimal,
@@ -972,8 +973,9 @@ class AnalyticsService(TenantScopedService):
         b_sum = await self.revenue_summary(marketplace=marketplace, period=b)
 
         delta_rev = a_sum.kpis.total_revenue - b_sum.kpis.total_revenue
-        delta_profit = (a_sum.kpis.total_profit or Decimal("0")) - (
-            b_sum.kpis.total_profit or Decimal("0")
+        delta_profit = compute_period_compare_delta_profit(
+            a_sum.kpis.total_profit,
+            b_sum.kpis.total_profit,
         )
         delta_margin = None
         if a_sum.kpis.margin_pct is not None and b_sum.kpis.margin_pct is not None:
