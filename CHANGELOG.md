@@ -1,5 +1,14 @@
 # Changelog
 
+## [9.6B-2A] — 2026-07-10 — Production Deployment & Trust Validation
+
+### Deployed
+- Frontend trust integration (9.6B-2) to production VPS — bundle `index-BqjAbDai.js`
+- Post-deploy smoke test PASS; DEPLOY == GIT certified at `7aedd90`
+- Certification: [docs/release/phase_96b2a_deployment_certification.md](docs/release/phase_96b2a_deployment_certification.md)
+
+---
+
 ## [Unreleased] — Phase 9.6B-2 Trust Integration (2026-07-10)
 
 ### Added
