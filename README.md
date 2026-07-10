@@ -1,9 +1,9 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
-**Version:** Phase 9.7-D (trust closure) · Phase 9.7-C (Analytics Hub Step 2)  
+**Version:** Phase 9.7-E (partial trust live validation) · Phase 9.7-D (trust closure)  
 **Certified baseline:** git tag `certified-production` → `0a59676`  
 **Frontend bundle (production):** `index-BxNJPr4A.js` @ 2026-07-11  
-**Status:** Trust closure deployed · reconciliation gate live · smoke PASS  
+**Status:** All trust states live-validated · **GO** for Phase 9.8-A  
 **Last updated:** 2026-07-11
 
 ---
@@ -14,6 +14,8 @@
 |-------|-------|
 | **Certified baseline (VPS)** | git tag `certified-production` → `0a59676` (Phase 9.7-D) |
 | **Frontend bundle** | `index-BxNJPr4A.js` @ 2026-07-11 |
+| **Phase 9.7-E certification** | [docs/release/phase_97e_certification.md](docs/release/phase_97e_certification.md) |
+| **Partial trust results** | [docs/product/partial_trust_validation_results.md](docs/product/partial_trust_validation_results.md) |
 | **Phase 9.7-D certification** | [docs/release/phase_97d_certification.md](docs/release/phase_97d_certification.md) |
 | **Trust matrix** | [docs/product/trust_matrix_certification.md](docs/product/trust_matrix_certification.md) |
 | **Analytics Hub master spec** | [docs/product/analytics_hub_master_spec.md](docs/product/analytics_hub_master_spec.md) |

@@ -1,5 +1,24 @@
 # Changelog
 
+## [9.7-E] — 2026-07-11 — Partial Trust Live Validation
+
+### Validated
+- **PARTIAL trust live** — dedicated tenant `partial-trust-e2e@mail.ru` at 50% COGS coverage (1/2 SKUs).
+- **7/7 UX Scenario B steps** — Dashboard, Comparison, Economics, SKU Drilldown, Reconciliation, Cost Coverage, AI Recommendations.
+- **Trust upgrade journey** — partial (50%) → COGS upload → full (100%) confirmed.
+
+### Added
+- `docs/product/partial_trust_validation_results.md` — live API evidence and UX walkthrough results.
+- `docs/release/phase_97e_certification.md` — **GO** for Phase 9.8-A Analytics Hub physical merge.
+
+### Defects
+- Medium (documented): CSV cost import requires quoted fields for SKU names containing commas — no code fix.
+
+### Decision
+- **GO** for Phase 9.8-A — all three trust states (INSUFFICIENT, PARTIAL, FULL) live-validated.
+
+---
+
 ## [9.7-D] — 2026-07-11 — Trust Closure & Analytics Hub Preparation
 
 ### Fixed

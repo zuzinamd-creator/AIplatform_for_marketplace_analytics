@@ -174,6 +174,8 @@ Use [pilot_trust_validation.md](pilot_trust_validation.md) Scenario B. Moderated
 
 **Pass threshold:** 7/7 browser steps + 4/4 API checks.
 
+**Production status (9.7-E):** ✅ Live validated — see [partial_trust_validation_results.md](partial_trust_validation_results.md).
+
 ---
 
 ## Rollback / safety

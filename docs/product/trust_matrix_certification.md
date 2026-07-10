@@ -29,7 +29,7 @@ Classification: `classify_profit_trust()` in `app/domain/analytics/profit_trust.
 | INSUFFICIENT | `—` | `—` | No profit line | Critical + CTA | `total_profit` null |
 
 **API:** `GET /analytics/kpis/summary`, `GET /analytics/trends/daily`  
-**Validation:** ✅ FULL live (margarita); ✅ INSUFFICIENT live (MVP); ⚠️ PARTIAL staging pending
+**Validation:** ✅ FULL live (margarita); ✅ INSUFFICIENT live (MVP); ✅ PARTIAL live ([partial_trust_validation_results.md](partial_trust_validation_results.md), 9.7-E)
 
 ---
 
@@ -42,7 +42,7 @@ Classification: `classify_profit_trust()` in `app/domain/analytics/profit_trust.
 | INSUFFICIENT | `н/д` | `н/д` | No profit-based priorities | Critical + CTA |
 
 **API:** `GET /analytics/kpis/period-compare` — `delta_profit: null` when either period profit null (9.7-A fix)  
-**Validation:** ✅ FULL + INSUFFICIENT live; ⚠️ PARTIAL staging pending
+**Validation:** ✅ FULL + INSUFFICIENT live; ✅ PARTIAL live (9.7-E)
 
 ---
 
@@ -133,11 +133,13 @@ Classification: `classify_profit_trust()` in `app/domain/analytics/profit_trust.
 | Backend profit gating complete | ✅ PASS (reconciliation closed 9.7-D) |
 | FULL trust live validated | ✅ PASS |
 | INSUFFICIENT trust live validated | ✅ PASS |
-| PARTIAL trust live validated | ⚠️ PENDING — [partial_trust_live_validation.md](partial_trust_live_validation.md) |
+| PARTIAL trust live validated | ✅ PASS (9.7-E) |
 | Analytics Hub IA Step 2 | ✅ PASS (9.7-C) |
-| Physical Hub merge | ⏸ Deferred to 9.8 |
+| Physical Hub merge | ⏸ Deferred to 9.8-A |
 
-**Trust readiness:** **CONDITIONAL GO** — proceed to 9.8 after PARTIAL live session (1× ~45 min).
+**Trust readiness:** **GO** — all three trust states live-validated (9.7-E).
+
+**Hub readiness:** **82/100** — **GO** for Phase 9.8-A physical merge.
 
 ---
 

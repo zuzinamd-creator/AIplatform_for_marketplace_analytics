@@ -2,6 +2,8 @@
 
 | Release | Document | Status |
 |---------|----------|--------|
+| **Phase 9.7-E — Partial Trust Live Validation** | [phase_97e_certification.md](phase_97e_certification.md) | **CERTIFIED** (docs-only, **GO** for 9.8-A) |
+| Scope | PARTIAL trust live validation, trust upgrade journey, hub readiness 82/100 | 2026-07-11 |
 | **Phase 9.7-D — Trust Closure & Hub Prep** | [phase_97d_certification.md](phase_97d_certification.md) | **CERTIFIED** (`0a59676`, bundle `index-BxNJPr4A.js`) |
 | Scope | Reconciliation profit gate, trust matrix, partial validation proc, hub master spec | 2026-07-11 |
 | **Phase 9.7-C — Analytics Hub Step 2** | [phase_97c_deployment_certification.md](phase_97c_deployment_certification.md) | Superseded by 9.7-D |
