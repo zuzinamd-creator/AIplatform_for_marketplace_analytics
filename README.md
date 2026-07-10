@@ -1,10 +1,10 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
 **Version:** Phase 9.6B-3 (trust UX complete) · Phase 9.3A (invite system) · Phase 8.1–8.3 (finance + safety)  
-**Certified baseline:** git tag `certified-production` → `7aedd90` (pending 9.6B-3 deploy)  
-**Frontend bundle (production):** pending 9.6B-3 deploy  
+**Certified baseline:** git tag `certified-production` → `255bd2a`  
+**Frontend bundle (production):** `index-B1kahpoB.js` @ 2026-07-10  
 **Alembic head:** `0035_registration_invites`  
-**Status:** Production frontend = Git HEAD · smoke PASS · trust certified (insufficient live + unit matrix)  
+**Status:** Production frontend = Git HEAD · smoke PASS · trust UX complete (9.6B-3)  
 **Last updated:** 2026-07-10
 
 ---
@@ -13,8 +13,9 @@
 
 | Field | Value |
 |-------|-------|
-| **Certified baseline (VPS)** | git tag `certified-production` → `7aedd90` (Phase 9.6B-2A) |
-| **Frontend bundle** | `index-BqjAbDai.js` @ 2026-07-10 |
+| **Certified baseline (VPS)** | git tag `certified-production` → `255bd2a` (Phase 9.6B-3) |
+| **Frontend bundle** | `index-B1kahpoB.js` @ 2026-07-10 |
+| **Phase 9.6B-3 certification** | [docs/release/phase_96b3_deployment_certification.md](docs/release/phase_96b3_deployment_certification.md) |
 | **Phase 9.6B-2A certification** | [docs/release/phase_96b2a_deployment_certification.md](docs/release/phase_96b2a_deployment_certification.md) |
 | **Historical safety baseline** | `11731e9` — 8.2.1a recovery stabilization |
 | **Safety stack** | 8.2.0 systemd preflight · 8.2.1a recovery tooling · 8.3.0 deploy guard |
