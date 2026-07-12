@@ -1,7 +1,7 @@
 # Phase 9.8-B — Analytics Hub Polish & Dedup Certification
 
 **Date:** 2026-07-12  
-**Git HEAD:** `efbef3a`  
+**Git HEAD:** `efbef3a` (feature) · `3d07b17` (cert docs)  
 **Frontend bundle:** `index-B16sFXhD.js`  
 **Deploy timestamp:** 2026-07-12T17:11Z  
 
@@ -36,8 +36,8 @@
 
 | Field | Value |
 |-------|-------|
-| Git HEAD | `efbef3a` |
-| certified-production | `efbef3a` |
+| Git HEAD | `3d07b17` |
+| certified-production | `3d07b17` |
 | Bundle | `index-B16sFXhD.js` |
 
 **Verdict:** ✅
