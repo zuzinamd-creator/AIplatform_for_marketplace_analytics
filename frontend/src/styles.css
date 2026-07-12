@@ -110,4 +110,12 @@
   .nav-item-idle {
     @apply text-ink-secondary hover:bg-surface-inset;
   }
+
+  .analytics-tab-active {
+    @apply border-b-2 border-brand bg-brand-subtle text-brand;
+  }
+
+  .analytics-tab-idle {
+    @apply text-ink-secondary hover:bg-surface-inset hover:text-ink;
+  }
 }

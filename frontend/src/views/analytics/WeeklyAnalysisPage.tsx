@@ -15,7 +15,12 @@ import { Link } from "react-router-dom";
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
-import { formatProfitValue, guardPeriodCompareDeltaProfit, showInlineCostTrustBanner, useProfitTrust, COST_COVERAGE_ROUTE } from "../../state/profit-trust";
+import {
+  ANALYTICS_COST_COVERAGE_ROUTE,
+  ANALYTICS_ECONOMICS_ROUTE,
+  ANALYTICS_OVERVIEW_ROUTE,
+} from "../../shell/analytics-tabs";
+import { formatProfitValue, guardPeriodCompareDeltaProfit, showInlineCostTrustBanner, useProfitTrust } from "../../state/profit-trust";
 import { formatInteger, formatPct, formatRub, parseNumeric } from "../../utils/format";
 import { Card } from "../../ui/card";
 import { CollapsibleSection } from "../../ui/collapsible-section";
@@ -194,13 +199,13 @@ export function WeeklyAnalysisPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link className="btn-secondary" to="/app/dashboard">
+          <Link className="btn-secondary" to={ANALYTICS_OVERVIEW_ROUTE}>
             Вернуться к обзору бизнеса
           </Link>
-          <Link className="btn-secondary" to="/app/economics">
+          <Link className="btn-secondary" to={ANALYTICS_ECONOMICS_ROUTE}>
             Экономика SKU →
           </Link>
-          <Link className="btn-secondary" to={COST_COVERAGE_ROUTE}>
+          <Link className="btn-secondary" to={ANALYTICS_COST_COVERAGE_ROUTE}>
             Покрытие себестоимости →
           </Link>
           <StatusBadge tone={stale ? "warn" : "info"}>{stale ? "данные устарели" : "актуально"}</StatusBadge>

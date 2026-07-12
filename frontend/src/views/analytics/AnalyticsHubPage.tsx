@@ -1,7 +1,11 @@
 import { BarChart3, LayoutDashboard, LineChart, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import { COST_COVERAGE_ROUTE } from "../../state/profit-trust";
+import {
+  ANALYTICS_COST_COVERAGE_ROUTE,
+  ANALYTICS_ECONOMICS_ROUTE,
+  ANALYTICS_WEEKLY_ROUTE,
+} from "../../shell/analytics-tabs";
 import { Card } from "../../ui/card";
 
 const ENTRIES = [
@@ -12,19 +16,19 @@ const ENTRIES = [
     icon: LayoutDashboard,
   },
   {
-    to: "/app/analytics/weekly",
+    to: ANALYTICS_WEEKLY_ROUTE,
     title: "Сравнение периодов",
     description: "Почему изменились показатели: дельты выручки, прибыли, маржи, ABC и складские риски.",
     icon: BarChart3,
   },
   {
-    to: "/app/economics",
+    to: ANALYTICS_ECONOMICS_ROUTE,
     title: "Экономика SKU",
     description: "Прибыльность по товарам: маржа, затраты и утечки прибыли на уровне SKU.",
     icon: LineChart,
   },
   {
-    to: COST_COVERAGE_ROUTE,
+    to: ANALYTICS_COST_COVERAGE_ROUTE,
     title: "Покрытие себестоимости",
     description: "Доля SKU с загруженной себестоимостью — основа доверия к прибыли и марже.",
     icon: Shield,

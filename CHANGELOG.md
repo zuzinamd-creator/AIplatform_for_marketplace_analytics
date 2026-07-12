@@ -1,6 +1,24 @@
 # Changelog
 
-## [9.7-E] — 2026-07-11 — Partial Trust Live Validation
+## [9.8-A] — 2026-07-12 — Analytics Hub Physical Merge
+
+### Added
+- **`AnalyticsShell`** — tab shell at `/app/analytics` embedding Overview, Comparison, Economics, and Cost Coverage.
+- Hub route aliases: `/app/analytics/economics`, `/app/analytics/cost-coverage`, `/app/analytics/overview` → `/app/analytics`.
+- `FEATURE_FLAGS.analyticsHubTabs` — rollback to 9.7-C link hub when `false`.
+- `frontend/src/shell/analytics-tabs.ts` — shared tab definitions and route constants.
+- `docs/release/phase_98a_certification.md` — deployment certification.
+
+### Changed
+- **Navigation** — Analytics Hub (`/app/analytics`) is the primary analytics entry; cost coverage moved from Reports to Analytics section.
+- **Cross-links** — Comparison and Economics CTAs use hub tab routes.
+- Legacy routes preserved: `/app/dashboard`, `/app/analytics/weekly`, `/app/economics`, `/app/finance/cost-coverage`.
+
+### Constraints respected
+- No KPI calculation, API, trust threshold, or AI prompt changes.
+- No route removal; backward-compatible bookmarks.
+
+---
 
 ### Validated
 - **PARTIAL trust live** — dedicated tenant `partial-trust-e2e@mail.ru` at 50% COGS coverage (1/2 SKUs).

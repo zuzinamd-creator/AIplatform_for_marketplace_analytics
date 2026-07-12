@@ -245,3 +245,25 @@ Trust matrix certification and reconciliation backend profit gate. See:
 
 **Hub readiness:** 78/100 — Conditional GO for 9.8 after PARTIAL live session.
 
+## Phase 9.8-A Analytics Hub Physical Merge
+
+Physical tab shell under `/app/analytics`. See [docs/product/analytics_hub_master_spec.md](../product/analytics_hub_master_spec.md) and [docs/release/phase_98a_certification.md](../release/phase_98a_certification.md).
+
+| Change | Detail |
+|--------|--------|
+| `AnalyticsShell` | Tab shell: Обзор · Сравнение периодов · Экономика SKU · Покрытие себестоимости |
+| Hub routes | `/app/analytics`, `/app/analytics/weekly`, `/app/analytics/economics`, `/app/analytics/cost-coverage` |
+| Legacy routes | `/app/dashboard`, `/app/economics`, `/app/finance/cost-coverage` — unchanged standalone pages |
+| Rollback | `FEATURE_FLAGS.analyticsHubTabs = false` → 9.7-C link hub (`AnalyticsHubPage`) |
+
+### Embedded pages (no logic duplication)
+
+| Tab | Component | Route |
+|-----|-----------|-------|
+| Обзор | `DashboardPage` | `/app/analytics` (index) |
+| Сравнение периодов | `WeeklyAnalysisPage` | `/app/analytics/weekly` |
+| Экономика SKU | `EconomicsPage` | `/app/analytics/economics` |
+| Покрытие себестоимости | `CostCoveragePage` | `/app/analytics/cost-coverage` |
+
+Trust components (`CostTrustBanner`, `ProfitTrustBadge`, `CostCoverageIndicator`, AI disclosures) remain on each embedded page — no trust logic changes.
+

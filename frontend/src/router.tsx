@@ -3,8 +3,10 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { AppShell } from "./shell/AppShell";
+import { AnalyticsShell } from "./shell/AnalyticsShell";
 import { RequireAuth, RequirePlatformAdmin } from "./state/auth";
 import { RouteError } from "./ui/route-error";
+import { FEATURE_FLAGS } from "./state/feature-flags";
 
 import { LoginPage } from "./views/auth/LoginPage";
 import { RegisterPage } from "./views/auth/RegisterPage";
@@ -88,8 +90,22 @@ export const router = createBrowserRouter([
       { path: "finance/reconciliation", element: withBoundary(<ReconciliationPage />) },
       { path: "finance/cost-coverage", element: withBoundary(<CostCoveragePage />) },
       { path: "economics", element: withBoundary(<EconomicsPage />) },
-      { path: "analytics", element: withBoundary(<AnalyticsHubPage />) },
-      { path: "analytics/weekly", element: withBoundary(<WeeklyAnalysisPage />) },
+      {
+        path: "analytics",
+        element: withBoundary(FEATURE_FLAGS.analyticsHubTabs ? <AnalyticsShell /> : <AnalyticsHubPage />),
+        children: FEATURE_FLAGS.analyticsHubTabs
+          ? [
+              { index: true, element: withBoundary(<DashboardPage />) },
+              { path: "overview", element: <Navigate to="/app/analytics" replace /> },
+              { path: "weekly", element: withBoundary(<WeeklyAnalysisPage />) },
+              { path: "economics", element: withBoundary(<EconomicsPage />) },
+              { path: "cost-coverage", element: withBoundary(<CostCoveragePage />) },
+            ]
+          : [],
+      },
+      ...(FEATURE_FLAGS.analyticsHubTabs
+        ? []
+        : [{ path: "analytics/weekly", element: withBoundary(<WeeklyAnalysisPage />) }]),
       { path: "economics/sku/:sku", element: withBoundary(<SkuDrilldownPage />) },
       { path: "economics/inventory", element: withBoundary(<InventoryEconomicsPage />) },
 

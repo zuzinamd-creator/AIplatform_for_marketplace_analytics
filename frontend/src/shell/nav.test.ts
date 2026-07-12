@@ -22,7 +22,9 @@ describe("buildNavSections", () => {
     const analytics = sections.find((s) => s.id === "analytics");
     expect(analytics?.items.map((i) => i.to)).toContain("/app/analytics");
     expect(analytics?.items.map((i) => i.to)).toContain("/app/analytics/weekly");
-    expect(analytics?.items.find((i) => i.to === "/app/analytics")?.label).toBe("Обзор аналитики");
+    expect(analytics?.items.map((i) => i.to)).toContain("/app/analytics/economics");
+    expect(analytics?.items.map((i) => i.to)).toContain("/app/analytics/cost-coverage");
+    expect(analytics?.items.find((i) => i.to === "/app/analytics")?.label).toBe("Аналитика");
     expect(analytics?.items.find((i) => i.to === "/app/analytics/weekly")?.label).toBe(
       "Сравнение периодов",
     );
@@ -35,10 +37,11 @@ describe("buildNavSections", () => {
     expect(account?.items.map((i) => i.to)).toEqual(["/app/onboarding", "/app/settings", "/app/support"]);
 
     const reports = sections.find((s) => s.id === "reports");
-    expect(reports?.items.map((i) => i.to)).toContain("/app/finance/cost-coverage");
-    expect(reports?.items.find((i) => i.to === "/app/finance/cost-coverage")?.label).toBe(
-      "Покрытие себестоимости",
-    );
+    expect(reports?.items.map((i) => i.to)).toEqual([
+      "/app/reports",
+      "/app/reports/upload",
+      "/app/costs",
+    ]);
 
     expect(sections.flatMap((s) => s.items).some((i) => i.to.startsWith("/app/admin"))).toBe(false);
   });

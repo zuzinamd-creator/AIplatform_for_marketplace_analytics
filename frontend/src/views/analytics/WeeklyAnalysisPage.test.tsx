@@ -130,10 +130,10 @@ describe("WeeklyAnalysisPage", () => {
 
     expect(screen.getByRole("heading", { name: "Сравнение периодов", level: 1 })).toBeTruthy();
     const backLink = screen.getByRole("link", { name: "Вернуться к обзору бизнеса" });
-    expect(backLink.getAttribute("href")).toBe("/app/dashboard");
-    expect(screen.getByRole("link", { name: "Экономика SKU →" }).getAttribute("href")).toBe("/app/economics");
+    expect(backLink.getAttribute("href")).toBe("/app/analytics");
+    expect(screen.getByRole("link", { name: "Экономика SKU →" }).getAttribute("href")).toBe("/app/analytics/economics");
     expect(screen.getByRole("link", { name: "Покрытие себестоимости →" }).getAttribute("href")).toBe(
-      "/app/finance/cost-coverage",
+      "/app/analytics/cost-coverage",
     );
     expect(await screen.findByText("ABC-анализ")).toBeTruthy();
     expect(await screen.findByText("Риски запасов")).toBeTruthy();

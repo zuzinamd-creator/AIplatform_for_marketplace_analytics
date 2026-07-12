@@ -1,8 +1,8 @@
-# Analytics Hub — Master Specification (Phase 9.7-D)
+# Analytics Hub — Master Specification (Phase 9.7-D / 9.8-A)
 
-**Date:** 2026-07-11  
-**Status:** Preparation complete — physical merge deferred to Phase 9.8  
-**Current production:** IA Step 2 deployed (9.7-C, `73e9597`)
+**Date:** 2026-07-12  
+**Status:** Phase 9.8-A physical merge **complete**  
+**Current production:** Pending 9.8-A deploy certification
 
 ---
 
@@ -15,7 +15,7 @@ Unify seller analytics under a single **Analytics Hub** mental model while prese
 | **What is happening now?** | Overview (Dashboard) |
 | **Why did it change?** | Comparison + Economics drilldown |
 
-Phase 9.7-C delivered the **entry hub** (`/app/analytics`). Phase 9.8 will deliver **physical tab merge** under that route.
+Phase 9.7-C delivered the **entry hub** (`/app/analytics`). Phase 9.8-A delivers **physical tab merge** under that route.
 
 ---
 
@@ -23,55 +23,56 @@ Phase 9.7-C delivered the **entry hub** (`/app/analytics`). Phase 9.8 will deliv
 
 ```
 Обзор (Overview)
-  └── /app/dashboard
+  └── /app/dashboard (legacy standalone)
 
-Аналитика (Analytics)
-  ├── /app/analytics              ← Hub entry (Step 2 ✅)
-  ├── /app/analytics/weekly       ← Comparison (Step 2 ✅, tabs in 9.8)
-  ├── /app/economics              ← SKU Economics (9.8: hub tab alias)
-  ├── /app/economics/sku/:sku     ← Drilldown (unchanged route)
+Аналитика (Analytics Hub)
+  ├── /app/analytics              ← Tab shell (9.8-A ✅)
+  │     ├── (index)               ← Overview tab → DashboardPage
+  │     ├── weekly                ← Comparison tab → WeeklyAnalysisPage
+  │     ├── economics             ← Economics tab → EconomicsPage
+  │     └── cost-coverage         ← Cost Coverage tab → CostCoveragePage
+  ├── /app/analytics/weekly       ← Bookmark preserved (shell tab)
+  ├── /app/economics              ← Legacy standalone
+  ├── /app/economics/sku/:sku     ← Drilldown (unchanged)
   ├── /app/economics/inventory    ← Inventory (unchanged)
   └── /app/finance/reconciliation ← Reconciliation (unchanged)
 
 Отчеты (Reports)
   ├── /app/reports
-  └── /app/finance/cost-coverage  ← Cost Coverage (CTA-linked from hub ✅)
+  └── /app/costs                  ← COGS upload
 ```
 
-### Nav labels (RU, current)
+### Nav labels (RU, 9.8-A)
 
 | Section | Items |
 |---------|-------|
 | **Обзор** | Dashboard |
-| **Аналитика** | Обзор аналитики, Сравнение периодов, Экономика SKU, Склад и оборот, Сверка выплат |
-| **Отчеты** | Отчёты, Покрытие себестоимости, Себестоимость |
+| **Аналитика** | Аналитика, Сравнение периодов, Экономика SKU, Покрытие себестоимости, Склад и оборот, Сверка выплат |
+| **Отчеты** | Отчёты, Загрузка, Себестоимость |
 
 ---
 
 ## Route map
 
-### Current (9.7-C) — all routes active
+### Current (9.8-A) — all routes active
 
 | Route | Component | Hub relationship |
 |-------|-----------|------------------|
-| `/app/analytics` | `AnalyticsHubPage` | Entry — links only |
-| `/app/dashboard` | `DashboardPage` | Overview (not merged) |
-| `/app/analytics/weekly` | `WeeklyAnalysisPage` | Comparison |
-| `/app/economics` | `EconomicsPage` | Economics |
+| `/app/analytics` | `AnalyticsShell` → `DashboardPage` | Hub shell — Overview tab |
+| `/app/analytics/weekly` | `AnalyticsShell` → `WeeklyAnalysisPage` | Comparison tab |
+| `/app/analytics/economics` | `AnalyticsShell` → `EconomicsPage` | Economics tab alias |
+| `/app/analytics/cost-coverage` | `AnalyticsShell` → `CostCoveragePage` | Cost Coverage tab alias |
+| `/app/analytics/overview` | Redirect → `/app/analytics` | Overview alias |
+| `/app/dashboard` | `DashboardPage` | Legacy standalone |
+| `/app/economics` | `EconomicsPage` | Legacy standalone |
+| `/app/finance/cost-coverage` | `CostCoveragePage` | Legacy standalone |
 | `/app/economics/sku/:sku` | `SkuDrilldownPage` | Drilldown |
 | `/app/economics/inventory` | `InventoryEconomicsPage` | Inventory |
 | `/app/finance/reconciliation` | `ReconciliationPage` | Finance |
-| `/app/finance/cost-coverage` | `CostCoveragePage` | Trust / COGS |
 
-### Target (9.8) — physical merge
+### Rollback (feature flag)
 
-| Route | 9.8 behavior |
-|-------|--------------|
-| `/app/analytics` | Hub shell with tabs: Overview · Comparison · Economics · Cost Coverage |
-| `/app/analytics/weekly` | **Redirect or embed** → Comparison tab (bookmark preserved) |
-| `/app/dashboard` | **Preserved** — optional redirect to `/app/analytics?tab=overview` (feature-flagged) |
-| `/app/economics` | **Preserved** — optional embed in hub Economics tab |
-| All other routes | **Unchanged** — no removal |
+Set `FEATURE_FLAGS.analyticsHubTabs = false` in `frontend/src/state/feature-flags.ts` to restore 9.7-C link hub (`AnalyticsHubPage`).
 
 ---
 
@@ -83,15 +84,15 @@ Phase 9.7-C delivered the **entry hub** (`/app/analytics`). Phase 9.8 will deliv
 | **9.7-A** | Backend trust hardening (`delta_profit` null) | ✅ Complete |
 | **9.7-B** | Pilot validation (FULL + INSUFFICIENT live) | ✅ Complete |
 | **9.7-C** | IA Step 2 — hub entry, CTAs, nav labels | ✅ Complete |
-| **9.7-D** | Trust closure + reconciliation gate + docs | 🔄 This phase |
-| **9.8** | Physical hub merge (tabs), inventory dedup | ⏸ Planned |
+| **9.7-D** | Trust closure + reconciliation gate + docs | ✅ Complete |
+| **9.7-E** | PARTIAL trust live validation | ✅ Complete |
+| **9.8-A** | Physical hub merge (tabs) | ✅ Complete |
+| **9.8-B** | Inventory dedup, shared period context | ⏸ Planned |
 
-### 9.8 scope (in)
+### 9.8-B scope (in)
 
-- Tab shell under `/app/analytics` (Overview, Comparison, Economics, Cost Coverage)
 - Shared period selector context across hub tabs
 - Inventory risk deduplication (Comparison vs Inventory Economics overlap)
-- PARTIAL trust live validation gate (must pass before merge deploy)
 
 ### 9.8 non-goals (out)
 
@@ -107,10 +108,10 @@ Phase 9.7-C delivered the **entry hub** (`/app/analytics`). Phase 9.8 will deliv
 ## Backward compatibility strategy
 
 1. **No route deletion** — every 9.7-C route remains registered in `router.tsx`.
-2. **Bookmark preservation** — `/app/dashboard`, `/app/analytics/weekly`, `/app/economics` keep working.
-3. **API contract frozen** — hub merge is frontend-only; no schema changes required for 9.8.
-4. **Gradual redirect** — optional `?tab=` deep links; default redirects behind feature flag.
-5. **Nav dual-entry** — hub card + legacy nav item coexist until adoption metrics justify consolidation.
+2. **Bookmark preservation** — `/app/dashboard`, `/app/analytics/weekly`, `/app/economics`, `/app/finance/cost-coverage` keep working.
+3. **API contract frozen** — hub merge is frontend-only; no schema changes required.
+4. **Hub tab aliases** — `/app/analytics/economics`, `/app/analytics/cost-coverage` for unified navigation.
+5. **Nav dual-entry** — hub tabs + legacy standalone routes coexist.
 
 ---
 
@@ -120,33 +121,33 @@ Phase 9.7-C delivered the **entry hub** (`/app/analytics`). Phase 9.8 will deliv
 |----------|--------|
 | Hub tabs break rendering | Disable `analyticsHubTabs` feature flag → fall back to 9.7-C link hub |
 | Period context regression | Revert shared context provider; pages keep local `PeriodSelector` |
-| Trust regression | Roll back to `certified-production` tag; reconciliation gate is independent |
-| Full rollback | `git revert` 9.8 merge commit + redeploy frontend bundle from 9.7-D tag |
+| Trust regression | Roll back to `certified-production` tag; redeploy prior bundle |
+| Full rollback | `git revert` 9.8-A merge commit + redeploy frontend bundle from 9.7-E tag |
 
-Rollback does **not** require database migration or backend restart for frontend-only 9.8.
+Rollback does **not** require database migration or backend restart for frontend-only 9.8-A.
 
 ---
 
-## Trust prerequisites for 9.8
+## Trust prerequisites for 9.8-A
 
 | Prerequisite | Owner | Status |
 |--------------|-------|--------|
 | Reconciliation backend profit gate | 9.7-D | ✅ |
 | Trust matrix certified | 9.7-D | ✅ |
-| PARTIAL live validation | Staging session | ⚠️ Pending |
-| Hub readiness score ≥ 80 | Product | 76/100 → target 80 post-9.7-D |
+| PARTIAL live validation | 9.7-E | ✅ |
+| Hub readiness score ≥ 80 | Product | 82/100 (9.7-E) |
 
 ---
 
-## Hub readiness score (9.7-D)
+## Hub readiness score (9.8-A)
 
 | Dimension | Score | Notes |
 |-----------|-------|-------|
-| Trust completeness | 90/100 | Reconciliation gate closes last backend gap |
-| IA clarity | 80/100 | Step 2 CTAs + hub entry |
-| Journey continuity | 70/100 | Physical merge still pending |
-| Live validation | 65/100 | PARTIAL staging pending |
-| **Overall** | **78/100** | Conditional GO for 9.8 planning |
+| Trust completeness | 95/100 | All trust states live-validated |
+| IA clarity | 90/100 | Physical tab shell deployed |
+| Journey continuity | 85/100 | Hub tabs + legacy routes |
+| Live validation | 90/100 | PARTIAL + FULL + INSUFFICIENT |
+| **Overall** | **90/100** | GO for 9.8-B planning |
 
 ---
 
@@ -164,5 +165,6 @@ Rollback does **not** require database migration or backend restart for frontend
 
 - [analytics_hub_step2.md](analytics_hub_step2.md) — 9.7-C implementation record
 - [trust_matrix_certification.md](trust_matrix_certification.md) — trust surface matrix
-- [partial_trust_live_validation.md](partial_trust_live_validation.md) — PARTIAL gate for 9.8
+- [partial_trust_validation_results.md](partial_trust_validation_results.md) — PARTIAL gate evidence
 - [frontend_architecture.md](../frontend/frontend_architecture.md) — frontend structure
+- [phase_98a_certification.md](../release/phase_98a_certification.md) — 9.8-A deploy certification

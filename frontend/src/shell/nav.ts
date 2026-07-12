@@ -39,9 +39,10 @@ const dashboardItems: NavItem[] = [
 ];
 
 const analyticsItems: NavItem[] = [
-  { to: "/app/analytics", label: "Обзор аналитики", icon: BarChart3 },
+  { to: "/app/analytics", label: "Аналитика", icon: BarChart3 },
   { to: "/app/analytics/weekly", label: "Сравнение периодов", icon: BarChart3 },
-  { to: "/app/economics", label: "Экономика SKU", icon: LineChart },
+  { to: "/app/analytics/economics", label: "Экономика SKU", icon: LineChart },
+  { to: "/app/analytics/cost-coverage", label: "Покрытие себестоимости", icon: Shield },
   { to: "/app/economics/inventory", label: "Склад и оборот", icon: Package },
   { to: "/app/finance/reconciliation", label: "Сверка выплат", icon: Shield },
 ];
@@ -50,7 +51,6 @@ const reportsItems: NavItem[] = [
   { to: "/app/reports", label: "Отчёты", icon: Database },
   { to: "/app/reports/upload", label: "Загрузка", icon: Upload },
   { to: "/app/costs", label: "Себестоимость", icon: Database },
-  { to: "/app/finance/cost-coverage", label: "Покрытие себестоимости", icon: Shield },
 ];
 
 const aiItems: NavItem[] = [
