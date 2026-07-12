@@ -1,9 +1,9 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
 **Version:** Phase 9.8-A (Analytics Hub physical merge) · Phase 9.7-E (partial trust live validation)  
-**Certified baseline:** git tag `certified-production` → `0a59676` (pre-9.8-A deploy)  
-**Frontend bundle (production):** `index-BxNJPr4A.js` @ 2026-07-11 (pre-9.8-A deploy)  
-**Status:** Analytics Hub tab merge implemented · pending 9.8-A certification deploy  
+**Certified baseline:** git tag `certified-production` → `c9ff57a`  
+**Frontend bundle (production):** `index-DpDryz6p.js` @ 2026-07-12  
+**Status:** Analytics Hub tab merge deployed · **GO** for Phase 9.8-B  
 **Last updated:** 2026-07-12
 
 ---
@@ -12,8 +12,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Certified baseline (VPS)** | git tag `certified-production` → `0a59676` (pre-9.8-A; updated post-deploy) |
-| **Frontend bundle** | `index-BxNJPr4A.js` @ 2026-07-11 (pre-9.8-A; updated post-deploy) |
+| **Certified baseline (VPS)** | git tag `certified-production` → `c9ff57a` (Phase 9.8-A) |
+| **Frontend bundle** | `index-DpDryz6p.js` @ 2026-07-12 |
 | **Phase 9.8-A certification** | [docs/release/phase_98a_certification.md](docs/release/phase_98a_certification.md) |
 | **Phase 9.7-E certification** | [docs/release/phase_97e_certification.md](docs/release/phase_97e_certification.md) |
 | **Partial trust results** | [docs/product/partial_trust_validation_results.md](docs/product/partial_trust_validation_results.md) |
