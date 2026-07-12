@@ -34,7 +34,7 @@ export type NavSection = {
 };
 
 const dashboardItems: NavItem[] = [
-  { to: "/app/dashboard", label: "Панель", icon: LayoutDashboard },
+  { to: "/app/analytics", label: "Панель", icon: LayoutDashboard },
   { to: "/app/today", label: "Сегодня", icon: Gauge },
 ];
 

@@ -1,6 +1,20 @@
 # Changelog
 
-## [9.8-A] — 2026-07-12 — Analytics Hub Physical Merge
+## [9.8-B] — 2026-07-12 — Analytics Hub Polish & Dedup
+
+### Changed
+- **Inventory dedup** — Comparison keeps summary KPIs, priorities, warehouse; SKU tables replaced with CTA to Inventory Economics.
+- **Dashboard soft redirect** — `/app` and `/app/dashboard` → `/app/analytics` (query/hash preserved); nav «Панель» → hub.
+- **Shared period context** — `AnalyticsPeriodProvider` + `usePagePeriod` across hub tabs.
+
+### Added
+- `frontend/src/shell/analytics-period-context.tsx`, `DashboardRedirect.tsx`, `use-page-period.ts`
+- `docs/product/analytics_hub_polish.md`
+
+### Constraints respected
+- No KPI, API, trust, AI, or backend changes; all legacy routes work via redirect.
+
+---
 
 ### Added
 - **`AnalyticsShell`** — tab shell at `/app/analytics` embedding Overview, Comparison, Economics, and Cost Coverage.

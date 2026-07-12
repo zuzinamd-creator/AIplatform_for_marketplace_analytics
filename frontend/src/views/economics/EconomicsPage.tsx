@@ -23,7 +23,8 @@ import { CostTrustBanner } from "../../ui/cost-trust-banner";
 import { Input, Select } from "../../ui/field";
 import { PeriodSelector } from "../../ui/period-selector";
 import { ProfitTrustBadge } from "../../ui/profit-trust-badge";
-import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
+import { previousPeriod } from "../../state/period";
+import { usePagePeriod } from "../../state/use-page-period";
 import { StatusBadge } from "../../ui/status-badge";
 
 function integrityBanner(integrity?: { warnings: Array<{ code: string; severity: string; message: string }>; financial_completeness_score?: string | null } | null) {
@@ -66,7 +67,7 @@ export function EconomicsPage() {
   const workspace = loadWorkspaceProfile();
   const defaultMarketplace = workspace.marketplace === "unknown" ? "wildberries" : workspace.marketplace;
   const [marketplace, setMarketplace] = useState<string>(defaultMarketplace);
-  const [periodSel, setPeriodSel] = useState<PeriodSelection>(() => loadPeriodSelection());
+  const { periodSel, setPeriodSel } = usePagePeriod();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState("contribution_margin");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
@@ -170,7 +171,7 @@ export function EconomicsPage() {
         </div>
       </div>
 
-      <PeriodSelector onChange={setPeriodSel} />
+      <PeriodSelector value={periodSel} onChange={setPeriodSel} />
 
       {a.isError ? (
         <Card className="border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">

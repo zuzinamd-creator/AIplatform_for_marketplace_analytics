@@ -67,7 +67,7 @@ describe("LoginPage post-registration flow", () => {
     });
   });
 
-  it("redirects seller with completed onboarding to dashboard", async () => {
+  it("redirects seller with completed onboarding to analytics hub", async () => {
     localStorage.setItem("ma.onboardingDone", "true");
 
     render(
@@ -84,7 +84,7 @@ describe("LoginPage post-registration flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Войти" }));
 
     await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith("/app/dashboard", { replace: true });
+      expect(navigateMock).toHaveBeenCalledWith("/app/analytics", { replace: true });
     });
   });
 });

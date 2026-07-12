@@ -1,9 +1,9 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
-**Version:** Phase 9.8-A (Analytics Hub physical merge) · Phase 9.7-E (partial trust live validation)  
-**Certified baseline:** git tag `certified-production` → `c9ff57a`  
-**Frontend bundle (production):** `index-DpDryz6p.js` @ 2026-07-12  
-**Status:** Analytics Hub tab merge deployed · **GO** for Phase 9.8-B  
+**Version:** Phase 9.8-B (Analytics Hub polish) · Phase 9.8-A (physical merge)  
+**Certified baseline:** git tag `certified-production` → `02185d3` (pre-9.8-B deploy)  
+**Frontend bundle (production):** `index-DpDryz6p.js` @ 2026-07-12 (pre-9.8-B deploy)  
+**Status:** Hub polish implemented · pending 9.8-B certification deploy  
 **Last updated:** 2026-07-12
 
 ---

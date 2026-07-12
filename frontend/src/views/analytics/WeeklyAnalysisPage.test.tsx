@@ -135,9 +135,14 @@ describe("WeeklyAnalysisPage", () => {
     expect(screen.getByRole("link", { name: "Покрытие себестоимости →" }).getAttribute("href")).toBe(
       "/app/analytics/cost-coverage",
     );
+    expect(screen.getAllByRole("link", { name: "Склад и оборот →" }).every((l) => l.getAttribute("href") === "/app/economics/inventory")).toBe(
+      true,
+    );
     expect(await screen.findByText("ABC-анализ")).toBeTruthy();
     expect(await screen.findByText("Риски запасов")).toBeTruthy();
     expect(await screen.findByText("Складская аналитика")).toBeTruthy();
+    expect(screen.queryByText("Риск дефицита (топ SKU)")).toBeNull();
+    expect(screen.queryByText("Риск затоваривания (топ SKU)")).toBeNull();
 
     await waitFor(() => {
       expect(periodCompare).toHaveBeenCalled();

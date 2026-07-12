@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
-import { loadPeriodSelection } from "../../state/period";
+import { usePagePeriod } from "../../state/use-page-period";
 import {
   COSTS_WORKFLOW_ROUTE,
   normalizeProfitTrust,
@@ -26,8 +26,8 @@ import { WarnCallout } from "../../ui/warn-callout";
 export function CostCoveragePage() {
   const workspace = loadWorkspaceProfile();
   const marketplace = workspace.marketplace === "unknown" ? "wildberries" : workspace.marketplace;
-  const initial = loadPeriodSelection();
-  const [range, setRange] = useState(() => initial.range);
+  const { periodSel, setPeriodSel } = usePagePeriod();
+  const range = periodSel.range;
   const [q, setQ] = useState("");
 
   const coverage = useQuery({
@@ -67,7 +67,10 @@ export function CostCoveragePage() {
         </div>
       </div>
 
-      <PeriodSelector onChange={(s) => setRange(s.range)} />
+      <PeriodSelector
+        value={periodSel}
+        onChange={setPeriodSel}
+      />
 
       {showInlineCostTrustBanner() && trustCtx.trust !== "full" ? (
         <CostTrustBanner

@@ -267,3 +267,14 @@ Physical tab shell under `/app/analytics`. See [docs/product/analytics_hub_maste
 
 Trust components (`CostTrustBanner`, `ProfitTrustBadge`, `CostCoverageIndicator`, AI disclosures) remain on each embedded page — no trust logic changes.
 
+## Phase 9.8-B Analytics Hub Polish & Dedup
+
+See [docs/product/analytics_hub_polish.md](../product/analytics_hub_polish.md).
+
+| Change | Detail |
+|--------|--------|
+| Inventory dedup | Comparison: summary + priorities + warehouse; SKU drilldown → `/app/economics/inventory` |
+| Dashboard strategy | Soft redirect `/app/dashboard` → `/app/analytics`; `/app` index → analytics |
+| Shared period | `AnalyticsPeriodProvider` in `AnalyticsShell`; `usePagePeriod` hook for hub tabs |
+| `PeriodSelector` | Controlled mode (`value` + `onChange`) for hub pages |
+

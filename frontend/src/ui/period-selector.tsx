@@ -15,13 +15,35 @@ const presetOptions: Array<{ value: PeriodPreset; label: string }> = [
   { value: "custom", label: "Произвольный период" },
 ];
 
-export function PeriodSelector(props: { onChange?: (sel: PeriodSelection) => void }) {
-  const [sel, setSel] = useState<PeriodSelection>(() => loadPeriodSelection());
+export function PeriodSelector(props: {
+  value?: PeriodSelection;
+  onChange?: (sel: PeriodSelection) => void;
+}) {
+  const [internalSel, setInternalSel] = useState<PeriodSelection>(() => loadPeriodSelection());
+  const controlled = props.value !== undefined && props.onChange !== undefined;
+  const sel = controlled ? props.value! : internalSel;
+
+  const updateSel = (next: PeriodSelection | ((prev: PeriodSelection) => PeriodSelection)) => {
+    if (controlled) {
+      const resolved = typeof next === "function" ? next(props.value!) : next;
+      props.onChange!(resolved);
+      return;
+    }
+    setInternalSel(next);
+  };
 
   useEffect(() => {
-    savePeriodSelection(sel);
-    props.onChange?.(sel);
-  }, [sel]);
+    if (!controlled) {
+      savePeriodSelection(internalSel);
+      props.onChange?.(internalSel);
+    }
+  }, [controlled, internalSel]);
+
+  useEffect(() => {
+    if (controlled) {
+      savePeriodSelection(props.value!);
+    }
+  }, [controlled, props.value]);
 
   const compareRange = useMemo(() => {
     if (!sel.compareEnabled) return null;
@@ -39,7 +61,7 @@ export function PeriodSelector(props: { onChange?: (sel: PeriodSelection) => voi
             onChange={(e) => {
               const preset = e.target.value as PeriodPreset;
               const range = preset === "custom" ? sel.range : computePreset(preset);
-              setSel((s) => ({ ...s, preset, range }));
+              updateSel((s) => ({ ...s, preset, range }));
             }}
           >
             {presetOptions.map((o) => (
@@ -55,7 +77,7 @@ export function PeriodSelector(props: { onChange?: (sel: PeriodSelection) => voi
           <Input
             type="date"
             value={sel.range.start}
-            onChange={(e) => setSel((s) => ({ ...s, preset: "custom", range: { ...s.range, start: e.target.value } }))}
+            onChange={(e) => updateSel((s) => ({ ...s, preset: "custom", range: { ...s.range, start: e.target.value } }))}
           />
         </div>
         <div className="md:col-span-3">
@@ -63,7 +85,7 @@ export function PeriodSelector(props: { onChange?: (sel: PeriodSelection) => voi
           <Input
             type="date"
             value={sel.range.end}
-            onChange={(e) => setSel((s) => ({ ...s, preset: "custom", range: { ...s.range, end: e.target.value } }))}
+            onChange={(e) => updateSel((s) => ({ ...s, preset: "custom", range: { ...s.range, end: e.target.value } }))}
           />
         </div>
 
@@ -74,15 +96,15 @@ export function PeriodSelector(props: { onChange?: (sel: PeriodSelection) => voi
             onChange={(e) => {
               const v = e.target.value;
               if (v === "off") {
-                setSel((s) => ({ ...s, compareEnabled: false }));
+                updateSel((s) => ({ ...s, compareEnabled: false }));
                 return;
               }
               if (v === "custom") {
                 const base = sel.compareRange ?? previousPeriod(sel.range);
-                setSel((s) => ({ ...s, compareEnabled: true, comparePreset: "custom", compareRange: base }));
+                updateSel((s) => ({ ...s, compareEnabled: true, comparePreset: "custom", compareRange: base }));
                 return;
               }
-              setSel((s) => ({ ...s, compareEnabled: true, comparePreset: "previous_period" }));
+              updateSel((s) => ({ ...s, compareEnabled: true, comparePreset: "previous_period" }));
             }}
           >
             <option value="off">Выключено</option>
@@ -99,7 +121,7 @@ export function PeriodSelector(props: { onChange?: (sel: PeriodSelection) => voi
                 type="date"
                 value={(sel.compareRange ?? compareRange)?.start ?? ""}
                 onChange={(e) =>
-                  setSel((s) => ({
+                  updateSel((s) => ({
                     ...s,
                     compareEnabled: true,
                     comparePreset: "custom",
@@ -114,7 +136,7 @@ export function PeriodSelector(props: { onChange?: (sel: PeriodSelection) => voi
                 type="date"
                 value={(sel.compareRange ?? compareRange)?.end ?? ""}
                 onChange={(e) =>
-                  setSel((s) => ({
+                  updateSel((s) => ({
                     ...s,
                     compareEnabled: true,
                     comparePreset: "custom",

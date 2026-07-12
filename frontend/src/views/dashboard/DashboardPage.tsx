@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Bot, Database, LineChart as LineChartIcon, Server, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { api } from "../../state/http";
@@ -27,7 +27,7 @@ import { ProfitTrustBadge } from "../../ui/profit-trust-badge";
 import { StatusBadge } from "../../ui/status-badge";
 import { WarnCallout } from "../../ui/warn-callout";
 import { PeriodSelector } from "../../ui/period-selector";
-import { loadPeriodSelection, type PeriodSelection } from "../../state/period";
+import { usePagePeriod } from "../../state/use-page-period";
 import { toast } from "../../ui/toast";
 import { FirstRunChecklist } from "../../ui/first-run-checklist";
 
@@ -39,7 +39,7 @@ export function DashboardPage() {
   const demo = isDemoMode();
   const workspace = loadWorkspaceProfile();
   const marketplace = workspace.marketplace === "unknown" ? "wildberries" : workspace.marketplace;
-  const [periodSel, setPeriodSel] = useState<PeriodSelection>(() => loadPeriodSelection());
+  const { periodSel, setPeriodSel } = usePagePeriod();
   const start = periodSel.range.start;
   const end = periodSel.range.end;
 
@@ -132,7 +132,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <PeriodSelector onChange={setPeriodSel} />
+      <PeriodSelector value={periodSel} onChange={setPeriodSel} />
 
       {showInlineCostTrustBanner() && trustCtx.trust !== "full" ? (
         <CostTrustBanner

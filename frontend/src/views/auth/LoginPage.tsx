@@ -67,7 +67,7 @@ export function LoginPage() {
         `${t("auth.welcome_back")}${trimmedEmail ? `, ${trimmedEmail}` : ""}.`,
       );
       const from = loc.state?.from;
-      let dest = from ?? "/app/dashboard";
+      let dest = from ?? "/app/analytics";
       if (!from) {
         const me = await api.auth.me();
         if (!isPlatformAdmin(me) && !isOnboardingDone()) {

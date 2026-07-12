@@ -130,7 +130,7 @@ export function RequirePlatformAdmin(props: { children: React.ReactNode }) {
     );
   }
   if (!isPlatformAdmin(user)) {
-    return <Navigate to="/app/dashboard" replace state={{ from: loc.pathname, denied: "platform_admin" }} />;
+    return <Navigate to="/app/analytics" replace state={{ from: loc.pathname, denied: "platform_admin" }} />;
   }
   return <>{props.children}</>;
 }

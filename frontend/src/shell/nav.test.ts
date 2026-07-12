@@ -33,6 +33,9 @@ describe("buildNavSections", () => {
     expect(ai?.items.map((i) => i.to)).toEqual(["/app/ai/recommendations", "/app/ai/digest"]);
     expect(ai?.items.map((i) => i.label)).toEqual(["ИИ-помощник", "Сводка ИИ"]);
 
+    const dashboard = sections.find((s) => s.id === "dashboard");
+    expect(dashboard?.items.find((i) => i.label === "Панель")?.to).toBe("/app/analytics");
+
     const account = sections.find((s) => s.id === "account");
     expect(account?.items.map((i) => i.to)).toEqual(["/app/onboarding", "/app/settings", "/app/support"]);
 

@@ -48,7 +48,7 @@ function renderGuard(role: UserResponse["role"]) {
               </RequirePlatformAdmin>
             }
           />
-          <Route path="/app/dashboard" element={<div>dashboard</div>} />
+          <Route path="/app/analytics" element={<div>analytics</div>} />
         </Routes>
       </AuthProvider>
     </MemoryRouter>,
@@ -65,9 +65,9 @@ describe("RequirePlatformAdmin", () => {
     cleanup();
   });
 
-  it("redirects seller to dashboard", async () => {
+  it("redirects seller to analytics hub", async () => {
     renderGuard(USER_ROLE_SELLER);
-    expect(await screen.findByText("dashboard")).toBeTruthy();
+    expect(await screen.findByText("analytics")).toBeTruthy();
     expect(screen.queryByText("ops-content")).toBeNull();
   });
 
@@ -92,13 +92,13 @@ describe("RequirePlatformAdmin", () => {
                 </RequirePlatformAdmin>
               }
             />
-            <Route path="/app/dashboard" element={<div>dashboard</div>} />
+            <Route path="/app/analytics" element={<div>analytics</div>} />
           </Routes>
         </AuthProvider>
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText("dashboard")).toBeTruthy();
+    expect(await screen.findByText("analytics")).toBeTruthy();
     expect(screen.queryByText("admin-invites")).toBeNull();
   });
 
@@ -118,7 +118,7 @@ describe("RequirePlatformAdmin", () => {
                 </RequirePlatformAdmin>
               }
             />
-            <Route path="/app/dashboard" element={<div>dashboard</div>} />
+            <Route path="/app/analytics" element={<div>analytics</div>} />
           </Routes>
         </AuthProvider>
       </MemoryRouter>,
@@ -143,13 +143,13 @@ describe("RequirePlatformAdmin", () => {
                 </RequirePlatformAdmin>
               }
             />
-            <Route path="/app/dashboard" element={<div>dashboard</div>} />
+            <Route path="/app/analytics" element={<div>analytics</div>} />
           </Routes>
         </AuthProvider>
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText("dashboard")).toBeTruthy();
+    expect(await screen.findByText("analytics")).toBeTruthy();
     expect(screen.queryByText("admin-users")).toBeNull();
   });
 });

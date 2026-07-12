@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -14,7 +14,8 @@ import { Link } from "react-router-dom";
 
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
-import { loadPeriodSelection, previousPeriod, type PeriodSelection } from "../../state/period";
+import { previousPeriod } from "../../state/period";
+import { usePagePeriod } from "../../state/use-page-period";
 import {
   ANALYTICS_COST_COVERAGE_ROUTE,
   ANALYTICS_ECONOMICS_ROUTE,
@@ -51,32 +52,24 @@ function SectionState(props: { loading: boolean; error: Error | null; empty: boo
   return <>{props.children}</>;
 }
 
-function stockRiskLabel(risk: string | null | undefined): string {
-  if (risk === "overstock") return "Затоваривание";
-  if (risk === "stockout") return "Дефицит";
-  return "Норма";
-}
-
-function stockRiskTone(risk: string | null | undefined): "ok" | "warn" | "bad" | "info" {
-  if (risk === "overstock") return "warn";
-  if (risk === "stockout") return "bad";
-  return "ok";
-}
+const INVENTORY_ECONOMICS_ROUTE = "/app/economics/inventory";
 
 export function WeeklyAnalysisPage() {
   const workspace = loadWorkspaceProfile();
   const defaultMarketplace = workspace.marketplace === "unknown" ? "wildberries" : workspace.marketplace;
   const [marketplace, setMarketplace] = useState<"wildberries" | "ozon">(defaultMarketplace as "wildberries" | "ozon");
-  const [periodSel, setPeriodSel] = useState<PeriodSelection>(() => {
-    const base = loadPeriodSelection();
-    if (base.compareEnabled) return base;
-    return {
-      ...base,
-      compareEnabled: true,
-      comparePreset: "previous_period",
-      compareRange: previousPeriod(base.range),
-    };
-  });
+  const { periodSel, setPeriodSel } = usePagePeriod();
+
+  useEffect(() => {
+    if (!periodSel.compareEnabled) {
+      setPeriodSel((prev) => ({
+        ...prev,
+        compareEnabled: true,
+        comparePreset: "previous_period",
+        compareRange: previousPeriod(prev.range),
+      }));
+    }
+  }, [periodSel.compareEnabled, setPeriodSel]);
 
   const rangeA = periodSel.range;
   const rangeB = useMemo(() => {
@@ -208,6 +201,9 @@ export function WeeklyAnalysisPage() {
           <Link className="btn-secondary" to={ANALYTICS_COST_COVERAGE_ROUTE}>
             Покрытие себестоимости →
           </Link>
+          <Link className="btn-secondary" to={INVENTORY_ECONOMICS_ROUTE}>
+            Склад и оборот →
+          </Link>
           <StatusBadge tone={stale ? "warn" : "info"}>{stale ? "данные устарели" : "актуально"}</StatusBadge>
           <Select
             value={marketplace}
@@ -220,7 +216,7 @@ export function WeeklyAnalysisPage() {
         </div>
       </div>
 
-      <PeriodSelector onChange={setPeriodSel} />
+      <PeriodSelector value={periodSel} onChange={setPeriodSel} />
 
       {showInlineCostTrustBanner() && trustCtx.trust !== "full" ? (
         <CostTrustBanner
@@ -384,71 +380,19 @@ export function WeeklyAnalysisPage() {
               </ul>
             </Card>
 
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-              <Card className="p-4">
-                <div className="text-sm font-semibold">Риск дефицита (топ SKU)</div>
-                {riskSkus.stockout.length === 0 ? (
-                  <div className="mt-3 text-sm text-ink-muted">Нет SKU с признаком дефицита.</div>
-                ) : (
-                  <div className="mt-3 overflow-auto">
-                    <table className="table-shell w-full min-w-[480px] text-sm">
-                      <thead className="text-left text-xs text-ink-muted">
-                        <tr>
-                          <th className="py-2">SKU</th>
-                          <th className="py-2">Остаток</th>
-                          <th className="py-2">Продано</th>
-                          <th className="py-2">Риск</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {riskSkus.stockout.map((row) => (
-                          <tr key={row.sku}>
-                            <td className="py-2 font-mono text-xs">{row.sku}</td>
-                            <td className="py-2">{formatInteger(row.stock_units)}</td>
-                            <td className="py-2">{formatInteger(row.sold_units)}</td>
-                            <td className="py-2">
-                              <StatusBadge tone={stockRiskTone(row.stock_risk)}>{stockRiskLabel(row.stock_risk)}</StatusBadge>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </Card>
-
-              <Card className="p-4">
-                <div className="text-sm font-semibold">Риск затоваривания (топ SKU)</div>
-                {riskSkus.overstock.length === 0 ? (
-                  <div className="mt-3 text-sm text-ink-muted">Нет SKU с признаком затоваривания.</div>
-                ) : (
-                  <div className="mt-3 overflow-auto">
-                    <table className="table-shell w-full min-w-[480px] text-sm">
-                      <thead className="text-left text-xs text-ink-muted">
-                        <tr>
-                          <th className="py-2">SKU</th>
-                          <th className="py-2">Остаток</th>
-                          <th className="py-2">Заморожено</th>
-                          <th className="py-2">Риск</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {riskSkus.overstock.map((row) => (
-                          <tr key={row.sku}>
-                            <td className="py-2 font-mono text-xs">{row.sku}</td>
-                            <td className="py-2">{formatInteger(row.stock_units)}</td>
-                            <td className="py-2">{formatRub(row.frozen_capital)}</td>
-                            <td className="py-2">
-                              <StatusBadge tone={stockRiskTone(row.stock_risk)}>{stockRiskLabel(row.stock_risk)}</StatusBadge>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </Card>
-            </div>
+            <Card className="p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold">Детализация по SKU</div>
+                  <p className="mt-1 text-xs text-ink-muted">
+                    Списки SKU в дефиците и затоваривании, оборот и медленные остатки — на странице «Склад и оборот».
+                  </p>
+                </div>
+                <Link className="btn-secondary" to={INVENTORY_ECONOMICS_ROUTE}>
+                  Склад и оборот →
+                </Link>
+              </div>
+            </Card>
           </div>
         </SectionState>
       </CollapsibleSection>

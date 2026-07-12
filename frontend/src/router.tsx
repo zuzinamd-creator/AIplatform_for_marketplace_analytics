@@ -4,6 +4,7 @@ import { ErrorBoundary } from "react-error-boundary";
 
 import { AppShell } from "./shell/AppShell";
 import { AnalyticsShell } from "./shell/AnalyticsShell";
+import { DashboardRedirect } from "./shell/DashboardRedirect";
 import { RequireAuth, RequirePlatformAdmin } from "./state/auth";
 import { RouteError } from "./ui/route-error";
 import { FEATURE_FLAGS } from "./state/feature-flags";
@@ -76,9 +77,9 @@ export const router = createBrowserRouter([
       </RequireAuth>,
     ),
     children: [
-      { index: true, element: <Navigate to="dashboard" replace /> },
+      { index: true, element: <Navigate to="analytics" replace /> },
       { path: "onboarding", element: withBoundary(<OnboardingPage />) },
-      { path: "dashboard", element: withBoundary(<DashboardPage />) },
+      { path: "dashboard", element: <DashboardRedirect /> },
       { path: "status", element: <Navigate to="/app/system/status" replace /> },
       { path: "settings", element: withBoundary(<SettingsPage />) },
       { path: "support", element: withBoundary(<SupportPage />) },
