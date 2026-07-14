@@ -602,13 +602,14 @@ class AIService:
                 seller=seller,
             )
             total_revenue_d = seller.revenue
-            seller_profit_raw_d = adjusted.seller_profit_raw
+            seller_profit_raw_d = seller.seller_profit
             promotion_expenses_d = adjusted.wb_promotion_expenses
             jam_subscription_expenses_d = adjusted.jam_subscription_expenses
             manual_expenses_total_d = adjusted.manual_expenses_total
-            total_profit_d = adjusted.seller_profit_after_promotion
-            seller_margin = adjusted.margin_pct
-            seller_profitability = adjusted.profitability_pct
+            # Variant A: primary profit = settlement − COGS (no second manual subtract).
+            total_profit_d = seller.seller_profit
+            seller_margin = seller.margin_pct
+            seller_profitability = seller.profitability_pct
             seller_margin_raw = seller.margin_pct
             anomalies: list[AnomalyDTO] = []
             if total_revenue_d > 0 and seller_margin_raw is not None:
@@ -698,17 +699,7 @@ class AIService:
         )
         profit_after_out = profit_out
         promotion_impact_pct_out: Decimal | None = None
-        if (
-            profit_raw_out is not None
-            and profit_after_out is not None
-            and manual_expenses_out > 0
-        ):
-            from app.domain.analytics.promotion_adjusted import compute_promotion_impact_pct
-
-            promotion_impact_pct_out = compute_promotion_impact_pct(
-                seller_profit_raw=profit_raw_out,
-                seller_profit_after_promotion=profit_after_out,
-            )
+        # Variant A: no second subtract → impact omitted when raw == primary.
         if cov_pct is not None and cov_pct < Decimal("80"):
             anomalies.append(
                 AnomalyDTO(

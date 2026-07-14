@@ -234,12 +234,6 @@ export function DashboardPage() {
             sub={
               <span>
                 Чистая прибыль: {formatProfitValue(data?.revenue_summary.kpis.total_profit, trustCtx.trust)}
-                {hasManualExpenses && trustCtx.canShowProfit ? (
-                  <>
-                    {" · "}Прибыль до учёта ручных расходов:{" "}
-                    {formatProfitValue(data?.finance_summary.kpis.seller_profit_raw, trustCtx.trust)}
-                  </>
-                ) : null}
                 {" · "}Маржинальность: {formatMarginValue(data?.revenue_summary.kpis.margin_pct, trustCtx.trust)}
                 {" · "}Рентабельность:{" "}
                 {formatProfitabilityValue(data?.revenue_summary.kpis.profitability_pct, trustCtx.trust)}
@@ -279,9 +273,7 @@ export function DashboardPage() {
         <Card className="p-6 md:col-span-2">
           <div className="flex items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">
-              {hasManualExpenses
-                ? "Тренд продаж и прибыли до учёта ручных расходов (по дням)"
-                : "Тренд продаж и прибыли (по дням)"}
+              Тренд продаж и прибыли (по дням)
               <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
             </div>
             <StatusBadge tone={stale ? "warn" : "info"}>
@@ -316,7 +308,7 @@ export function DashboardPage() {
                   <Line
                     type="monotone"
                     dataKey="profit"
-                    name={hasManualExpenses ? "Прибыль до учёта ручных расходов" : "Прибыль"}
+                    name="Прибыль"
                     stroke={CHART.series.profit}
                     strokeWidth={2}
                     dot={false}
@@ -337,13 +329,11 @@ export function DashboardPage() {
               <div>График прибыли скрыт — загрузите себестоимость.</div>
             ) : trustCtx.trust === "partial" ? (
               <div>Прибыль на графике — оценка (пунктир); маржа недоступна при неполном покрытии COGS.</div>
-            ) : hasManualExpenses ? (
-              <div>
-                График показывает прибыль до учёта WB-продвижения и подписки Джем. Чистая прибыль после
-                ручных расходов отображается в карточке продаж и финансовой сводке.
-              </div>
             ) : (
-              <div>Прибыль на графике — settlement-прибыль продавца по дням.</div>
+              <div>
+                Прибыль на графике — settlement-прибыль продавца по дням (Settlement WB − COGS;
+                удержания WB уже внутри settlement).
+              </div>
             )}
           </div>
           {integrityWarnings.length ? (
@@ -434,32 +424,20 @@ export function DashboardPage() {
             <div className="flex justify-between gap-3"><span>Логистика</span><span>{formatRub(data?.finance_summary.kpis.logistics)}</span></div>
             <div className="flex justify-between gap-3"><span>Хранение</span><span>{formatRub(data?.finance_summary.kpis.storage_fee)}</span></div>
             <div className="flex justify-between gap-3"><span>Удержания</span><span>{formatRub(data?.finance_summary.kpis.deductions)}</span></div>
-            <div className="flex justify-between gap-3 border-t border-surface-subtle pt-2"><span>Settlement WB (до учёта ручных расходов)</span><span>{formatRub(data?.finance_summary.kpis.total_to_pay)}</span></div>
             {wbPromotionExpenses > 0 ? (
-              <div className="flex justify-between gap-3">
-                <span>WB-продвижение</span>
+              <div className="flex justify-between gap-3 pl-3 text-ink-muted">
+                <span>в т.ч. WB-продвижение</span>
                 <span>{formatRub(data?.finance_summary.kpis.promotion_expenses)}</span>
               </div>
             ) : null}
             {jamSubscriptionExpenses > 0 ? (
-              <div className="flex justify-between gap-3">
-                <span>Подписка Джем</span>
+              <div className="flex justify-between gap-3 pl-3 text-ink-muted">
+                <span>в т.ч. Подписка Джем</span>
                 <span>{formatRub(data?.finance_summary.kpis.jam_subscription_expenses)}</span>
               </div>
             ) : null}
-            {hasManualExpenses ? (
-              <div className="flex justify-between gap-3">
-                <span>Settlement WB (после ручных расходов)</span>
-                <span>{formatRub(data?.finance_summary.kpis.adjusted_settlement)}</span>
-              </div>
-            ) : null}
+            <div className="flex justify-between gap-3 border-t border-surface-subtle pt-2"><span>Settlement WB (к перечислению)</span><span>{formatRub(data?.finance_summary.kpis.total_to_pay)}</span></div>
             <div className="flex justify-between gap-3"><span>Себестоимость</span><span>{formatRub(data?.finance_summary.kpis.cogs)}</span></div>
-            {hasManualExpenses && trustCtx.canShowProfit ? (
-              <div className="flex justify-between gap-3 text-ink-muted">
-                <span>Прибыль до учёта ручных расходов</span>
-                <span>{formatProfitValue(data?.finance_summary.kpis.seller_profit_raw, trustCtx.trust)}</span>
-              </div>
-            ) : null}
             <div className="mt-3 flex justify-between gap-3 border-t border-surface-subtle pt-3 font-semibold text-ink">
               <span className="inline-flex items-center gap-2">
                 Чистая прибыль
@@ -482,7 +460,8 @@ export function DashboardPage() {
           <div className="mt-4 space-y-2 text-xs text-ink-muted">
             {hasManualExpenses ? (
               <div>
-                Чистая прибыль = Settlement WB − WB-продвижение − подписка Джем − себестоимость.
+                Чистая прибыль = Settlement WB − себестоимость. WB-продвижение и Джем — детализация
+                удержаний (уже внутри Settlement), без повторного вычета.
               </div>
             ) : null}
             {trustCtx.trust === "insufficient"

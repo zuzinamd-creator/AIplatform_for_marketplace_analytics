@@ -175,8 +175,8 @@ describe("DashboardPage Task 0 manual expense rows", () => {
       manual_expenses_total: "9925",
     });
     renderPage();
-    expect(await screen.findByText("WB-продвижение")).toBeTruthy();
-    expect(screen.queryByText("Подписка Джем")).toBeNull();
+    expect(await screen.findByText(/в т.ч. WB-продвижение/i)).toBeTruthy();
+    expect(screen.queryByText(/в т.ч. Подписка Джем/i)).toBeNull();
   });
 
   it("C: shows only Подписка Джем when WB is zero", async () => {
@@ -186,19 +186,27 @@ describe("DashboardPage Task 0 manual expense rows", () => {
       manual_expenses_total: "500",
     });
     renderPage();
-    expect(await screen.findByText("Подписка Джем")).toBeTruthy();
-    expect(screen.queryByText("WB-продвижение")).toBeNull();
+    expect(await screen.findByText(/в т.ч. Подписка Джем/i)).toBeTruthy();
+    expect(screen.queryByText(/в т.ч. WB-продвижение/i)).toBeNull();
   });
 
-  it("D: shows both WB and Jam rows when both are positive", async () => {
+  it("D: shows both WB and Jam as deduction breakdown without second subtract", async () => {
     mockFinanceSummary({
       promotion_expenses: "9925",
       jam_subscription_expenses: "500",
       manual_expenses_total: "10425",
+      adjusted_settlement: "75000",
+      total_to_pay: "75000",
+      seller_profit_raw: "45000",
+      gross_profit: "45000",
     });
     renderPage();
-    expect(await screen.findByText("WB-продвижение")).toBeTruthy();
-    expect(screen.getByText("Подписка Джем")).toBeTruthy();
-    expect(screen.getByText(/Settlement WB \(после ручных расходов\)/i)).toBeTruthy();
+    expect(await screen.findByText(/в т.ч. WB-продвижение/i)).toBeTruthy();
+    expect(screen.getByText(/в т.ч. Подписка Джем/i)).toBeTruthy();
+    expect(screen.queryByText(/Settlement WB \(после ручных расходов\)/i)).toBeNull();
+    expect(screen.getByText(/Settlement WB \(к перечислению\)/i)).toBeTruthy();
+    expect(
+      screen.getByText(/детализация удержаний \(уже внутри Settlement\), без повторного вычета/i),
+    ).toBeTruthy();
   });
 });

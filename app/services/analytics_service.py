@@ -18,6 +18,10 @@ from app.domain.analytics.profit_trust import (
     gate_profit_decimal,
     gate_profitability_decimal,
 )
+from app.domain.analytics.canonical_reports import (
+    FinanceReportCandidate,
+    select_canonical_finance_report_ids,
+)
 from app.domain.analytics.promotion_adjusted import (
     PromotionAdjustedProfit,
     compute_profit_after_promotion,
@@ -31,7 +35,7 @@ from app.models.finance.enums import LedgerOperationType
 from app.models.finance.ledger import FinancialLedgerEntry
 from app.models.finance.normalized import NormalizedReportRow
 from app.models.inventory.snapshot import WarehouseStockSnapshot
-from app.models.report import Marketplace, Report, ReportType
+from app.models.report import Marketplace, Report, ReportStatus, ReportType
 from app.models.user import User
 from app.schemas.analytics import (
     AbcAnalysisResponse,
@@ -271,13 +275,50 @@ class AnalyticsService(TenantScopedService):
             warnings=warnings,
         )
 
+    async def _canonical_finance_report_ids(
+        self, *, marketplace: Marketplace, period: Period
+    ) -> list:
+        """
+        Select canonical processed FINANCE reports overlapping the period.
+
+        Nested/subset reports (e.g. SHORT 15–20 inside FULL 15–21) are excluded;
+        longest inclusive span wins. Used by settlement KPIs and manual expense sums.
+        """
+        report_stmt = (
+            select(
+                Report.id,
+                Report.period_start,
+                Report.period_end,
+                Report.created_at,
+            )
+            .where(Report.marketplace == marketplace)
+            .where(Report.report_type == ReportType.FINANCE)
+            .where(Report.status == ReportStatus.PROCESSED)
+            .where(Report.period_start.is_not(None))
+            .where(Report.period_end.is_not(None))
+            .where(Report.period_start <= period.end)
+            .where(Report.period_end >= period.start)
+        )
+        report_res = await self.execute_with_rls(report_stmt)
+        candidates = [
+            FinanceReportCandidate(
+                id=row.id,
+                period_start=row.period_start,
+                period_end=row.period_end,
+                created_at=row.created_at,
+            )
+            for row in report_res.all()
+        ]
+        return select_canonical_finance_report_ids(candidates)
+
     async def _wb_seller_kpis(self, *, marketplace: Marketplace, period: Period) -> SellerKpis:
         """
         WB seller settlement KPIs for a period.
 
-        Uses report-scoped ledger rows when finance reports overlap the period
-        (matches WB weekly settlement). Return payouts are netted from normalized
-        return rows because they are not always materialized as ledger PAYOUT.
+        Uses report-scoped ledger rows when canonical finance reports overlap the
+        period (matches WB weekly settlement). Nested overlapping reports are
+        excluded. Return payouts are netted from normalized return rows because
+        they are not always materialized as ledger PAYOUT.
         """
         agg_stmt = (
             select(func.coalesce(func.sum(DailyAggregate.revenue), 0))
@@ -295,16 +336,9 @@ class AnalyticsService(TenantScopedService):
         )
         cogs = Decimal((await self.execute_with_rls(cogs_stmt)).scalar_one())
 
-        report_stmt = (
-            select(Report.id)
-            .where(Report.marketplace == marketplace)
-            .where(Report.period_start.is_not(None))
-            .where(Report.period_end.is_not(None))
-            .where(Report.period_start <= period.end)
-            .where(Report.period_end >= period.start)
+        report_ids = await self._canonical_finance_report_ids(
+            marketplace=marketplace, period=period
         )
-        report_res = await self.execute_with_rls(report_stmt)
-        report_ids = [row[0] for row in report_res.all()]
 
         if report_ids:
             ledger_stmt = (
@@ -396,17 +430,18 @@ class AnalyticsService(TenantScopedService):
     async def _sum_manual_expenses(
         self, *, marketplace: Marketplace, period: Period
     ) -> tuple[Decimal, Decimal, Decimal]:
+        """Sum promo/jam on canonical FINANCE reports (breakdown only; not profit)."""
+        report_ids = await self._canonical_finance_report_ids(
+            marketplace=marketplace, period=period
+        )
+        if not report_ids:
+            return Decimal("0"), Decimal("0"), Decimal("0")
         stmt = (
             select(
                 func.coalesce(func.sum(Report.promotion_expenses), 0),
                 func.coalesce(func.sum(Report.jam_subscription_expenses), 0),
             )
-            .where(Report.marketplace == marketplace)
-            .where(Report.report_type == ReportType.FINANCE)
-            .where(Report.period_start.is_not(None))
-            .where(Report.period_end.is_not(None))
-            .where(Report.period_start <= period.end)
-            .where(Report.period_end >= period.start)
+            .where(Report.id.in_(report_ids))
         )
         wb_sum, jam_sum = (await self.execute_with_rls(stmt)).one()
         wb = Decimal(wb_sum)
@@ -416,6 +451,7 @@ class AnalyticsService(TenantScopedService):
     async def _promotion_adjusted_profit(
         self, *, marketplace: Marketplace, period: Period, seller: SellerKpis
     ) -> PromotionAdjustedProfit:
+        """Manual expense annotation + primary settlement profit (Variant A)."""
         wb_promotion, jam_subscription, _ = await self._sum_manual_expenses(
             marketplace=marketplace, period=period
         )
@@ -522,9 +558,6 @@ class AnalyticsService(TenantScopedService):
         self, *, marketplace: Marketplace, period: Period
     ) -> RevenueKpiSummaryResponse:
         seller = await self._wb_seller_kpis(marketplace=marketplace, period=period)
-        adjusted = await self._promotion_adjusted_profit(
-            marketplace=marketplace, period=period, seller=seller
-        )
         stmt = (
             select(
                 func.coalesce(func.sum(DailyAggregate.units_sold), 0),
@@ -539,13 +572,14 @@ class AnalyticsService(TenantScopedService):
         freshness = await self._freshness()
         integrity = await self._integrity(marketplace=marketplace, period=period, semantics_version=freshness.semantics_version)
         trust = integrity.profit_metrics_trust if integrity else "insufficient"
+        # Variant A: primary profit = settlement − COGS (manual expenses are breakdown only).
         profit_value, margin_value = apply_profit_trust_to_kpis(
             trust=trust or "insufficient",
-            total_profit=adjusted.seller_profit_after_promotion,
-            margin_pct=adjusted.margin_pct,
+            total_profit=seller.seller_profit,
+            margin_pct=seller.margin_pct,
         )
         profitability_value = gate_profitability_decimal(
-            adjusted.profitability_pct, trust=trust or "insufficient"
+            seller.profitability_pct, trust=trust or "insufficient"
         )
         if units_sold and int(units_sold) > 0:
             avg_check = seller.revenue / Decimal(units_sold)
@@ -595,17 +629,18 @@ class AnalyticsService(TenantScopedService):
 
         integrity = await self._integrity(marketplace=marketplace, period=period, semantics_version=freshness.semantics_version)
         trust = integrity.profit_metrics_trust if integrity else "insufficient"
+        # Variant A: primary = settlement profit; promo/jam exposed as deduction breakdown.
         profit_value, margin_value = apply_profit_trust_to_kpis(
             trust=trust or "insufficient",
-            total_profit=adjusted.seller_profit_after_promotion,
-            margin_pct=adjusted.margin_pct,
+            total_profit=seller.seller_profit,
+            margin_pct=seller.margin_pct,
         )
         cogs_value = seller.cogs if trust == "full" else None
         profitability_value = gate_profitability_decimal(
-            adjusted.profitability_pct, trust=trust or "insufficient"
+            seller.profitability_pct, trust=trust or "insufficient"
         )
         profit_raw_value = gate_profit_decimal(
-            adjusted.seller_profit_raw,
+            seller.seller_profit,
             trust=trust or "insufficient",
         )
         return FinancialKpiSummaryResponse(
@@ -631,7 +666,7 @@ class AnalyticsService(TenantScopedService):
                 promotion_expenses=adjusted.wb_promotion_expenses,
                 jam_subscription_expenses=adjusted.jam_subscription_expenses,
                 manual_expenses_total=adjusted.manual_expenses_total,
-                adjusted_settlement=adjusted.adjusted_settlement,
+                adjusted_settlement=seller.total_to_pay,
                 margin_pct=margin_value,
                 profitability_pct=profitability_value,
                 return_rate_pct=return_rate,

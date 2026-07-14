@@ -1,10 +1,13 @@
-"""Promotion-adjusted profit math (Phase 8.1 / 9.9-R4B.1)."""
+"""Manual expense annotation math (Phase 9.9-R15 Variant A — no second subtract)."""
 
 from __future__ import annotations
 
 from decimal import Decimal
 
-from app.domain.analytics.promotion_adjusted import compute_profit_after_promotion
+from app.domain.analytics.promotion_adjusted import (
+    compute_profit_after_promotion,
+    compute_promotion_impact_pct,
+)
 from tests.unit.test_seller_kpi_math import PILOT_EXPECTED
 
 TOLERANCE = Decimal("0.01")
@@ -17,7 +20,7 @@ def _assert_close(actual: Decimal, expected: Decimal, label: str) -> None:
     assert delta <= TOLERANCE, f"{label}: expected {expected}, got {actual} (delta {delta})"
 
 
-def test_compute_profit_after_promotion_pilot() -> None:
+def test_compute_profit_after_promotion_variant_a_no_second_subtract() -> None:
     adjusted = compute_profit_after_promotion(
         settlement_wb=PILOT_EXPECTED["total_to_pay"],
         wb_promotion_expenses=WB_PROMOTION,
@@ -28,26 +31,25 @@ def test_compute_profit_after_promotion_pilot() -> None:
     _assert_close(adjusted.wb_promotion_expenses, WB_PROMOTION, "wb_promotion_expenses")
     _assert_close(adjusted.jam_subscription_expenses, Decimal("0"), "jam_subscription_expenses")
     _assert_close(adjusted.manual_expenses_total, WB_PROMOTION, "manual_expenses_total")
+    # Variant A: adjusted_settlement is NOT reduced by manual expenses.
     _assert_close(
         adjusted.adjusted_settlement,
-        PILOT_EXPECTED["total_to_pay"] - WB_PROMOTION,
+        PILOT_EXPECTED["total_to_pay"],
         "adjusted_settlement",
     )
     _assert_close(adjusted.seller_profit_raw, PILOT_EXPECTED["seller_profit"], "seller_profit_raw")
-    _assert_close(adjusted.seller_profit_after_promotion, Decimal("90605.15"), "profit_after")
+    _assert_close(
+        adjusted.seller_profit_after_promotion,
+        PILOT_EXPECTED["seller_profit"],
+        "profit_primary",
+    )
     assert adjusted.margin_pct is not None
-    _assert_close(adjusted.margin_pct.quantize(Decimal("0.01")), Decimal("18.07"), "margin_after")
+    _assert_close(adjusted.margin_pct.quantize(Decimal("0.01")), PILOT_EXPECTED["margin_pct"], "margin")
     assert adjusted.profitability_pct is not None
     _assert_close(
         adjusted.profitability_pct.quantize(Decimal("0.01")),
-        Decimal("46.75"),
-        "profitability_after",
-    )
-    assert adjusted.margin_pct_raw is not None
-    _assert_close(
-        adjusted.margin_pct_raw.quantize(Decimal("0.01")),
-        PILOT_EXPECTED["margin_pct"],
-        "margin_raw",
+        PILOT_EXPECTED["profitability_pct"],
+        "profitability",
     )
 
 
@@ -62,7 +64,7 @@ def test_zero_promotion_keeps_profit() -> None:
     _assert_close(adjusted.seller_profit_after_promotion, PILOT_EXPECTED["seller_profit"], "profit")
 
 
-def test_wb_and_jam_manual_expenses_sum() -> None:
+def test_wb_and_jam_manual_expenses_sum_without_subtract() -> None:
     adjusted = compute_profit_after_promotion(
         settlement_wb=PILOT_EXPECTED["total_to_pay"],
         wb_promotion_expenses=WB_PROMOTION,
@@ -74,17 +76,14 @@ def test_wb_and_jam_manual_expenses_sum() -> None:
     _assert_close(adjusted.manual_expenses_total, total_manual, "manual_expenses_total")
     _assert_close(
         adjusted.seller_profit_after_promotion,
-        PILOT_EXPECTED["seller_profit"] - total_manual,
-        "profit_after_combined",
+        PILOT_EXPECTED["seller_profit"],
+        "profit_not_reduced",
     )
 
 
-def test_promotion_impact_pct_pilot() -> None:
-    from app.domain.analytics.promotion_adjusted import compute_promotion_impact_pct
-
+def test_promotion_impact_pct_none_when_equal() -> None:
     impact = compute_promotion_impact_pct(
         seller_profit_raw=PILOT_EXPECTED["seller_profit"],
-        seller_profit_after_promotion=Decimal("90605.15"),
+        seller_profit_after_promotion=PILOT_EXPECTED["seller_profit"],
     )
-    assert impact is not None
-    _assert_close(impact.quantize(Decimal("0.01")), Decimal("9.87"), "promotion_impact_pct")
+    assert impact is None

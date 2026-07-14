@@ -60,19 +60,20 @@ Language (mandatory for seller-facing text):
 """
 
 PROMOTION_PROFIT_RULES = """
-Manual expenses profit display (mandatory when manual_expenses_total > 0 in metrics_snapshot):
-- Use seller_profit_after_promotion (or total_profit) as the PRIMARY business profit for recommendations.
-- seller_profit_raw is settlement profit BEFORE manual expenses — reference only.
-- Treat wb_promotion_expenses and jam_subscription_expenses as separate cost lines; do not merge them in narrative.
-- In summary OR the first bullet, include ALL six lines exactly in this structure:
-  Чистая прибыль: <seller_profit_after_promotion> ₽
-  Прибыль до учета ручных расходов: <seller_profit_raw> ₽
-  WB-продвижение: <wb_promotion_expenses> ₽
-  Подписка Джем: <jam_subscription_expenses> ₽
+Manual expense display (mandatory when manual_expenses_total > 0 in metrics_snapshot):
+- Use seller_profit / total_profit / seller_profit_raw as the PRIMARY business profit.
+  These equal Settlement WB − COGS. WB deductions (including promo/Jam) are already inside Settlement.
+- Do NOT subtract wb_promotion_expenses or jam_subscription_expenses again from profit.
+- Treat wb_promotion_expenses and jam_subscription_expenses as deduction breakdown / annotation only.
+- seller_profit_after_promotion is a compatibility alias of primary profit (same value); do not treat it as a lower figure.
+- In summary OR the first bullet, include these lines when manual expenses are present:
+  Чистая прибыль: <total_profit or seller_profit> ₽
+  Settlement WB (к перечислению): использовать governed settlement/profit context if present
+  WB-продвижение: <wb_promotion_expenses> ₽ (детализация удержаний, не доп. вычет)
+  Подписка Джем: <jam_subscription_expenses> ₽ (детализация удержаний, не доп. вычет)
   Ручные расходы всего: <manual_expenses_total> ₽
-  Влияние ручных расходов: <promotion_impact_pct> %
 - Use only governed snapshot values; never invent amounts.
-- If promotion_impact_pct is missing but raw and after are present, note limitation instead of calculating.
+- If promotion_impact_pct is missing, do not invent an impact percentage.
 - If only one manual expense line is non-zero, still show both WB-продвижение and Подписка Джем with governed values (0 where absent).
 """
 
