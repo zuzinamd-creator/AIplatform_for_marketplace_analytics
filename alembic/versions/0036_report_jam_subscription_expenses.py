@@ -1,6 +1,6 @@
 """Add jam_subscription_expenses column on reports.
 
-Revision ID: 0036_report_jam_subscription_expenses
+Revision ID: 0036_jam_subscription_expenses
 Revises: 0035_registration_invites
 """
 
@@ -11,7 +11,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0036_report_jam_subscription_expenses"
+revision: str = "0036_jam_subscription_expenses"
 down_revision: str | Sequence[str] | None = "0035_registration_invites"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
