@@ -30,6 +30,7 @@ import { PeriodSelector } from "../../ui/period-selector";
 import { usePagePeriod } from "../../state/use-page-period";
 import { toast } from "../../ui/toast";
 import { FirstRunChecklist } from "../../ui/first-run-checklist";
+import { FinancialSummaryCard } from "./FinancialSummaryCard";
 
 export function DashboardPage() {
   useEffect(() => {
@@ -80,12 +81,6 @@ export function DashboardPage() {
   const integrityWarnings = data?.revenue_summary.integrity?.warnings ?? [];
   const completeness = data?.revenue_summary.integrity?.financial_completeness_score ?? null;
   const trustCtx = useProfitTrust(data?.revenue_summary.integrity, data?.cost_coverage ?? null);
-  const wbPromotionExpenses = Number(data?.finance_summary.kpis.promotion_expenses ?? "0");
-  const jamSubscriptionExpenses = Number(data?.finance_summary.kpis.jam_subscription_expenses ?? "0");
-  const manualExpensesTotal = Number(
-    data?.finance_summary.kpis.manual_expenses_total ?? wbPromotionExpenses + jamSubscriptionExpenses,
-  );
-  const hasManualExpenses = manualExpensesTotal > 0;
 
   return (
     <div className="page-shell">
@@ -412,65 +407,13 @@ export function DashboardPage() {
           </div>
         </Card>
 
-        <Card className="p-6">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="text-sm font-semibold text-ink">Финансовая сводка</div>
-            <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
-          </div>
-          <div className="mt-2 text-xs text-ink-muted">Период: {start} → {end}</div>
-          <div className="mt-5 space-y-2.5 text-sm text-ink-secondary">
-            <div className="flex justify-between gap-3"><span>Выручка</span><span>{formatRub(data?.revenue_summary.kpis.total_revenue)}</span></div>
-            <div className="flex justify-between gap-3"><span>К перечислению за товар</span><span>{formatRub(data?.finance_summary.kpis.payout_for_goods ?? data?.finance_summary.kpis.payout)}</span></div>
-            <div className="flex justify-between gap-3"><span>Логистика</span><span>{formatRub(data?.finance_summary.kpis.logistics)}</span></div>
-            <div className="flex justify-between gap-3"><span>Хранение</span><span>{formatRub(data?.finance_summary.kpis.storage_fee)}</span></div>
-            <div className="flex justify-between gap-3"><span>Удержания</span><span>{formatRub(data?.finance_summary.kpis.deductions)}</span></div>
-            {wbPromotionExpenses > 0 ? (
-              <div className="flex justify-between gap-3 pl-3 text-ink-muted">
-                <span>в т.ч. WB-продвижение</span>
-                <span>{formatRub(data?.finance_summary.kpis.promotion_expenses)}</span>
-              </div>
-            ) : null}
-            {jamSubscriptionExpenses > 0 ? (
-              <div className="flex justify-between gap-3 pl-3 text-ink-muted">
-                <span>в т.ч. Подписка Джем</span>
-                <span>{formatRub(data?.finance_summary.kpis.jam_subscription_expenses)}</span>
-              </div>
-            ) : null}
-            <div className="flex justify-between gap-3 border-t border-surface-subtle pt-2"><span>Settlement WB (к перечислению)</span><span>{formatRub(data?.finance_summary.kpis.total_to_pay)}</span></div>
-            <div className="flex justify-between gap-3"><span>Себестоимость</span><span>{formatRub(data?.finance_summary.kpis.cogs)}</span></div>
-            <div className="mt-3 flex justify-between gap-3 border-t border-surface-subtle pt-3 font-semibold text-ink">
-              <span className="inline-flex items-center gap-2">
-                Чистая прибыль
-                <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" showLabel={false} />
-              </span>
-              <span>{formatProfitValue(data?.finance_summary.kpis.gross_profit, trustCtx.trust)}</span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="inline-flex items-center gap-2">
-                Маржинальность
-                <ProfitTrustBadge trust={trustCtx.trust} metric="margin" showLabel={false} />
-              </span>
-              <span>{formatMarginValue(data?.finance_summary.kpis.margin_pct, trustCtx.trust)}</span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span>Рентабельность</span>
-              <span>{formatProfitabilityValue(data?.finance_summary.kpis.profitability_pct, trustCtx.trust)}</span>
-            </div>
-          </div>
-          <div className="mt-4 space-y-2 text-xs text-ink-muted">
-            {hasManualExpenses ? (
-              <div>
-                Чистая прибыль = Settlement WB − себестоимость. WB-продвижение и Джем — детализация
-                удержаний (уже внутри Settlement), без повторного вычета.
-              </div>
-            ) : null}
-            {trustCtx.trust === "insufficient"
-              ? "Прибыль и маржа недоступны без себестоимости."
-              : trustCtx.trust === "partial"
-                ? "Прибыль показана как оценка; маржа скрыта при неполном покрытии COGS."
-                : "Показатели проверены при полном покрытии себестоимости."}
-          </div>
-        </Card>
+        <FinancialSummaryCard
+          periodStart={start}
+          periodEnd={end}
+          totalRevenue={data?.revenue_summary.kpis.total_revenue}
+          financeKpis={data?.finance_summary.kpis}
+          trustCtx={trustCtx}
+        />
       </div>
 
       <CollapsibleSection
