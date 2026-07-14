@@ -281,8 +281,8 @@ class AnalyticsService(TenantScopedService):
         """
         Select canonical processed FINANCE reports overlapping the period.
 
-        Nested/subset reports (e.g. SHORT 15–20 inside FULL 15–21) are excluded;
-        longest inclusive span wins. Used by settlement KPIs and manual expense sums.
+        Nested overlapping reports are excluded;
+        longest inclusive span wins. Used by settlement KPIs, revenue, and manual expense sums.
         """
         report_stmt = (
             select(
@@ -315,19 +315,11 @@ class AnalyticsService(TenantScopedService):
         """
         WB seller settlement KPIs for a period.
 
-        Uses report-scoped ledger rows when canonical finance reports overlap the
-        period (matches WB weekly settlement). Nested overlapping reports are
-        excluded. Return payouts are netted from normalized return rows because
-        they are not always materialized as ledger PAYOUT.
+        Revenue, payout, logistics, storage, and deductions all come from the same
+        canonical FINANCE report ledger set (Phase 9.9-R15B). Nested overlapping
+        reports are excluded. Return payouts are netted from normalized return rows
+        because they are not always materialized as ledger PAYOUT.
         """
-        agg_stmt = (
-            select(func.coalesce(func.sum(DailyAggregate.revenue), 0))
-            .where(DailyAggregate.marketplace == marketplace)
-            .where(DailyAggregate.aggregate_date >= period.start)
-            .where(DailyAggregate.aggregate_date <= period.end)
-        )
-        revenue = Decimal((await self.execute_with_rls(agg_stmt)).scalar_one())
-
         cogs_stmt = (
             select(func.coalesce(func.sum(SkuUnitEconomicsDaily.cogs), 0))
             .where(SkuUnitEconomicsDaily.marketplace == marketplace)
@@ -411,6 +403,8 @@ class AnalyticsService(TenantScopedService):
 
         ledger_res = await self.execute_with_rls(ledger_stmt)
         by_type = {op: Decimal(total) for op, total in ledger_res.all()}
+        # Same canonical ledger as settlement — do not use daily_aggregates (may include nested reports).
+        revenue = by_type.get(LedgerOperationType.SALE, Decimal("0"))
         payout_sales = by_type.get(LedgerOperationType.PAYOUT, Decimal("0"))
         logistics = abs(by_type.get(LedgerOperationType.LOGISTICS, Decimal("0")))
         storage = abs(by_type.get(LedgerOperationType.STORAGE_FEE, Decimal("0")))
@@ -466,7 +460,11 @@ class AnalyticsService(TenantScopedService):
     async def _wb_seller_profit_by_day(
         self, *, marketplace: Marketplace, period: Period
     ) -> dict[date, SellerKpis]:
-        """Daily seller settlement KPIs (operation_date scoped) for trend charts."""
+        """Daily seller KPIs from canonical FINANCE ledger (operation_date scoped)."""
+        report_ids = await self._canonical_finance_report_ids(
+            marketplace=marketplace, period=period
+        )
+
         led_stmt = (
             select(
                 FinancialLedgerEntry.operation_date,
@@ -477,6 +475,8 @@ class AnalyticsService(TenantScopedService):
             .where(FinancialLedgerEntry.operation_date <= period.end)
             .group_by(FinancialLedgerEntry.operation_date, FinancialLedgerEntry.operation_type)
         )
+        if report_ids:
+            led_stmt = led_stmt.where(FinancialLedgerEntry.report_id.in_(report_ids))
         led_res = await self.execute_with_rls(led_stmt)
         ledger_by_day: dict[date, dict[LedgerOperationType, Decimal]] = {}
         for day, op, total in led_res.all():
@@ -495,19 +495,6 @@ class AnalyticsService(TenantScopedService):
         cogs_res = await self.execute_with_rls(cogs_stmt)
         cogs_by_day = {day: Decimal(total) for day, total in cogs_res.all()}
 
-        rev_stmt = (
-            select(
-                DailyAggregate.aggregate_date,
-                func.coalesce(func.sum(DailyAggregate.revenue), 0),
-            )
-            .where(DailyAggregate.marketplace == marketplace)
-            .where(DailyAggregate.aggregate_date >= period.start)
-            .where(DailyAggregate.aggregate_date <= period.end)
-            .group_by(DailyAggregate.aggregate_date)
-        )
-        rev_res = await self.execute_with_rls(rev_stmt)
-        revenue_by_day = {day: Decimal(total) for day, total in rev_res.all()}
-
         ret_stmt = (
             select(
                 NormalizedReportRow.operation_date,
@@ -523,8 +510,6 @@ class AnalyticsService(TenantScopedService):
                     0,
                 ),
             )
-            .join(Report, Report.id == NormalizedReportRow.report_id)
-            .where(Report.marketplace == marketplace)
             .where(NormalizedReportRow.operation_date >= period.start)
             .where(NormalizedReportRow.operation_date <= period.end)
             .where(
@@ -536,15 +521,21 @@ class AnalyticsService(TenantScopedService):
             .where(NormalizedReportRow.canonical_payload["payout"].astext != "0")
             .group_by(NormalizedReportRow.operation_date)
         )
+        if report_ids:
+            ret_stmt = ret_stmt.where(NormalizedReportRow.report_id.in_(report_ids))
+        else:
+            ret_stmt = ret_stmt.join(Report, Report.id == NormalizedReportRow.report_id).where(
+                Report.marketplace == marketplace
+            )
         ret_res = await self.execute_with_rls(ret_stmt)
         payout_returns_by_day = {day: Decimal(total) for day, total in ret_res.all() if day is not None}
 
-        days = sorted(set(revenue_by_day) | set(ledger_by_day) | set(cogs_by_day))
+        days = sorted(set(ledger_by_day) | set(cogs_by_day) | set(payout_returns_by_day))
         out: dict[date, SellerKpis] = {}
         for day in days:
             led = ledger_by_day.get(day, {})
             out[day] = compute_seller_kpis(
-                revenue=revenue_by_day.get(day, Decimal("0")),
+                revenue=led.get(LedgerOperationType.SALE, Decimal("0")),
                 payout_sales=led.get(LedgerOperationType.PAYOUT, Decimal("0")),
                 payout_returns=payout_returns_by_day.get(day, Decimal("0")),
                 logistics=abs(led.get(LedgerOperationType.LOGISTICS, Decimal("0"))),
@@ -858,40 +849,50 @@ class AnalyticsService(TenantScopedService):
     async def revenue_trend(
         self, *, marketplace: Marketplace, period: Period
     ) -> RevenueTrendResponse:
-        stmt = (
-            select(DailyAggregate)
+        seller_by_day = await self._wb_seller_profit_by_day(marketplace=marketplace, period=period)
+        # Keep units_sold from daily aggregates (units projection); money KPIs use canonical seller day.
+        units_stmt = (
+            select(
+                DailyAggregate.aggregate_date,
+                DailyAggregate.units_sold,
+            )
             .where(DailyAggregate.marketplace == marketplace)
             .where(DailyAggregate.aggregate_date >= period.start)
             .where(DailyAggregate.aggregate_date <= period.end)
-            .order_by(DailyAggregate.aggregate_date.asc())
         )
-        res = await self.execute_with_rls(stmt)
-        rows = list(res.scalars().all())
-        seller_by_day = await self._wb_seller_profit_by_day(marketplace=marketplace, period=period)
+        units_res = await self.execute_with_rls(units_stmt)
+        units_by_day = {row.aggregate_date: int(row.units_sold or 0) for row in units_res.all()}
+
         integrity = await self._integrity(marketplace=marketplace, period=period)
         trust = integrity.profit_metrics_trust if integrity else "insufficient"
-        points = [
-            TrendPoint(
-                date=r.aggregate_date,
-                revenue=r.revenue,
-                net_profit=gate_profit_decimal(r.net_profit, trust=trust or "insufficient"),
-                seller_profit=gate_profit_decimal(
-                    seller_by_day[r.aggregate_date].seller_profit
-                    if r.aggregate_date in seller_by_day
-                    else None,
-                    trust=trust or "insufficient",
-                ),
-                margin_pct=gate_margin_decimal(r.margin, trust=trust or "insufficient"),
-                seller_margin_pct=gate_margin_decimal(
-                    seller_by_day[r.aggregate_date].margin_pct
-                    if r.aggregate_date in seller_by_day
-                    else None,
-                    trust=trust or "insufficient",
-                ),
-                units_sold=r.units_sold,
+        days = sorted(set(seller_by_day) | set(units_by_day))
+        points = []
+        for day in days:
+            seller = seller_by_day.get(day)
+            revenue = seller.revenue if seller else Decimal("0")
+            points.append(
+                TrendPoint(
+                    date=day,
+                    revenue=revenue,
+                    net_profit=gate_profit_decimal(
+                        seller.seller_profit if seller else None,
+                        trust=trust or "insufficient",
+                    ),
+                    seller_profit=gate_profit_decimal(
+                        seller.seller_profit if seller else None,
+                        trust=trust or "insufficient",
+                    ),
+                    margin_pct=gate_margin_decimal(
+                        seller.margin_pct if seller else None,
+                        trust=trust or "insufficient",
+                    ),
+                    seller_margin_pct=gate_margin_decimal(
+                        seller.margin_pct if seller else None,
+                        trust=trust or "insufficient",
+                    ),
+                    units_sold=units_by_day.get(day, 0),
+                )
             )
-            for r in rows
-        ]
         return RevenueTrendResponse(
             marketplace=marketplace,
             period_start=period.start,
