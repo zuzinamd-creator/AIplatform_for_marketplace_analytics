@@ -1,5 +1,5 @@
 import { describe, expect, it, afterEach } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 
 import { deriveProfitTrustContext } from "../../state/profit-trust";
 import type { FinancialKpiSummaryResponse } from "../../state/types-analytics";
@@ -75,18 +75,41 @@ function renderCard(
   );
 }
 
-describe("FinancialSummaryCard behavior freeze", () => {
+describe("FinancialSummaryCard R19 UX", () => {
   afterEach(() => {
     cleanup();
   });
 
-  it("renders settlement, margin, profitability labels unchanged", () => {
+  it("uses seller-facing labels: Выплата от WB and Маржа, no Settlement", () => {
     renderCard();
     expect(screen.getByText(/Финансовая сводка/i)).toBeTruthy();
-    expect(screen.getByText(/Settlement WB \(к перечислению\)/i)).toBeTruthy();
-    expect(screen.getByText("Маржинальность")).toBeTruthy();
-    expect(screen.getByText("Рентабельность")).toBeTruthy();
+    expect(screen.getByText("Выплата от WB")).toBeTruthy();
+    expect(screen.getByText("Маржа")).toBeTruthy();
     expect(screen.getByText("Чистая прибыль")).toBeTruthy();
+    expect(screen.getByText("Деньги от Wildberries")).toBeTruthy();
+    expect(screen.getByText("Прибыль")).toBeTruthy();
+    expect(screen.getByText("Удержания WB")).toBeTruthy();
+    expect(screen.queryByText(/Settlement/i)).toBeNull();
+    expect(screen.queryByText("Маржинальность")).toBeNull();
+  });
+
+  it("keeps disclosures closed by default", () => {
+    const { container } = renderCard({
+      kpis: {
+        promotion_expenses: "9925",
+        jam_subscription_expenses: "500",
+        manual_expenses_total: "10425",
+      },
+    });
+    const details = container.querySelectorAll("details");
+    expect(details.length).toBeGreaterThanOrEqual(3);
+    for (const el of details) {
+      expect(el.open).toBe(false);
+      expect(el.hasAttribute("open")).toBe(false);
+    }
+    expect(screen.getByText(/Детализация услуг WB/i)).toBeTruthy();
+    expect(screen.getByText(/^Из них$/i)).toBeTruthy();
+    expect(screen.getByText(/Ещё показатели/i)).toBeTruthy();
   });
 
   it("A: hides WB and Jam rows when both are zero", () => {
@@ -97,12 +120,13 @@ describe("FinancialSummaryCard behavior freeze", () => {
         manual_expenses_total: "0",
       },
     });
-    expect(screen.queryByText(/в т.ч. WB-продвижение/i)).toBeNull();
-    expect(screen.queryByText(/в т.ч. Подписка Джем/i)).toBeNull();
+    expect(screen.queryByText(/^Из них$/i)).toBeNull();
+    expect(screen.queryByText(/WB-продвижение/i)).toBeNull();
+    expect(screen.queryByText(/Подписка Джем/i)).toBeNull();
     expect(screen.queryByText(/Затраты на продвижение/i)).toBeNull();
   });
 
-  it("B: shows only WB-продвижение when jam is zero", () => {
+  it("B: shows only WB-продвижение under Из них when jam is zero", () => {
     renderCard({
       kpis: {
         promotion_expenses: "9925",
@@ -110,11 +134,12 @@ describe("FinancialSummaryCard behavior freeze", () => {
         manual_expenses_total: "9925",
       },
     });
-    expect(screen.getByText(/в т.ч. WB-продвижение/i)).toBeTruthy();
-    expect(screen.queryByText(/в т.ч. Подписка Джем/i)).toBeNull();
+    expect(screen.getByText(/^Из них$/i)).toBeTruthy();
+    expect(screen.getByText(/WB-продвижение/i)).toBeTruthy();
+    expect(screen.queryByText(/Подписка Джем/i)).toBeNull();
   });
 
-  it("C: shows only Подписка Джем when WB is zero", () => {
+  it("C: shows only Подписка Джем under Из них when WB is zero", () => {
     renderCard({
       kpis: {
         promotion_expenses: "0",
@@ -122,12 +147,13 @@ describe("FinancialSummaryCard behavior freeze", () => {
         manual_expenses_total: "500",
       },
     });
-    expect(screen.getByText(/в т.ч. Подписка Джем/i)).toBeTruthy();
-    expect(screen.queryByText(/в т.ч. WB-продвижение/i)).toBeNull();
+    expect(screen.getByText(/^Из них$/i)).toBeTruthy();
+    expect(screen.getByText(/Подписка Джем/i)).toBeTruthy();
+    expect(screen.queryByText(/WB-продвижение/i)).toBeNull();
   });
 
-  it("D: shows both promo/jam and settlement footnote without second-subtract row", () => {
-    renderCard({
+  it("D: promo/jam under deductions disclosure; formula footer; no second-subtract", () => {
+    const { container } = renderCard({
       kpis: {
         promotion_expenses: "9925",
         jam_subscription_expenses: "500",
@@ -138,13 +164,25 @@ describe("FinancialSummaryCard behavior freeze", () => {
         gross_profit: "45000",
       },
     });
-    expect(screen.getByText(/в т.ч. WB-продвижение/i)).toBeTruthy();
-    expect(screen.getByText(/в т.ч. Подписка Джем/i)).toBeTruthy();
-    expect(screen.queryByText(/Settlement WB \(после ручных расходов\)/i)).toBeNull();
-    expect(screen.getByText(/Settlement WB \(к перечислению\)/i)).toBeTruthy();
+    const izNikh = screen.getByText(/^Из них$/i).closest("details");
+    expect(izNikh).toBeTruthy();
+    expect(within(izNikh as HTMLElement).getByText(/WB-продвижение/i)).toBeTruthy();
+    expect(within(izNikh as HTMLElement).getByText(/Подписка Джем/i)).toBeTruthy();
+
     expect(
-      screen.getByText(/детализация удержаний \(уже внутри Settlement\), без повторного вычета/i),
+      screen.getByText("Выплата от WB − Себестоимость = Чистая прибыль"),
     ).toBeTruthy();
+    expect(screen.queryByText(/Settlement/i)).toBeNull();
+    expect(screen.queryByText(/после ручных расходов/i)).toBeNull();
+    expect(screen.queryByText(/без повторного вычета/i)).toBeNull();
+
+    // logistics hidden under services disclosure
+    const services = Array.from(container.querySelectorAll("details")).find((d) =>
+      d.textContent?.includes("Детализация услуг WB"),
+    );
+    expect(services).toBeTruthy();
+    expect(within(services as HTMLElement).getByText("Логистика")).toBeTruthy();
+    expect(within(services as HTMLElement).getByText("Хранение")).toBeTruthy();
   });
 
   it("shows profit trust badge and hides profit when COGS trust is insufficient", () => {
@@ -167,9 +205,7 @@ describe("FinancialSummaryCard behavior freeze", () => {
       trust: trustPartial(),
     });
     expect(screen.getByText(/Прибыль показана как оценка/i)).toBeTruthy();
-    // formatProfitValue prefixes ~ for partial
     expect(screen.getByText(/~.*45/)).toBeTruthy();
-    // margin & profitability gated to —
     const dashes = screen.getAllByText("—");
     expect(dashes.length).toBeGreaterThanOrEqual(2);
   });

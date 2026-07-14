@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Card } from "../../ui/card";
 import { ProfitTrustBadge } from "../../ui/profit-trust-badge";
 import {
@@ -19,9 +20,59 @@ export type FinancialSummaryCardProps = {
   trustCtx: ProfitTrustContext;
 };
 
+function MetricRow({
+  label,
+  value,
+  emphasize,
+  className = "",
+}: {
+  label: ReactNode;
+  value: ReactNode;
+  emphasize?: "primary" | "secondary";
+  className?: string;
+}) {
+  const rowTone =
+    emphasize === "primary"
+      ? "font-semibold text-ink text-[0.95rem]"
+      : emphasize === "secondary"
+        ? "font-semibold text-ink"
+        : "text-ink-secondary";
+  return (
+    <div className={`flex justify-between gap-3 ${rowTone} ${className}`.trim()}>
+      <span className="inline-flex items-center gap-2">{label}</span>
+      <span>{value}</span>
+    </div>
+  );
+}
+
+function InlineDisclosure({
+  summary,
+  children,
+}: {
+  summary: string;
+  children: ReactNode;
+}) {
+  return (
+    <details className="group text-ink-muted">
+      <summary className="cursor-pointer list-none text-xs hover:text-ink-secondary [&::-webkit-details-marker]:hidden">
+        <span className="inline-flex items-center gap-1">
+          <span aria-hidden className="select-none group-open:hidden">
+            ▸
+          </span>
+          <span aria-hidden className="hidden select-none group-open:inline">
+            ▾
+          </span>
+          {summary}
+        </span>
+      </summary>
+      <div className="mt-2 space-y-2 pl-3 text-sm">{children}</div>
+    </details>
+  );
+}
+
 /**
- * Behavior-freeze extract of the dashboard «Финансовая сводка» card (Phase 9.9-R18).
- * No UX/label/order changes — presentation only.
+ * Financial summary card (Phase 9.9-R19 UX): two blocks, disclosures, seller-facing labels.
+ * Data sources and profit math are unchanged — presentation only.
  */
 export function FinancialSummaryCard({
   periodStart,
@@ -32,10 +83,7 @@ export function FinancialSummaryCard({
 }: FinancialSummaryCardProps) {
   const wbPromotionExpenses = Number(financeKpis?.promotion_expenses ?? "0");
   const jamSubscriptionExpenses = Number(financeKpis?.jam_subscription_expenses ?? "0");
-  const manualExpensesTotal = Number(
-    financeKpis?.manual_expenses_total ?? wbPromotionExpenses + jamSubscriptionExpenses,
-  );
-  const hasManualExpenses = manualExpensesTotal > 0;
+  const hasDeductionBreakdown = wbPromotionExpenses > 0 || jamSubscriptionExpenses > 0;
 
   return (
     <Card className="p-6">
@@ -46,73 +94,89 @@ export function FinancialSummaryCard({
       <div className="mt-2 text-xs text-ink-muted">
         Период: {periodStart} → {periodEnd}
       </div>
-      <div className="mt-5 space-y-2.5 text-sm text-ink-secondary">
-        <div className="flex justify-between gap-3">
-          <span>Выручка</span>
-          <span>{formatRub(totalRevenue)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span>К перечислению за товар</span>
-          <span>{formatRub(financeKpis?.payout_for_goods ?? financeKpis?.payout)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span>Логистика</span>
-          <span>{formatRub(financeKpis?.logistics)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span>Хранение</span>
-          <span>{formatRub(financeKpis?.storage_fee)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span>Удержания</span>
-          <span>{formatRub(financeKpis?.deductions)}</span>
-        </div>
-        {wbPromotionExpenses > 0 ? (
-          <div className="flex justify-between gap-3 pl-3 text-ink-muted">
-            <span>в т.ч. WB-продвижение</span>
-            <span>{formatRub(financeKpis?.promotion_expenses)}</span>
+
+      <div className="mt-5 space-y-5">
+        {/* Block 1: money from WB */}
+        <section className="space-y-2.5 text-sm">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+            Деньги от Wildberries
+          </h3>
+          <MetricRow label="Выручка" value={formatRub(totalRevenue)} />
+          <MetricRow
+            label="К перечислению за товар"
+            value={formatRub(financeKpis?.payout_for_goods ?? financeKpis?.payout)}
+          />
+          <InlineDisclosure summary="Детализация услуг WB">
+            <MetricRow label="Логистика" value={formatRub(financeKpis?.logistics)} />
+            <MetricRow label="Хранение" value={formatRub(financeKpis?.storage_fee)} />
+          </InlineDisclosure>
+          <div className="space-y-2">
+            <MetricRow label="Удержания WB" value={formatRub(financeKpis?.deductions)} />
+            {hasDeductionBreakdown ? (
+              <InlineDisclosure summary="Из них">
+                {wbPromotionExpenses > 0 ? (
+                  <MetricRow
+                    label="WB-продвижение"
+                    value={formatRub(financeKpis?.promotion_expenses)}
+                  />
+                ) : null}
+                {jamSubscriptionExpenses > 0 ? (
+                  <MetricRow
+                    label="Подписка Джем"
+                    value={formatRub(financeKpis?.jam_subscription_expenses)}
+                  />
+                ) : null}
+              </InlineDisclosure>
+            ) : null}
           </div>
-        ) : null}
-        {jamSubscriptionExpenses > 0 ? (
-          <div className="flex justify-between gap-3 pl-3 text-ink-muted">
-            <span>в т.ч. Подписка Джем</span>
-            <span>{formatRub(financeKpis?.jam_subscription_expenses)}</span>
-          </div>
-        ) : null}
-        <div className="flex justify-between gap-3 border-t border-surface-subtle pt-2">
-          <span>Settlement WB (к перечислению)</span>
-          <span>{formatRub(financeKpis?.total_to_pay)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span>Себестоимость</span>
-          <span>{formatRub(financeKpis?.cogs)}</span>
-        </div>
-        <div className="mt-3 flex justify-between gap-3 border-t border-surface-subtle pt-3 font-semibold text-ink">
-          <span className="inline-flex items-center gap-2">
-            Чистая прибыль
-            <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" showLabel={false} />
-          </span>
-          <span>{formatProfitValue(financeKpis?.gross_profit, trustCtx.trust)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="inline-flex items-center gap-2">
-            Маржинальность
-            <ProfitTrustBadge trust={trustCtx.trust} metric="margin" showLabel={false} />
-          </span>
-          <span>{formatMarginValue(financeKpis?.margin_pct, trustCtx.trust)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span>Рентабельность</span>
-          <span>{formatProfitabilityValue(financeKpis?.profitability_pct, trustCtx.trust)}</span>
-        </div>
+          <MetricRow
+            label="Выплата от WB"
+            value={formatRub(financeKpis?.total_to_pay)}
+            emphasize="secondary"
+            className="border-t border-surface-subtle pt-2"
+          />
+        </section>
+
+        {/* Block 2: profit */}
+        <section className="space-y-2.5 text-sm">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Прибыль</h3>
+          <MetricRow label="Себестоимость" value={formatRub(financeKpis?.cogs)} />
+          <MetricRow
+            label={
+              <>
+                Чистая прибыль
+                <ProfitTrustBadge
+                  trust={trustCtx.trust}
+                  trustContext={trustCtx}
+                  metric="profit"
+                  showLabel={false}
+                />
+              </>
+            }
+            value={formatProfitValue(financeKpis?.gross_profit, trustCtx.trust)}
+            emphasize="primary"
+            className="border-t border-surface-subtle pt-3"
+          />
+          <MetricRow
+            label={
+              <>
+                Маржа
+                <ProfitTrustBadge trust={trustCtx.trust} metric="margin" showLabel={false} />
+              </>
+            }
+            value={formatMarginValue(financeKpis?.margin_pct, trustCtx.trust)}
+          />
+          <InlineDisclosure summary="Ещё показатели">
+            <MetricRow
+              label="Рентабельность"
+              value={formatProfitabilityValue(financeKpis?.profitability_pct, trustCtx.trust)}
+            />
+          </InlineDisclosure>
+        </section>
       </div>
+
       <div className="mt-4 space-y-2 text-xs text-ink-muted">
-        {hasManualExpenses ? (
-          <div>
-            Чистая прибыль = Settlement WB − себестоимость. WB-продвижение и Джем — детализация
-            удержаний (уже внутри Settlement), без повторного вычета.
-          </div>
-        ) : null}
+        <div>Выплата от WB − Себестоимость = Чистая прибыль</div>
         {trustCtx.trust === "insufficient"
           ? "Прибыль и маржа недоступны без себестоимости."
           : trustCtx.trust === "partial"
