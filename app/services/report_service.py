@@ -49,6 +49,8 @@ class ReportService(TenantScopedService):
         file_checksum: str,
         raw_data: dict | None,
         row_count: int | None,
+        promotion_expenses: Decimal = Decimal("0"),
+        jam_subscription_expenses: Decimal = Decimal("0"),
     ) -> Report:
         report = Report(
             user_id=self.user.id,
@@ -59,6 +61,8 @@ class ReportService(TenantScopedService):
             file_checksum=file_checksum,
             raw_data=raw_data,
             row_count=row_count,
+            promotion_expenses=promotion_expenses,
+            jam_subscription_expenses=jam_subscription_expenses,
         )
         async with self._rls_transaction():
             self.db.add(report)
@@ -373,16 +377,27 @@ class ReportService(TenantScopedService):
             period_end=period_end,
         )
 
-    async def update_promotion_expenses(
+    async def update_manual_expenses(
         self,
         report_id: UUID,
         *,
-        promotion_expenses: Decimal,
+        promotion_expenses: Decimal | None = None,
+        jam_subscription_expenses: Decimal | None = None,
     ) -> ReportResponse:
-        if promotion_expenses < 0:
+        if promotion_expenses is not None and promotion_expenses < 0:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="promotion_expenses must be >= 0",
+            )
+        if jam_subscription_expenses is not None and jam_subscription_expenses < 0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="jam_subscription_expenses must be >= 0",
+            )
+        if promotion_expenses is None and jam_subscription_expenses is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="At least one expense field must be provided",
             )
         async with self._rls_transaction():
             result = await self.db.execute(
@@ -391,7 +406,10 @@ class ReportService(TenantScopedService):
             report = result.scalar_one_or_none()
             if report is None:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
-            report.promotion_expenses = promotion_expenses
+            if promotion_expenses is not None:
+                report.promotion_expenses = promotion_expenses
+            if jam_subscription_expenses is not None:
+                report.jam_subscription_expenses = jam_subscription_expenses
             self.db.add(report)
             await self.db.flush()
             await self.db.refresh(report)

@@ -29,13 +29,15 @@ class ReportResponse(BaseModel):
     period_start: date | None = None
     period_end: date | None = None
     promotion_expenses: Decimal = Field(default=Decimal("0"), ge=0)
+    jam_subscription_expenses: Decimal = Field(default=Decimal("0"), ge=0)
     report_number: str | None = Field(default=None, min_length=1, max_length=32)
     created_at: datetime
     updated_at: datetime
 
 
-class ReportPromotionExpensesUpdate(BaseModel):
-    promotion_expenses: Decimal = Field(default=Decimal("0"), ge=0)
+class ReportManualExpensesUpdate(BaseModel):
+    promotion_expenses: Decimal | None = Field(default=None, ge=0)
+    jam_subscription_expenses: Decimal | None = Field(default=None, ge=0)
 
 
 class ReportUploadResponse(BaseModel):

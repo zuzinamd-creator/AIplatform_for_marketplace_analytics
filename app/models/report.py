@@ -73,6 +73,11 @@ class Report(Base, TenantMixin, TimestampMixin):
         nullable=False,
         server_default="0",
     )
+    jam_subscription_expenses: Mapped[Decimal] = mapped_column(
+        Numeric(18, 4),
+        nullable=False,
+        server_default="0",
+    )
     row_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

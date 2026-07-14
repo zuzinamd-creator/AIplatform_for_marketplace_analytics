@@ -110,3 +110,95 @@ describe("DashboardPage trust integration", () => {
     expect(dashboardSummary.mock.calls[0][0]).not.toHaveProperty("compare_start");
   });
 });
+
+function mockFinanceSummary(kpis: Record<string, string | null>) {
+  dashboardSummary.mockResolvedValue({
+    revenue_summary: {
+      kpis: { total_revenue: "100000", total_profit: "20000", margin_pct: "20", profitability_pct: "50" },
+      integrity: { warnings: [], profit_metrics_trust: "full" },
+      freshness: { stale_data_warning: false, data_as_of: "2026-05-14" },
+    },
+    finance_summary: {
+      kpis: {
+        payout_for_goods: "80000",
+        logistics: "1000",
+        storage_fee: "100",
+        deductions: "500",
+        total_to_pay: "75000",
+        cogs: "30000",
+        gross_profit: "20000",
+        seller_profit_raw: "45000",
+        adjusted_settlement: "65000",
+        margin_pct: "20",
+        profitability_pct: "50",
+        promotion_expenses: "0",
+        jam_subscription_expenses: "0",
+        manual_expenses_total: "0",
+        ...kpis,
+      },
+    },
+    cost_coverage: { covered_skus: 5, total_skus: 5, sku_cost_coverage_pct: "100", missing_skus: [] },
+    revenue_trend_daily: { points: [{ date: "2026-05-01", revenue: "100", net_profit: "10", seller_profit: "10" }] },
+    finance_trend_daily: { points: [] },
+    top_skus: { items: [] },
+    coverage: { available_min_date: null, available_max_date: null, missing_periods: [], recommendations: [] },
+    queue: { status_counts: {} },
+    recommendations: { items: [] },
+    runtime: { rebuild: {} },
+    ai_ops: {},
+    todays_focus: { dangerous: [] },
+  });
+}
+
+describe("DashboardPage Task 0 manual expense rows", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("A: hides WB and Jam rows when both are zero", async () => {
+    mockFinanceSummary({
+      promotion_expenses: "0",
+      jam_subscription_expenses: "0",
+      manual_expenses_total: "0",
+    });
+    renderPage();
+    await screen.findByText(/Финансовая сводка/i);
+    expect(screen.queryByText("WB-продвижение")).toBeNull();
+    expect(screen.queryByText("Подписка Джем")).toBeNull();
+    expect(screen.queryByText(/Затраты на продвижение/i)).toBeNull();
+  });
+
+  it("B: shows only WB-продвижение when jam is zero", async () => {
+    mockFinanceSummary({
+      promotion_expenses: "9925",
+      jam_subscription_expenses: "0",
+      manual_expenses_total: "9925",
+    });
+    renderPage();
+    expect(await screen.findByText("WB-продвижение")).toBeTruthy();
+    expect(screen.queryByText("Подписка Джем")).toBeNull();
+  });
+
+  it("C: shows only Подписка Джем when WB is zero", async () => {
+    mockFinanceSummary({
+      promotion_expenses: "0",
+      jam_subscription_expenses: "500",
+      manual_expenses_total: "500",
+    });
+    renderPage();
+    expect(await screen.findByText("Подписка Джем")).toBeTruthy();
+    expect(screen.queryByText("WB-продвижение")).toBeNull();
+  });
+
+  it("D: shows both WB and Jam rows when both are positive", async () => {
+    mockFinanceSummary({
+      promotion_expenses: "9925",
+      jam_subscription_expenses: "500",
+      manual_expenses_total: "10425",
+    });
+    renderPage();
+    expect(await screen.findByText("WB-продвижение")).toBeTruthy();
+    expect(screen.getByText("Подписка Джем")).toBeTruthy();
+    expect(screen.getByText(/Settlement WB \(после ручных расходов\)/i)).toBeTruthy();
+  });
+});

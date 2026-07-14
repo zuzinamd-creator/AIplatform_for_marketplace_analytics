@@ -73,6 +73,11 @@ def report_to_response(
             if report.promotion_expenses is not None
             else Decimal("0")
         ),
+        jam_subscription_expenses=(
+            report.jam_subscription_expenses
+            if report.jam_subscription_expenses is not None
+            else Decimal("0")
+        ),
         report_number=extract_report_number(
             filename=report.original_filename,
             marketplace=report.marketplace,

@@ -9,7 +9,9 @@ from decimal import Decimal
 @dataclass(frozen=True)
 class PromotionAdjustedProfit:
     settlement_wb: Decimal
-    promotion_expenses: Decimal
+    wb_promotion_expenses: Decimal
+    jam_subscription_expenses: Decimal
+    manual_expenses_total: Decimal
     adjusted_settlement: Decimal
     cogs: Decimal
     seller_profit_raw: Decimal
@@ -25,7 +27,7 @@ def compute_promotion_impact_pct(
     seller_profit_raw: Decimal,
     seller_profit_after_promotion: Decimal,
 ) -> Decimal | None:
-    """Share of settlement profit consumed by promotion: (raw - after) * 100 / raw."""
+    """Share of settlement profit consumed by manual expenses: (raw - after) * 100 / raw."""
     if seller_profit_raw <= 0:
         return None
     return (seller_profit_raw - seller_profit_after_promotion) * Decimal("100") / seller_profit_raw
@@ -34,16 +36,19 @@ def compute_promotion_impact_pct(
 def compute_profit_after_promotion(
     *,
     settlement_wb: Decimal,
-    promotion_expenses: Decimal,
+    wb_promotion_expenses: Decimal,
+    jam_subscription_expenses: Decimal = Decimal("0"),
     cogs: Decimal,
     revenue: Decimal,
 ) -> PromotionAdjustedProfit:
     """
     Settlement WB = total_to_pay from marketplace.
     seller_profit_raw = settlement_wb - COGS
-    seller_profit_after_promotion = (settlement_wb - promotion_expenses) - COGS
+    seller_profit_after_promotion = (settlement_wb - manual_expenses_total) - COGS
+    manual_expenses_total = wb_promotion_expenses + jam_subscription_expenses
     """
-    adjusted_settlement = settlement_wb - promotion_expenses
+    manual_expenses_total = wb_promotion_expenses + jam_subscription_expenses
+    adjusted_settlement = settlement_wb - manual_expenses_total
     seller_profit_raw = settlement_wb - cogs
     seller_profit_after_promotion = adjusted_settlement - cogs
     margin_pct_raw = (
@@ -62,7 +67,9 @@ def compute_profit_after_promotion(
     )
     return PromotionAdjustedProfit(
         settlement_wb=settlement_wb,
-        promotion_expenses=promotion_expenses,
+        wb_promotion_expenses=wb_promotion_expenses,
+        jam_subscription_expenses=jam_subscription_expenses,
+        manual_expenses_total=manual_expenses_total,
         adjusted_settlement=adjusted_settlement,
         cogs=cogs,
         seller_profit_raw=seller_profit_raw,

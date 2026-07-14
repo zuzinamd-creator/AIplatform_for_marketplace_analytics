@@ -47,6 +47,8 @@ export function UploadReportPage() {
   const [reportType, setReportType] = useState("finance");
   const [progress, setProgress] = useState<number>(0);
   const [picked, setPicked] = useState<File | null>(null);
+  const [wbPromotion, setWbPromotion] = useState("");
+  const [jamSubscription, setJamSubscription] = useState("");
 
   const coverage = useQuery({
     queryKey: ["analytics", "coverage"],
@@ -60,6 +62,8 @@ export function UploadReportPage() {
       form.set("marketplace", marketplace);
       form.set("report_type", reportType);
       form.set("file", picked);
+      if (wbPromotion.trim()) form.set("promotion_expenses", wbPromotion.trim());
+      if (jamSubscription.trim()) form.set("jam_subscription_expenses", jamSubscription.trim());
       return await api.reports.upload(form, (pct) => setProgress(pct));
     },
     onSuccess: async (res) => {
@@ -70,6 +74,8 @@ export function UploadReportPage() {
       toast("Файл принят", `${res.message}${periodHint}`);
       setProgress(0);
       setPicked(null);
+      setWbPromotion("");
+      setJamSubscription("");
       await qc.invalidateQueries({ queryKey: ["reports"] });
       await qc.invalidateQueries({ queryKey: ["ops", "queue"] });
       await qc.invalidateQueries({ queryKey: ["analytics", "coverage"] });
@@ -150,6 +156,40 @@ export function UploadReportPage() {
           </div>
         </div>
 
+        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="wb-promotion">WB-продвижение</Label>
+            <input
+              id="wb-promotion"
+              type="text"
+              inputMode="decimal"
+              className="w-full rounded-lg border border-surface-subtle bg-surface px-3 py-2 text-sm"
+              placeholder="0"
+              value={wbPromotion}
+              onChange={(e) => setWbPromotion(e.target.value)}
+            />
+            <div className="text-xs text-ink-muted">
+              Расходы на продвижение внутри Wildberries, которые отсутствуют в автоматически загруженном отчёте.
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="jam-subscription">Подписка Джем</Label>
+            <input
+              id="jam-subscription"
+              type="text"
+              inputMode="decimal"
+              className="w-full rounded-lg border border-surface-subtle bg-surface px-3 py-2 text-sm"
+              placeholder="0"
+              value={jamSubscription}
+              onChange={(e) => setJamSubscription(e.target.value)}
+            />
+            <div className="text-xs text-ink-muted">
+              Стоимость подписки Джем и других сервисов Wildberries, которые отсутствуют в автоматически загруженном
+              отчёте.
+            </div>
+          </div>
+        </div>
+
         <div
           {...dz.getRootProps()}
           className="mt-5 cursor-pointer rounded-xl border border-dashed border-surface-subtle bg-surface-inset p-8 text-center"
@@ -181,6 +221,8 @@ export function UploadReportPage() {
             onClick={() => {
               setPicked(null);
               setProgress(0);
+              setWbPromotion("");
+              setJamSubscription("");
             }}
           >
             Сбросить

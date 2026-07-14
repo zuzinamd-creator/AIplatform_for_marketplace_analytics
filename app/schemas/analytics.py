@@ -253,6 +253,8 @@ class FinancialKpiSummary(BaseModel):
     gross_profit: Decimal | None = None
     seller_profit_raw: Decimal | None = None
     promotion_expenses: Decimal = Decimal("0")
+    jam_subscription_expenses: Decimal = Decimal("0")
+    manual_expenses_total: Decimal = Decimal("0")
     adjusted_settlement: Decimal | None = None
     margin_pct: Decimal | None = None
     profitability_pct: Decimal | None = None

@@ -109,6 +109,8 @@ export type FinancialKpiSummaryResponse = {
     gross_profit?: string | null;
     seller_profit_raw?: string | null;
     promotion_expenses?: string | null;
+    jam_subscription_expenses?: string | null;
+    manual_expenses_total?: string | null;
     adjusted_settlement?: string | null;
     margin_pct?: string | null;
     profitability_pct?: string | null;

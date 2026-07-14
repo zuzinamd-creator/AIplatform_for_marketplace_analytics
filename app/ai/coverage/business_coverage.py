@@ -216,7 +216,11 @@ def _cogs_block(snap: dict) -> CoverageBlock:
 
 
 def _promotion_block(snap: dict) -> CoverageBlock:
-    ad = bool(snap.get("ad_spend_available")) or bool(snap.get("promotion_expenses_available"))
+    ad = (
+        bool(snap.get("ad_spend_available"))
+        or bool(snap.get("manual_expenses_available"))
+        or bool(snap.get("promotion_expenses_available"))
+    )
     subs = (
         ("реклама WB/Ozon", ad),
         ("CTR", False),

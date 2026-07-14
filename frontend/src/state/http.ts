@@ -261,7 +261,10 @@ export const api = {
       const { data } = await http.get(`/reports/${reportId}`);
       return unwrap<ReportResponse>(data);
     },
-    async patch(reportId: string, body: { promotion_expenses: string }) {
+    async patch(
+      reportId: string,
+      body: { promotion_expenses?: string; jam_subscription_expenses?: string },
+    ) {
       const { data } = await http.patch(`/reports/${reportId}`, body);
       return unwrap<ReportResponse>(data);
     },

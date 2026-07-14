@@ -14,21 +14,24 @@ function parseAmount(raw: string): number {
   return value;
 }
 
+export type ManualExpenseField = "promotion_expenses" | "jam_subscription_expenses";
+
 type Props = {
   report: ReportResponse;
+  field: ManualExpenseField;
 };
 
-export function PromotionExpensesCell({ report }: Props) {
+export function ManualExpenseCell({ report, field }: Props) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const processed = String(report.status).toLowerCase().includes("processed");
-  const current = Number(report.promotion_expenses ?? "0");
+  const current = Number(report[field] ?? "0");
 
   const save = useMutation({
     mutationFn: (value: number) =>
-      api.reports.patch(report.id, { promotion_expenses: value.toFixed(2) }),
+      api.reports.patch(report.id, { [field]: value.toFixed(2) }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["reports"] });
       await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -94,4 +97,9 @@ export function PromotionExpensesCell({ report }: Props) {
       {save.isPending ? "…" : formatRub(current)}
     </button>
   );
+}
+
+/** @deprecated Use ManualExpenseCell with field="promotion_expenses" */
+export function PromotionExpensesCell({ report }: { report: ReportResponse }) {
+  return <ManualExpenseCell report={report} field="promotion_expenses" />;
 }

@@ -11,7 +11,7 @@ import { Label, Select } from "../../ui/field";
 import { StatusBadge } from "../../ui/status-badge";
 import { toast } from "../../ui/toast";
 import { buildReportTableRows } from "./report-missing-periods";
-import { PromotionExpensesCell } from "./PromotionExpensesCell";
+import { ManualExpenseCell } from "./PromotionExpensesCell";
 import { sortReportsByPeriod, type PeriodSortOrder } from "./report-period-sort";
 
 function isReportProcessing(status?: string, jobStatus?: string | null): boolean {
@@ -138,7 +138,7 @@ export function ReportsPage() {
       <Card className="overflow-hidden">
         <div className="grid grid-cols-12 gap-0 border-b border-surface-subtle bg-surface-inset px-4 py-3 text-xs font-medium uppercase tracking-wide text-ink-muted">
           <div className="col-span-2">№ отчёта</div>
-          <div className="col-span-2">Маркетплейс</div>
+          <div className="col-span-1 truncate">Маркетплейс</div>
           <button
             type="button"
             className="col-span-2 flex items-center gap-1 text-left transition hover:text-ink-secondary"
@@ -150,9 +150,18 @@ export function ReportsPage() {
               {periodSortOrder === "asc" ? "▲" : "▼"}
             </span>
           </button>
-          <div className="col-span-2">Статус</div>
-          <div className="col-span-2" title="Сумма за весь период отчёта (Telegram, VK, блогеры и др.)">
-            Затраты на продвижение
+          <div className="col-span-1">Статус</div>
+          <div
+            className="col-span-2"
+            title="Расходы на продвижение внутри Wildberries, которые отсутствуют в автоматически загруженном отчёте."
+          >
+            WB-продвижение
+          </div>
+          <div
+            className="col-span-2"
+            title="Стоимость подписки Джем и других сервисов Wildberries, которые отсутствуют в автоматически загруженном отчёте."
+          >
+            Подписка Джем
           </div>
           <div className="col-span-1">Примечания</div>
           <div className="col-span-1 text-right">Действия</div>
@@ -191,13 +200,16 @@ export function ReportsPage() {
                 >
                   {r.report_number ?? "—"}
                 </Link>
-                <div className="col-span-2 truncate text-ink-muted">{r.marketplace}</div>
+                <div className="col-span-1 truncate text-ink-muted">{r.marketplace}</div>
                 <div className="col-span-2 truncate text-ink-secondary">{fmtPeriod(r.period_start, r.period_end)}</div>
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <StatusBadge tone={toneForStatus(r.status)}>{r.status}</StatusBadge>
                 </div>
                 <div className="col-span-2">
-                  <PromotionExpensesCell report={r} />
+                  <ManualExpenseCell report={r} field="promotion_expenses" />
+                </div>
+                <div className="col-span-2">
+                  <ManualExpenseCell report={r} field="jam_subscription_expenses" />
                 </div>
                 <div className="col-span-1 truncate text-ink-muted">
                   {r.error_hint ?? (r.error_message ? `Ошибка: ${r.error_message}` : r.job?.status ? `Задача: ${r.job.status}` : "")}

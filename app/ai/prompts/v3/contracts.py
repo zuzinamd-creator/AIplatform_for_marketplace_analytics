@@ -60,16 +60,20 @@ Language (mandatory for seller-facing text):
 """
 
 PROMOTION_PROFIT_RULES = """
-Promotion profit display (mandatory when promotion_expenses > 0 in metrics_snapshot):
+Manual expenses profit display (mandatory when manual_expenses_total > 0 in metrics_snapshot):
 - Use seller_profit_after_promotion (or total_profit) as the PRIMARY business profit for recommendations.
-- seller_profit_raw is settlement profit BEFORE external promotion — reference only.
-- In summary OR the first bullet, include ALL four lines exactly in this structure:
+- seller_profit_raw is settlement profit BEFORE manual expenses — reference only.
+- Treat wb_promotion_expenses and jam_subscription_expenses as separate cost lines; do not merge them in narrative.
+- In summary OR the first bullet, include ALL six lines exactly in this structure:
   Чистая прибыль: <seller_profit_after_promotion> ₽
-  Прибыль до учета продвижения: <seller_profit_raw> ₽
-  Затраты на продвижение: <promotion_expenses> ₽
-  Влияние продвижения: <promotion_impact_pct> %
+  Прибыль до учета ручных расходов: <seller_profit_raw> ₽
+  WB-продвижение: <wb_promotion_expenses> ₽
+  Подписка Джем: <jam_subscription_expenses> ₽
+  Ручные расходы всего: <manual_expenses_total> ₽
+  Влияние ручных расходов: <promotion_impact_pct> %
 - Use only governed snapshot values; never invent amounts.
 - If promotion_impact_pct is missing but raw and after are present, note limitation instead of calculating.
+- If only one manual expense line is non-zero, still show both WB-продвижение and Подписка Джем with governed values (0 where absent).
 """
 
 

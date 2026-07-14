@@ -576,6 +576,8 @@ class AIService:
         total_revenue_d = Decimal("0")
         seller_profit_raw_d: Decimal | None = None
         promotion_expenses_d = Decimal("0")
+        jam_subscription_expenses_d = Decimal("0")
+        manual_expenses_total_d = Decimal("0")
         total_profit_d: Decimal | None = None
         seller_margin: Decimal | None = None
         seller_profitability: Decimal | None = None
@@ -601,7 +603,9 @@ class AIService:
             )
             total_revenue_d = seller.revenue
             seller_profit_raw_d = adjusted.seller_profit_raw
-            promotion_expenses_d = adjusted.promotion_expenses
+            promotion_expenses_d = adjusted.wb_promotion_expenses
+            jam_subscription_expenses_d = adjusted.jam_subscription_expenses
+            manual_expenses_total_d = adjusted.manual_expenses_total
             total_profit_d = adjusted.seller_profit_after_promotion
             seller_margin = adjusted.margin_pct
             seller_profitability = adjusted.profitability_pct
@@ -683,13 +687,21 @@ class AIService:
             if trust == "full" and seller_profit_raw_d is not None
             else None
         )
-        promotion_out = promotion_expenses_d if promotion_expenses_d > 0 else Decimal("0")
+        wb_promotion_out = (
+            promotion_expenses_d if promotion_expenses_d > 0 else Decimal("0")
+        )
+        jam_subscription_out = (
+            jam_subscription_expenses_d if jam_subscription_expenses_d > 0 else Decimal("0")
+        )
+        manual_expenses_out = (
+            manual_expenses_total_d if manual_expenses_total_d > 0 else Decimal("0")
+        )
         profit_after_out = profit_out
         promotion_impact_pct_out: Decimal | None = None
         if (
             profit_raw_out is not None
             and profit_after_out is not None
-            and promotion_out > 0
+            and manual_expenses_out > 0
         ):
             from app.domain.analytics.promotion_adjusted import compute_promotion_impact_pct
 
@@ -747,7 +759,10 @@ class AIService:
             "seller_profit_raw": (
                 str(profit_raw_out) if profit_raw_out is not None else None
             ),
-            "promotion_expenses": str(promotion_out),
+            "wb_promotion_expenses": str(wb_promotion_out),
+            "jam_subscription_expenses": str(jam_subscription_out),
+            "manual_expenses_total": str(manual_expenses_out),
+            "promotion_expenses": str(wb_promotion_out),
             "seller_profit_after_promotion": (
                 str(profit_after_out) if profit_after_out is not None else None
             ),
@@ -763,7 +778,8 @@ class AIService:
                 if promotion_impact_pct_out is not None
                 else None
             ),
-            "promotion_expenses_available": promotion_out > 0,
+            "manual_expenses_available": manual_expenses_out > 0,
+            "promotion_expenses_available": manual_expenses_out > 0,
         }
         if cov_pct is not None and cov_pct >= Decimal("100"):
             extras["cost_data_available"] = True

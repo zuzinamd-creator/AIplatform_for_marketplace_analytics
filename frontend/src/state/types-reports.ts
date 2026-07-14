@@ -16,6 +16,7 @@ export type ReportResponse = {
   period_start?: string | null;
   period_end?: string | null;
   promotion_expenses?: string | null;
+  jam_subscription_expenses?: string | null;
   report_number?: string | null;
   job?: {
     id: string;

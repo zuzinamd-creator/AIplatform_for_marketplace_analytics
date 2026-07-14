@@ -1,3 +1,4 @@
+from decimal import Decimal, InvalidOperation
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
@@ -8,7 +9,7 @@ from app.core.deps import get_current_user
 from app.core.upload_stream import buffer_upload_with_checksum
 from app.models.report import Marketplace, ReportType
 from app.models.user import User
-from app.schemas.report import ReportPromotionExpensesUpdate, ReportResponse, ReportUploadResponse
+from app.schemas.report import ReportManualExpensesUpdate, ReportResponse, ReportUploadResponse
 from app.schemas.report_mappers import report_to_response
 from app.services.report_deletion_service import ReportDeletionService
 from app.services.report_service import ReportService
@@ -17,14 +18,38 @@ from app.services.report_upload_service import persist_report_file, validate_rep
 router = APIRouter()
 
 
+def _parse_optional_expense(value: str | None, *, field: str) -> Decimal:
+    if value is None or not str(value).strip():
+        return Decimal("0")
+    try:
+        parsed = Decimal(str(value).strip().replace(",", "."))
+    except InvalidOperation as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"{field} must be a non-negative number",
+        ) from exc
+    if parsed < 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"{field} must be >= 0",
+        )
+    return parsed
+
+
 @router.post("/upload", response_model=ReportUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_report(
     marketplace: Marketplace = Form(...),
     report_type: ReportType = Form(...),
     file: UploadFile = File(...),
+    promotion_expenses: str | None = Form(default=None),
+    jam_subscription_expenses: str | None = Form(default=None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ReportUploadResponse:
+    wb_promotion = _parse_optional_expense(promotion_expenses, field="promotion_expenses")
+    jam_subscription = _parse_optional_expense(
+        jam_subscription_expenses, field="jam_subscription_expenses"
+    )
     filename = file.filename or "report.csv"
     spooled = await buffer_upload_with_checksum(file)
 
@@ -69,6 +94,8 @@ async def upload_report(
         file_checksum=spooled.checksum,
         raw_data=None,
         row_count=None,
+        promotion_expenses=wb_promotion,
+        jam_subscription_expenses=jam_subscription,
     )
 
     storage_path = persist_report_file(
@@ -114,13 +141,14 @@ async def get_report(
 @router.patch("/{report_id}", response_model=ReportResponse)
 async def patch_report(
     report_id: UUID,
-    payload: ReportPromotionExpensesUpdate,
+    payload: ReportManualExpensesUpdate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ReportResponse:
-    return await ReportService(db, current_user).update_promotion_expenses(
+    return await ReportService(db, current_user).update_manual_expenses(
         report_id,
         promotion_expenses=payload.promotion_expenses,
+        jam_subscription_expenses=payload.jam_subscription_expenses,
     )
 
 

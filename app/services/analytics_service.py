@@ -393,9 +393,14 @@ class AnalyticsService(TenantScopedService):
             cogs=cogs,
         )
 
-    async def _sum_promotion_expenses(self, *, marketplace: Marketplace, period: Period) -> Decimal:
+    async def _sum_manual_expenses(
+        self, *, marketplace: Marketplace, period: Period
+    ) -> tuple[Decimal, Decimal, Decimal]:
         stmt = (
-            select(func.coalesce(func.sum(Report.promotion_expenses), 0))
+            select(
+                func.coalesce(func.sum(Report.promotion_expenses), 0),
+                func.coalesce(func.sum(Report.jam_subscription_expenses), 0),
+            )
             .where(Report.marketplace == marketplace)
             .where(Report.report_type == ReportType.FINANCE)
             .where(Report.period_start.is_not(None))
@@ -403,15 +408,21 @@ class AnalyticsService(TenantScopedService):
             .where(Report.period_start <= period.end)
             .where(Report.period_end >= period.start)
         )
-        return Decimal((await self.execute_with_rls(stmt)).scalar_one())
+        wb_sum, jam_sum = (await self.execute_with_rls(stmt)).one()
+        wb = Decimal(wb_sum)
+        jam = Decimal(jam_sum)
+        return wb, jam, wb + jam
 
     async def _promotion_adjusted_profit(
         self, *, marketplace: Marketplace, period: Period, seller: SellerKpis
     ) -> PromotionAdjustedProfit:
-        promotion = await self._sum_promotion_expenses(marketplace=marketplace, period=period)
+        wb_promotion, jam_subscription, _ = await self._sum_manual_expenses(
+            marketplace=marketplace, period=period
+        )
         return compute_profit_after_promotion(
             settlement_wb=seller.total_to_pay,
-            promotion_expenses=promotion,
+            wb_promotion_expenses=wb_promotion,
+            jam_subscription_expenses=jam_subscription,
             cogs=seller.cogs,
             revenue=seller.revenue,
         )
@@ -617,7 +628,9 @@ class AnalyticsService(TenantScopedService):
                 cogs=cogs_value,
                 gross_profit=profit_value,
                 seller_profit_raw=profit_raw_value,
-                promotion_expenses=adjusted.promotion_expenses,
+                promotion_expenses=adjusted.wb_promotion_expenses,
+                jam_subscription_expenses=adjusted.jam_subscription_expenses,
+                manual_expenses_total=adjusted.manual_expenses_total,
                 adjusted_settlement=adjusted.adjusted_settlement,
                 margin_pct=margin_value,
                 profitability_pct=profitability_value,
