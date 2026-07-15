@@ -2,12 +2,24 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Bot, Database, LineChart as LineChartIcon, Server, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
+import { useAuth } from "../../state/auth";
 import { api } from "../../state/http";
 import { loadWorkspaceProfile } from "../../state/onboarding";
 import { isDemoMode } from "../../state/settings";
 import { trackUsage } from "../../state/usage";
+import { isPlatformAdmin } from "../../state/userRoles";
 import {
   chartTrustNumeric,
   formatMarginValue,
@@ -28,7 +40,6 @@ import { StatusBadge } from "../../ui/status-badge";
 import { WarnCallout } from "../../ui/warn-callout";
 import { PeriodSelector } from "../../ui/period-selector";
 import { usePagePeriod } from "../../state/use-page-period";
-import { toast } from "../../ui/toast";
 import { FirstRunChecklist } from "../../ui/first-run-checklist";
 import { FinancialSummaryCard } from "./FinancialSummaryCard";
 
@@ -37,6 +48,8 @@ export function DashboardPage() {
     trackUsage("view_dashboard");
   }, []);
 
+  const { user } = useAuth();
+  const admin = isPlatformAdmin(user);
   const demo = isDemoMode();
   const workspace = loadWorkspaceProfile();
   const marketplace = workspace.marketplace === "unknown" ? "wildberries" : workspace.marketplace;
@@ -52,21 +65,6 @@ export function DashboardPage() {
         start,
         end,
       }),
-  });
-
-  const runAiPeriod = useQuery({
-    enabled: false,
-    queryKey: ["ai", "periodRun", marketplace, start, end],
-    queryFn: async () => {
-      return await api.ai.runIntelligenceForPeriod({
-        workflow: "revenue_insight",
-        prompt_id: "analytics.summary.v1",
-        semantics_version: "1.0",
-        marketplace,
-        period_start: start,
-        period_end: end,
-      });
-    },
   });
 
   const data = summary.data;
@@ -97,8 +95,8 @@ export function DashboardPage() {
             ) : null}
           </div>
           <p className="page-subtitle">
-            Обзор бизнеса и операционной ситуации: KPI, риски, задачи и доверие к данным за период. Для сравнения с прошлым периодом
-            используйте «Сравнение периодов».
+            Обзор бизнеса: KPI, риски и доверие к данным за период. Для сравнения с прошлым периодом используйте
+            «Сравнение периодов».
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -112,22 +110,9 @@ export function DashboardPage() {
           >
             Загрузить отчёт
           </Link>
-          <Link className="btn-secondary" to="/app/ai/recommendations">
-            Рекомендации ИИ
+          <Link className="btn-accent" to="/app/ai/recommendations">
+            ИИ-помощник
           </Link>
-          <button
-            className="btn-accent"
-            onClick={async () => {
-              try {
-                const res = await runAiPeriod.refetch();
-                toast("ИИ-анализ периода запущен", res.data?.summary ?? "Готово.");
-              } catch (e) {
-                toast("ИИ-анализ не запустился", e instanceof Error ? e.message : "Неизвестная ошибка");
-              }
-            }}
-          >
-            ИИ-анализ периода
-          </button>
         </div>
       </div>
 
@@ -203,9 +188,6 @@ export function DashboardPage() {
                     : "Укажите себестоимость для точной прибыли"}
                 </div>
               )}
-              {(data?.ai_ops as Record<string, unknown>)?.degraded_intelligence_mode ? (
-                <div className="mt-1 text-xs text-ink-muted">ИИ осторожен</div>
-              ) : null}
             </div>
             <Link to="/app/costs" className="link-muted mt-3 inline-block text-xs">
               Себестоимость →
@@ -215,7 +197,7 @@ export function DashboardPage() {
       </CollapsibleSection>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-5">
+        <div className={admin ? "lg:col-span-5" : "lg:col-span-12"}>
           <KpiCard
             variant="hero"
             icon={<Database className="h-5 w-5" />}
@@ -229,46 +211,48 @@ export function DashboardPage() {
             sub={
               <span>
                 Чистая прибыль: {formatProfitValue(data?.revenue_summary.kpis.total_profit, trustCtx.trust)}
-                {" · "}Маржинальность: {formatMarginValue(data?.revenue_summary.kpis.margin_pct, trustCtx.trust)}
+                {" · "}Маржа: {formatMarginValue(data?.revenue_summary.kpis.margin_pct, trustCtx.trust)}
                 {" · "}Рентабельность:{" "}
                 {formatProfitabilityValue(data?.revenue_summary.kpis.profitability_pct, trustCtx.trust)}
               </span>
             }
           />
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:col-span-7">
-          <KpiCard
-            icon={<Server className="h-4 w-4" />}
-            label="Обработка данных"
-            value={isLoading ? "…" : formatMetric(queued)}
-            sub={<span>Задач в очереди/обработке</span>}
-          />
-          <KpiCard
-            icon={<Bot className="h-4 w-4" />}
-            label="Рекомендации ИИ"
-            value={isLoading ? "…" : recCount}
-            sub={
-              <span>
-                {(data?.ai_ops as Record<string, unknown>)?.degraded_intelligence_mode
-                  ? "Осторожный режим"
-                  : "Обычный режим"}
-              </span>
-            }
-          />
-          <KpiCard
-            icon={<AlertTriangle className="h-4 w-4" />}
-            label="Обновление аналитики"
-            value={isLoading ? "…" : (rebuild.running ?? 0) + (rebuild.pending_dispatch ?? 0)}
-            sub={<span>Пересборки активны или в очереди</span>}
-          />
-        </div>
+        {admin ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:col-span-7">
+            <KpiCard
+              icon={<Server className="h-4 w-4" />}
+              label="Обработка данных"
+              value={isLoading ? "…" : formatMetric(queued)}
+              sub={<span>Задач в очереди/обработке</span>}
+            />
+            <KpiCard
+              icon={<Bot className="h-4 w-4" />}
+              label="Рекомендации ИИ"
+              value={isLoading ? "…" : recCount}
+              sub={
+                <span>
+                  {(data?.ai_ops as Record<string, unknown>)?.degraded_intelligence_mode
+                    ? "Осторожный режим"
+                    : "Обычный режим"}
+                </span>
+              }
+            />
+            <KpiCard
+              icon={<AlertTriangle className="h-4 w-4" />}
+              label="Обновление аналитики"
+              value={isLoading ? "…" : (rebuild.running ?? 0) + (rebuild.pending_dispatch ?? 0)}
+              sub={<span>Пересборки активны или в очереди</span>}
+            />
+          </div>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card className="p-6 md:col-span-2">
           <div className="flex items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">
-              Тренд продаж и прибыли (по дням)
+              Тренд продаж и прибыли до учета операционных расходов и налогообложения (по дням)
               <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
             </div>
             <StatusBadge tone={stale ? "warn" : "info"}>
@@ -278,7 +262,7 @@ export function DashboardPage() {
           </div>
           <div className="chart-panel mt-5">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart
+              <BarChart
                 data={(data?.revenue_trend_daily.points ?? []).map((p) => ({
                   date: p.date.slice(5),
                   revenue: Number(p.revenue),
@@ -291,27 +275,18 @@ export function DashboardPage() {
                   contentStyle={CHART.tooltip}
                   formatter={(value, name) => chartRubTooltip(value, String(name))}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  name="Выручка"
-                  stroke={CHART.series.revenue}
-                  strokeWidth={2}
-                  dot={false}
-                />
+                <Legend />
+                <Bar dataKey="revenue" name="Выручка" fill={CHART.series.revenue} radius={[2, 2, 0, 0]} />
                 {trustCtx.canShowProfit ? (
-                  <Line
-                    type="monotone"
+                  <Bar
                     dataKey="profit"
                     name="Прибыль"
-                    stroke={CHART.series.profit}
-                    strokeWidth={2}
-                    dot={false}
-                    connectNulls={false}
-                    strokeDasharray={trustCtx.trust === "partial" ? "4 4" : undefined}
+                    fill={CHART.series.profit}
+                    radius={[2, 2, 0, 0]}
+                    fillOpacity={trustCtx.trust === "partial" ? 0.55 : 1}
                   />
                 ) : null}
-              </LineChart>
+              </BarChart>
             </ResponsiveContainer>
           </div>
           <div className="mt-3 space-y-1 text-xs text-ink-muted">
@@ -323,7 +298,7 @@ export function DashboardPage() {
             {trustCtx.trust === "insufficient" ? (
               <div>График прибыли скрыт — загрузите себестоимость.</div>
             ) : trustCtx.trust === "partial" ? (
-              <div>Прибыль на графике — оценка (пунктир); маржа недоступна при неполном покрытии COGS.</div>
+              <div>Прибыль на графике — оценка (приглушённый столбец); маржа недоступна при неполном покрытии COGS.</div>
             ) : (
               <div>
                 Прибыль на графике — прибыль продавца по дням (Выплата от WB − COGS; удержания WB уже
@@ -352,12 +327,17 @@ export function DashboardPage() {
               <div className="text-sm text-ink-muted">Пока нет метрик по SKU.</div>
             ) : (
               (data?.top_skus.items ?? []).map((row) => (
-                <div key={row.sku} className="flex items-center justify-between gap-3 border-b border-surface-subtle/60 pb-2 last:border-0 last:pb-0">
-                  <div className="truncate text-sm font-medium text-ink-secondary">{row.sku}</div>
-                  <div className="text-right text-xs text-ink-muted">
-                    {formatRub(row.revenue)}
-                    <div className="text-[11px] text-ink-faint">
-                      {row.contribution_pct ? `Доля: ${formatPct(row.contribution_pct)}` : "—"}
+                <div
+                  key={row.sku}
+                  className="flex items-start justify-between gap-3 border-b border-surface-subtle/60 pb-2 last:border-0 last:pb-0"
+                >
+                  <div className="min-w-0 truncate text-sm font-medium text-ink-secondary">{row.sku}</div>
+                  <div className="shrink-0 text-right text-xs text-ink-muted">
+                    <div>{formatRub(row.revenue)}</div>
+                    <div className="mt-0.5 text-[11px] text-ink-faint">
+                      Прибыль: {formatProfitValue(row.net_profit, trustCtx.trust)}
+                      {" · "}
+                      Маржа: {formatMarginValue(row.margin_pct, trustCtx.trust)}
                     </div>
                   </div>
                 </div>
@@ -394,11 +374,43 @@ export function DashboardPage() {
               >
                 <XAxis dataKey="date" tick={CHART.axis} />
                 <YAxis tick={CHART.axis} />
-                <Tooltip contentStyle={CHART.tooltip} formatter={chartRubTooltip} />
-                <Line type="monotone" dataKey="logistics" stroke={CHART.series.logistics} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="ads" stroke={CHART.series.ads} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="returns" stroke={CHART.series.returns} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="payout" stroke={CHART.series.payout} strokeWidth={2} dot={false} />
+                <Tooltip
+                  contentStyle={CHART.tooltip}
+                  formatter={(value, name) => chartRubTooltip(value, String(name))}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="logistics"
+                  name="Логистика"
+                  stroke={CHART.series.logistics}
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="ads"
+                  name="Продвижение"
+                  stroke={CHART.series.ads}
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="returns"
+                  name="Возвраты"
+                  stroke={CHART.series.returns}
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="payout"
+                  name="Выплаты"
+                  stroke={CHART.series.payout}
+                  strokeWidth={2}
+                  dot={false}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -425,11 +437,15 @@ export function DashboardPage() {
             <div className="text-sm font-semibold text-ink">Ежедневный сценарий</div>
             <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-ink-secondary">
               <li>Загрузите свежий отчёт (если есть)</li>
+              {admin ? (
+                <li>
+                  Проверьте <Link className="link-muted" to="/app/status">статус системы</Link> (очередь/пересборки)
+                </li>
+              ) : (
+                <li>Убедитесь, что свежие отчёты обработаны и KPI обновились</li>
+              )}
               <li>
-                Проверьте <Link className="link-muted" to="/app/status">статус системы</Link> (очередь/пересборки)
-              </li>
-              <li>
-                Откройте <Link className="link-muted" to="/app/ai/recommendations">входящие ИИ</Link> или{" "}
+                Откройте <Link className="link-muted" to="/app/ai/recommendations">ИИ-помощник</Link> или{" "}
                 <Link className="link-muted" to="/app/ai/today">фокус на сегодня</Link>
                 {" · "}
                 <Link className="link-muted" to="/app/ai/digest?type=daily">ежедневный дайджест</Link>
@@ -440,8 +456,9 @@ export function DashboardPage() {
           <div>
             <div className="text-sm font-semibold text-ink">Доверие к данным</div>
             <p className="mt-3 text-sm leading-relaxed text-ink-secondary">
-              Финансовые KPI берутся из read-only аналитического слоя. Если данные устарели — проверьте пересборки и очередь;
-              в режиме устаревания трактуйте выводы ИИ осторожно.
+              {admin
+                ? "Финансовые KPI берутся из read-only аналитического слоя. Если данные устарели — проверьте пересборки и очередь; в режиме устаревания трактуйте выводы ИИ осторожно."
+                : "Финансовые KPI берутся из аналитического слоя. Если показатели выглядят устаревшими — загрузите свежий отчёт и дождитесь обновления данных; выводы ИИ в таком случае трактуйте осторожно."}
             </p>
             <Link to="/app/onboarding" className="link-muted mt-4 inline-block text-sm">
               Завершить настройку →

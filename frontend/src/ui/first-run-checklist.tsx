@@ -52,11 +52,11 @@ export function FirstRunChecklist() {
           </div>
           <div className="mt-1 text-xs text-ink-muted">Посмотреть прибыльность и драйверы затрат.</div>
         </Link>
-        <Link to="/app/dashboard" className="rounded-xl border border-surface-subtle bg-surface-inset p-4 transition hover:border-brand-muted hover:bg-brand-subtle">
+        <Link to="/app/ai/recommendations" className="rounded-xl border border-surface-subtle bg-surface-inset p-4 transition hover:border-brand-muted hover:bg-brand-subtle">
           <div className="flex items-center gap-2 text-sm font-medium text-ink-secondary">
-            <Bot className="h-4 w-4 text-brand" /> 4) Запустить ИИ‑анализ периода
+            <Bot className="h-4 w-4 text-brand" /> 4) Открыть ИИ-помощник
           </div>
-          <div className="mt-1 text-xs text-ink-muted">ИИ advisory: показывает ограничения и снижает уверенность при плохих данных.</div>
+          <div className="mt-1 text-xs text-ink-muted">Рекомендации и запуск анализа периода — в разделе ИИ.</div>
         </Link>
       </div>
     </Card>
