@@ -36,10 +36,9 @@ vi.mock("../../state/usage", () => ({
 
 vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  LineChart: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  Line: () => null,
-  BarChart: ({ children }: { children: ReactNode }) => <div data-testid="sales-bar-chart">{children}</div>,
-  Bar: () => null,
+  BarChart: ({ children }: { children: ReactNode }) => <div data-testid="dashboard-bar-chart">{children}</div>,
+  Bar: ({ children }: { children?: ReactNode }) => <div data-testid="dashboard-bar">{children}</div>,
+  LabelList: () => <div data-testid="bar-label-list" />,
   Legend: () => null,
   XAxis: () => null,
   YAxis: () => null,
@@ -178,7 +177,7 @@ describe("DashboardPage trust integration", () => {
     expect(
       await screen.findByText(/Тренд продаж и прибыли до учета операционных расходов и налогообложения/i),
     ).toBeTruthy();
-    expect(screen.getByTestId("sales-bar-chart")).toBeTruthy();
+    expect(screen.getAllByTestId("dashboard-bar-chart").length).toBeGreaterThanOrEqual(1);
   });
 
   it("B4: shows Top SKU revenue, profit and margin (gated)", async () => {
@@ -187,5 +186,18 @@ describe("DashboardPage trust integration", () => {
     const row = sku.closest("div")?.parentElement;
     expect(row?.textContent).toMatch(/Прибыль:\s*—/);
     expect(row?.textContent).toMatch(/Маржа:\s*—/);
+  });
+
+  it("C1: renders on-bar labels for sales chart when period is short", async () => {
+    renderPage();
+    await screen.findByText(/Тренд продаж и прибыли до учета операционных расходов/i);
+    expect(screen.getAllByTestId("bar-label-list").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("C2: costs chart is a bar chart with Russian footer legend", async () => {
+    renderPage();
+    expect(await screen.findByText("Затраты и возвраты (по дням)")).toBeTruthy();
+    expect(screen.getAllByTestId("dashboard-bar-chart").length).toBe(2);
+    expect(screen.getByText(/Логистика · Продвижение · Возвраты · Выплаты/i)).toBeTruthy();
   });
 });

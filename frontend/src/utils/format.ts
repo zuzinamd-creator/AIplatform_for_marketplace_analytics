@@ -45,6 +45,33 @@ export function formatInteger(value: unknown): string {
   return Math.round(n).toLocaleString("ru-RU");
 }
 
+/**
+ * Compact chart labels (display-only).
+ * Examples: 1250 → "1.3 тыс.", 1_250_000 → "1.25 млн."
+ */
+export function formatCompactRub(value: unknown): string {
+  const n = parseNumeric(value);
+  if (n === null) return "";
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "−" : "";
+  if (abs < 1000) {
+    const rounded = Math.round(abs * 100) / 100;
+    const base =
+      Number.isInteger(rounded) || Math.abs(rounded - Math.round(rounded)) < 1e-9
+        ? String(Math.round(rounded))
+        : rounded.toFixed(2).replace(/\.?0+$/, "");
+    return `${sign}${base}`;
+  }
+  if (abs < 1_000_000) {
+    const v = Math.round((abs / 1000) * 10) / 10;
+    const text = Number.isInteger(v) ? String(v) : v.toFixed(1);
+    return `${sign}${text} тыс.`;
+  }
+  const v = Math.round((abs / 1_000_000) * 100) / 100;
+  const text = Number.isInteger(v) ? String(v) : String(v);
+  return `${sign}${text} млн.`;
+}
+
 /** Recharts tooltip: [label, series name]. */
 export function chartRubTooltip(value: unknown, name: string): [string, string] {
   return [formatRub(value), name];

@@ -5,9 +5,8 @@ import { useEffect } from "react";
 import {
   Bar,
   BarChart,
+  LabelList,
   Legend,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -28,7 +27,15 @@ import {
   showInlineCostTrustBanner,
   useProfitTrust,
 } from "../../state/profit-trust";
-import { formatMetric, formatPct, formatRub, chartRubTooltip } from "../../utils/format";
+import { formatCompactRub, formatMetric, formatPct, formatRub, chartRubTooltip } from "../../utils/format";
+
+/** Hide on-bar labels when the period has too many days (mobile / dense charts). */
+const MAX_LABELED_CHART_POINTS = 14;
+
+function chartBarLabel(value: unknown): string {
+  if (value == null || value === "") return "";
+  return formatCompactRub(value);
+}
 import { CHART } from "../../ui/chart-theme";
 import { Card } from "../../ui/card";
 import { CollapsibleSection } from "../../ui/collapsible-section";
@@ -268,6 +275,7 @@ export function DashboardPage() {
                   revenue: Number(p.revenue),
                   profit: chartTrustNumeric(p.seller_profit ?? p.net_profit, trustCtx.trust),
                 }))}
+                margin={{ top: 18, right: 8, left: 0, bottom: 0 }}
               >
                 <XAxis dataKey="date" tick={CHART.axis} />
                 <YAxis tick={CHART.axis} />
@@ -276,7 +284,16 @@ export function DashboardPage() {
                   formatter={(value, name) => chartRubTooltip(value, String(name))}
                 />
                 <Legend />
-                <Bar dataKey="revenue" name="Выручка" fill={CHART.series.revenue} radius={[2, 2, 0, 0]} />
+                <Bar dataKey="revenue" name="Выручка" fill={CHART.series.revenue} radius={[2, 2, 0, 0]}>
+                  {(data?.revenue_trend_daily.points ?? []).length <= MAX_LABELED_CHART_POINTS ? (
+                    <LabelList
+                      dataKey="revenue"
+                      position="top"
+                      formatter={chartBarLabel}
+                      style={{ fill: "#64748b", fontSize: 10 }}
+                    />
+                  ) : null}
+                </Bar>
                 {trustCtx.canShowProfit ? (
                   <Bar
                     dataKey="profit"
@@ -284,7 +301,16 @@ export function DashboardPage() {
                     fill={CHART.series.profit}
                     radius={[2, 2, 0, 0]}
                     fillOpacity={trustCtx.trust === "partial" ? 0.55 : 1}
-                  />
+                  >
+                    {(data?.revenue_trend_daily.points ?? []).length <= MAX_LABELED_CHART_POINTS ? (
+                      <LabelList
+                        dataKey="profit"
+                        position="top"
+                        formatter={chartBarLabel}
+                        style={{ fill: "#64748b", fontSize: 10 }}
+                      />
+                    ) : null}
+                  </Bar>
                 ) : null}
               </BarChart>
             </ResponsiveContainer>
@@ -363,7 +389,7 @@ export function DashboardPage() {
           <div className="text-sm font-semibold text-ink">Затраты и возвраты (по дням)</div>
           <div className="chart-panel mt-5">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart
+              <BarChart
                 data={(data?.finance_trend_daily.points ?? []).map((p) => ({
                   date: p.date.slice(5),
                   logistics: Number(p.logistics),
@@ -371,6 +397,7 @@ export function DashboardPage() {
                   returns: Number(p.returns_amount),
                   payout: Number(p.payout),
                 }))}
+                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
               >
                 <XAxis dataKey="date" tick={CHART.axis} />
                 <YAxis tick={CHART.axis} />
@@ -379,39 +406,11 @@ export function DashboardPage() {
                   formatter={(value, name) => chartRubTooltip(value, String(name))}
                 />
                 <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="logistics"
-                  name="Логистика"
-                  stroke={CHART.series.logistics}
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="ads"
-                  name="Продвижение"
-                  stroke={CHART.series.ads}
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="returns"
-                  name="Возвраты"
-                  stroke={CHART.series.returns}
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="payout"
-                  name="Выплаты"
-                  stroke={CHART.series.payout}
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
+                <Bar dataKey="logistics" name="Логистика" fill={CHART.series.logistics} radius={[2, 2, 0, 0]} />
+                <Bar dataKey="ads" name="Продвижение" fill={CHART.series.ads} radius={[2, 2, 0, 0]} />
+                <Bar dataKey="returns" name="Возвраты" fill={CHART.series.returns} radius={[2, 2, 0, 0]} />
+                <Bar dataKey="payout" name="Выплаты" fill={CHART.series.payout} radius={[2, 2, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           </div>
           <div className="mt-3 text-xs text-ink-muted">
