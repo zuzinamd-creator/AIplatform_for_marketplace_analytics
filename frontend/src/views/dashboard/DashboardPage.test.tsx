@@ -97,7 +97,24 @@ const baseSummary = {
     integrity: { warnings: [], profit_metrics_trust: "insufficient" },
     freshness: { stale_data_warning: false, data_as_of: "2026-05-14" },
   },
-  finance_summary: { kpis: { gross_profit: null, margin_pct: null, profitability_pct: null, promotion_expenses: "0" } },
+  finance_summary: {
+    kpis: {
+      sales_revenue: "1000",
+      returns_amount: "50",
+      return_rate_pct: "5",
+      commission: "430",
+      logistics: "200",
+      advertisement: "100",
+      storage_fee: "50",
+      penalties: "0",
+      deductions: "100",
+      acquiring: "50",
+      gross_profit: null,
+      margin_pct: null,
+      profitability_pct: null,
+      promotion_expenses: "0",
+    },
+  },
   cost_coverage: { covered_skus: 0, total_skus: 5, avg_cost_coverage_pct: "0", missing_skus: ["SKU-1"] },
   revenue_trend_daily: { points: [{ date: "2026-05-01", revenue: "100", net_profit: null, seller_profit: null }] },
   finance_trend_daily: {
@@ -319,5 +336,46 @@ describe("DashboardPage trust integration", () => {
     expect(costBars.every((el) => el.getAttribute("data-key") !== "other_costs")).toBe(true);
     expect(screen.queryByText("Выплаты")).toBeNull();
     expect(screen.queryByText("Прочие расходы")).toBeNull();
+  });
+
+  it("B13: shows cost business signal and hides SKU signal when trust insufficient", async () => {
+    renderPage();
+    expect(await screen.findByTestId("business-signals-panel")).toBeTruthy();
+    expect(screen.getByText("Бизнес-сигналы")).toBeTruthy();
+    expect(screen.getByTestId("business-signal-cost").textContent).toMatch(/Комиссия WB составляет 46%/);
+    expect(screen.queryByTestId("business-signal-returns")).toBeNull();
+    expect(screen.queryByTestId("business-signal-sku")).toBeNull();
+  });
+
+  it("B13: shows returns and SKU signals when trust allows and thresholds met", async () => {
+    dashboardSummary.mockResolvedValue({
+      ...baseSummary,
+      revenue_summary: {
+        ...baseSummary.revenue_summary,
+        integrity: { warnings: [], profit_metrics_trust: "full" },
+      },
+      finance_summary: {
+        kpis: {
+          ...baseSummary.finance_summary.kpis,
+          sales_revenue: "1000",
+          returns_amount: "120",
+          return_rate_pct: "12",
+          commission: "100",
+          logistics: "50",
+        },
+      },
+      top_skus: {
+        items: [
+          { sku: "SKU-A", revenue: "100000", net_profit: "20000", margin_pct: "20", units_sold: 1 },
+          { sku: "SKU-WEAK", revenue: "80000", net_profit: "500", margin_pct: "0.6", units_sold: 1 },
+        ],
+      },
+    });
+    renderPage();
+    expect(await screen.findByTestId("business-signal-returns")).toBeTruthy();
+    expect(screen.getByTestId("business-signal-returns").textContent).toMatch(/Возвраты достигли 12%/);
+    expect(screen.getByTestId("business-signal-sku").textContent).toMatch(
+      /SKU SKU-WEAK имеет высокую выручку при низкой марже/,
+    );
   });
 });

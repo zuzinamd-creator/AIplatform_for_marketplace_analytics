@@ -50,6 +50,8 @@ import { usePagePeriod } from "../../state/use-page-period";
 import { FirstRunChecklist } from "../../ui/first-run-checklist";
 import { FinancialSummaryCard } from "./FinancialSummaryCard";
 import { TopSkusCard } from "./TopSkusCard";
+import { BusinessSignalsPanel } from "./BusinessSignalsPanel";
+import { buildBusinessSignals } from "./business-signals";
 import {
   COST_STRUCTURE_STACK_ID,
   costStructureSeriesFor,
@@ -95,6 +97,11 @@ export function DashboardPage() {
 
   const costStructureRows = mapFinanceTrendToCostStructure(data?.finance_trend_daily.points);
   const costStructureSeries = costStructureSeriesFor(costStructureRows);
+  const businessSignals = buildBusinessSignals({
+    financeKpis: data?.finance_summary.kpis ?? null,
+    topSkus: data?.top_skus.items ?? null,
+    trustInsufficient: trustCtx.trust === "insufficient",
+  });
 
   return (
     <div className="page-shell">
@@ -211,6 +218,8 @@ export function DashboardPage() {
           </Card>
         </div>
       </CollapsibleSection>
+
+      <BusinessSignalsPanel signals={businessSignals} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className={admin ? "lg:col-span-5" : "lg:col-span-12"}>
