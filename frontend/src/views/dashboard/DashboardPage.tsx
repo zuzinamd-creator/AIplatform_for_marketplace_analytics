@@ -49,6 +49,7 @@ import { PeriodSelector } from "../../ui/period-selector";
 import { usePagePeriod } from "../../state/use-page-period";
 import { FirstRunChecklist } from "../../ui/first-run-checklist";
 import { FinancialSummaryCard } from "./FinancialSummaryCard";
+import { TopSkusCard } from "./TopSkusCard";
 
 export function DashboardPage() {
   useEffect(() => {
@@ -343,45 +344,17 @@ export function DashboardPage() {
           ) : null}
         </Card>
 
-        <Card className="p-6">
-          <div className="text-sm font-semibold text-ink">Топ SKU по продажам</div>
-          <div className="mt-2 text-xs text-ink-muted">
-            Период: {start} → {end} · {marketplace}
-          </div>
-          <div className="mt-5 space-y-3">
-            {(data?.top_skus.items ?? []).length === 0 ? (
-              <div className="text-sm text-ink-muted">Пока нет метрик по SKU.</div>
-            ) : (
-              (data?.top_skus.items ?? []).map((row) => (
-                <div
-                  key={row.sku}
-                  className="flex items-start justify-between gap-3 border-b border-surface-subtle/60 pb-2 last:border-0 last:pb-0"
-                >
-                  <div className="min-w-0 truncate text-sm font-medium text-ink-secondary">{row.sku}</div>
-                  <div className="shrink-0 text-right text-xs text-ink-muted">
-                    <div>{formatRub(row.revenue)}</div>
-                    <div className="mt-0.5 text-[11px] text-ink-faint">
-                      Прибыль: {formatProfitValue(row.net_profit, trustCtx.trust)}
-                      {" · "}
-                      Маржа: {formatMarginValue(row.margin_pct, trustCtx.trust)}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="mt-5 space-y-2 text-xs text-ink-muted">
-            <div>
-              Диапазон данных: {data?.coverage.available_min_date ?? "—"} → {data?.coverage.available_max_date ?? "—"}
-            </div>
-            {(data?.coverage.missing_periods ?? []).length ? (
-              <div>Есть пропуски в периодах: {data?.coverage.missing_periods.length}</div>
-            ) : null}
-            {(data?.coverage.recommendations ?? []).length ? (
-              <div>Рекомендации: {data?.coverage.recommendations.length}</div>
-            ) : null}
-          </div>
-        </Card>
+        <TopSkusCard
+          marketplace={marketplace}
+          start={start}
+          end={end}
+          summaryTopSkus={data?.top_skus}
+          trustCtx={trustCtx}
+          coverageMin={data?.coverage.available_min_date}
+          coverageMax={data?.coverage.available_max_date}
+          missingPeriodsCount={(data?.coverage.missing_periods ?? []).length}
+          recommendationsCount={(data?.coverage.recommendations ?? []).length}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

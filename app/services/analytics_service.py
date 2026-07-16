@@ -911,11 +911,16 @@ class AnalyticsService(TenantScopedService):
         sort: str,
     ) -> TopSkusResponse:
         sort_key = sort.lower()
-        sort_col = (
-            func.sum(SkuDailyMetric.revenue)
-            if sort_key == "revenue"
-            else func.sum(SkuDailyMetric.net_profit)
-        )
+        revenue_sum = func.sum(SkuDailyMetric.revenue)
+        profit_sum = func.sum(SkuDailyMetric.net_profit)
+        if sort_key == "revenue":
+            sort_col = revenue_sum
+        elif sort_key in {"margin", "margin_pct"}:
+            # Period margin proxy for ranking only (same ratio as TopSkuRow.margin_pct).
+            sort_col = profit_sum / func.nullif(revenue_sum, 0)
+        else:
+            # sort=profit | net_profit | any other → net_profit (existing contract).
+            sort_col = profit_sum
 
         stmt = (
             select(

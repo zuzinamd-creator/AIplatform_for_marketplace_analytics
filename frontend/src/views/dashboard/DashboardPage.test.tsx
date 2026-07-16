@@ -1,19 +1,23 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 import { DashboardPage } from "./DashboardPage";
 import { USER_ROLE_PLATFORM_ADMIN, USER_ROLE_SELLER } from "../../state/userRoles";
 
 const dashboardSummary = vi.fn();
+const topSkus = vi.fn();
 const useAuthMock = vi.fn();
 
 vi.mock("../../state/http", () => ({
   api: {
     dashboard: {
       summary: (...args: unknown[]) => dashboardSummary(...args),
+    },
+    analytics: {
+      topSkus: (...args: unknown[]) => topSkus(...args),
     },
   },
 }));
@@ -107,6 +111,18 @@ describe("DashboardPage trust integration", () => {
       loading: false,
     });
     dashboardSummary.mockResolvedValue(baseSummary);
+    topSkus.mockResolvedValue({
+      items: [
+        {
+          sku: "SKU-PROFIT",
+          revenue: "400",
+          net_profit: "200",
+          margin_pct: "50",
+          units_sold: 8,
+          contribution_pct: "40",
+        },
+      ],
+    });
   });
 
   afterEach(() => {
@@ -180,12 +196,55 @@ describe("DashboardPage trust integration", () => {
     expect(screen.getAllByTestId("dashboard-bar-chart").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("B4: shows Top SKU revenue, profit and margin (gated)", async () => {
+  it("B4: shows Top SKU revenue, units, profit and margin (gated)", async () => {
     renderPage();
-    const sku = await screen.findByText("SKU-TOP");
-    const row = sku.closest("div")?.parentElement;
-    expect(row?.textContent).toMatch(/Прибыль:\s*—/);
-    expect(row?.textContent).toMatch(/Маржа:\s*—/);
+    expect(await screen.findByText("SKU-TOP")).toBeTruthy();
+    expect(screen.getByText(/3 шт\./)).toBeTruthy();
+    expect(screen.getAllByText(/Прибыль:\s*—/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Маржа:\s*—/).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: /В Экономику товаров/i }).getAttribute("href")).toBe(
+      "/app/economics",
+    );
+    expect(screen.getByRole("tab", { name: "Выручка" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Прибыль" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Маржа" })).toBeTruthy();
+    expect(topSkus).not.toHaveBeenCalled();
+  });
+
+  it("E1: profit tab calls top-skus API with sort=profit", async () => {
+    renderPage();
+    await screen.findByText("SKU-TOP");
+    fireEvent.click(screen.getByRole("tab", { name: "Прибыль" }));
+    expect(await screen.findByText("SKU-PROFIT")).toBeTruthy();
+    expect(topSkus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        marketplace: "wildberries",
+        start: "2026-05-01",
+        end: "2026-05-14",
+        limit: 5,
+        sort: "profit",
+      }),
+    );
+  });
+
+  it("E1: margin tab calls top-skus API with sort=margin and highlights attention", async () => {
+    topSkus.mockResolvedValue({
+      items: [
+        {
+          sku: "SKU-MARGIN",
+          revenue: "1000",
+          net_profit: "50",
+          margin_pct: "5",
+          units_sold: 2,
+        },
+      ],
+    });
+    renderPage();
+    await screen.findByText("SKU-TOP");
+    fireEvent.click(screen.getByRole("tab", { name: "Маржа" }));
+    expect(await screen.findByText("SKU-MARGIN")).toBeTruthy();
+    expect(topSkus).toHaveBeenCalledWith(expect.objectContaining({ sort: "margin", limit: 5 }));
+    expect(screen.getByText("Требует внимания")).toBeTruthy();
   });
 
   it("C1: renders on-bar labels for sales chart when period is short", async () => {
