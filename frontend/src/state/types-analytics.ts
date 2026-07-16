@@ -134,6 +134,12 @@ export type FinancialTrendsResponse = {
     advertisement: string;
     payout: string;
     returns_amount: string;
+    commission?: string;
+    storage_fee?: string;
+    penalties?: string;
+    deductions?: string;
+    acquiring?: string;
+    other?: string;
   }>;
   freshness: AnalyticsFreshnessMeta;
   integrity?: AnalyticsIntegrityMeta | null;

@@ -22,6 +22,10 @@ from app.domain.analytics.canonical_reports import (
     FinanceReportCandidate,
     select_canonical_finance_report_ids,
 )
+from app.domain.analytics.financial_trend_costs import (
+    FINANCIAL_TREND_LEDGER_OPS,
+    ledger_day_trend_amounts,
+)
 from app.domain.analytics.promotion_adjusted import (
     PromotionAdjustedProfit,
     compute_profit_after_promotion,
@@ -689,17 +693,7 @@ class AnalyticsService(TenantScopedService):
             )
             .where(FinancialLedgerEntry.operation_date >= period.start)
             .where(FinancialLedgerEntry.operation_date <= period.end)
-            .where(
-                FinancialLedgerEntry.operation_type.in_(
-                    (
-                        LedgerOperationType.SALE,
-                        LedgerOperationType.RETURN,
-                        LedgerOperationType.PAYOUT,
-                        LedgerOperationType.LOGISTICS,
-                        LedgerOperationType.ADVERTISEMENT,
-                    )
-                )
-            )
+            .where(FinancialLedgerEntry.operation_type.in_(FINANCIAL_TREND_LEDGER_OPS))
             .group_by(FinancialLedgerEntry.operation_date, FinancialLedgerEntry.operation_type)
             .order_by(FinancialLedgerEntry.operation_date.asc())
         )
@@ -713,12 +707,7 @@ class AnalyticsService(TenantScopedService):
         trust = integrity.profit_metrics_trust if integrity else "insufficient"
         for row in agg_rows:
             day = row.aggregate_date
-            led = by_day.get(day, {})
-            sales = led.get(LedgerOperationType.SALE, Decimal("0"))
-            returns = abs(led.get(LedgerOperationType.RETURN, Decimal("0")))
-            payout = led.get(LedgerOperationType.PAYOUT, Decimal("0"))
-            logistics = abs(led.get(LedgerOperationType.LOGISTICS, Decimal("0")))
-            ads = abs(led.get(LedgerOperationType.ADVERTISEMENT, Decimal("0")))
+            amounts = ledger_day_trend_amounts(by_day.get(day, {}))
             profit_out, margin_out = apply_profit_trust_to_kpis(
                 trust=trust or "insufficient",
                 total_profit=row.net_profit,
@@ -727,13 +716,19 @@ class AnalyticsService(TenantScopedService):
             points.append(
                 FinancialTrendPoint(
                     date=day,
-                    sales_revenue=sales,
+                    sales_revenue=amounts["sales_revenue"],
                     gross_profit=profit_out,
                     margin_pct=margin_out,
-                    logistics=logistics,
-                    advertisement=ads,
-                    payout=payout,
-                    returns_amount=returns,
+                    logistics=amounts["logistics"],
+                    advertisement=amounts["advertisement"],
+                    payout=amounts["payout"],
+                    returns_amount=amounts["returns_amount"],
+                    commission=amounts["commission"],
+                    storage_fee=amounts["storage_fee"],
+                    penalties=amounts["penalties"],
+                    deductions=amounts["deductions"],
+                    acquiring=amounts["acquiring"],
+                    other=amounts["other"],
                 )
             )
 

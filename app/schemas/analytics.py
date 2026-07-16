@@ -284,6 +284,13 @@ class FinancialTrendPoint(BaseModel):
     advertisement: Decimal = Decimal("0")
     payout: Decimal = Decimal("0")
     returns_amount: Decimal = Decimal("0")
+    # Phase 9.12-B1 — daily cost structure (additive; abs of ledger sums).
+    commission: Decimal = Decimal("0")
+    storage_fee: Decimal = Decimal("0")
+    penalties: Decimal = Decimal("0")
+    deductions: Decimal = Decimal("0")
+    acquiring: Decimal = Decimal("0")
+    other: Decimal = Decimal("0")
 
 
 class FinancialTrendsResponse(BaseModel):

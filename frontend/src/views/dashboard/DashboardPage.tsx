@@ -50,6 +50,11 @@ import { usePagePeriod } from "../../state/use-page-period";
 import { FirstRunChecklist } from "../../ui/first-run-checklist";
 import { FinancialSummaryCard } from "./FinancialSummaryCard";
 import { TopSkusCard } from "./TopSkusCard";
+import {
+  COST_STRUCTURE_STACK_ID,
+  costStructureSeriesFor,
+  mapFinanceTrendToCostStructure,
+} from "./cost-structure-chart";
 
 export function DashboardPage() {
   useEffect(() => {
@@ -87,6 +92,9 @@ export function DashboardPage() {
   const integrityWarnings = data?.revenue_summary.integrity?.warnings ?? [];
   const completeness = data?.revenue_summary.integrity?.financial_completeness_score ?? null;
   const trustCtx = useProfitTrust(data?.revenue_summary.integrity, data?.cost_coverage ?? null);
+
+  const costStructureRows = mapFinanceTrendToCostStructure(data?.finance_trend_daily.points);
+  const costStructureSeries = costStructureSeriesFor(costStructureRows);
 
   return (
     <div className="page-shell">
@@ -359,19 +367,10 @@ export function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card className="p-6 md:col-span-2">
-          <div className="text-sm font-semibold text-ink">Затраты и возвраты (по дням)</div>
+          <div className="text-sm font-semibold text-ink">Структура расходов и возвратов</div>
           <div className="chart-panel mt-5">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={(data?.finance_trend_daily.points ?? []).map((p) => ({
-                  date: p.date.slice(5),
-                  logistics: Number(p.logistics),
-                  ads: Number(p.advertisement),
-                  returns: Number(p.returns_amount),
-                  payout: Number(p.payout),
-                }))}
-                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-              >
+              <BarChart data={costStructureRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <XAxis dataKey="date" tick={CHART.axis} />
                 <YAxis tick={CHART.axis} />
                 <Tooltip
@@ -379,15 +378,21 @@ export function DashboardPage() {
                   formatter={(value, name) => chartRubTooltip(value, String(name))}
                 />
                 <Legend />
-                <Bar dataKey="logistics" name="Логистика" fill={CHART.series.logistics} radius={[2, 2, 0, 0]} />
-                <Bar dataKey="ads" name="Продвижение" fill={CHART.series.ads} radius={[2, 2, 0, 0]} />
-                <Bar dataKey="returns" name="Возвраты" fill={CHART.series.returns} radius={[2, 2, 0, 0]} />
-                <Bar dataKey="payout" name="Выплаты" fill={CHART.series.payout} radius={[2, 2, 0, 0]} />
+                {costStructureSeries.map((series, index) => (
+                  <Bar
+                    key={series.dataKey}
+                    dataKey={series.dataKey}
+                    name={series.name}
+                    stackId={COST_STRUCTURE_STACK_ID}
+                    fill={CHART.series[series.fillKey]}
+                    radius={index === costStructureSeries.length - 1 ? [2, 2, 0, 0] : undefined}
+                  />
+                ))}
               </BarChart>
             </ResponsiveContainer>
           </div>
           <div className="mt-3 text-xs text-ink-muted">
-            Логистика · Продвижение · Возвраты · Выплаты
+            {costStructureSeries.map((s) => s.name).join(" · ")}
           </div>
         </Card>
 

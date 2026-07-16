@@ -18,5 +18,12 @@ export const CHART = {
     returns: "#e11d48",
     payout: "#4f46e5",
     spark: "#059669",
+    commission: "#0d9488",
+    storage: "#d97706",
+    penalties: "#dc2626",
+    deductions: "#9333ea",
+    acquiring: "#2563eb",
+    other: "#64748b",
+    otherCosts: "#64748b",
   },
 } as const;

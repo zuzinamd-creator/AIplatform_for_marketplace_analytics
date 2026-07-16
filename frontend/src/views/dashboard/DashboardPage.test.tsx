@@ -41,12 +41,31 @@ vi.mock("../../state/usage", () => ({
 vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   BarChart: ({ children }: { children: ReactNode }) => <div data-testid="dashboard-bar-chart">{children}</div>,
-  Bar: ({ children }: { children?: ReactNode }) => <div data-testid="dashboard-bar">{children}</div>,
+  Bar: ({
+    children,
+    name,
+    dataKey,
+    stackId,
+  }: {
+    children?: ReactNode;
+    name?: string;
+    dataKey?: string;
+    stackId?: string;
+  }) => (
+    <div
+      data-testid="dashboard-bar"
+      data-name={name ?? ""}
+      data-key={dataKey ?? ""}
+      data-stack={stackId ?? ""}
+    >
+      {children}
+    </div>
+  ),
   LabelList: () => <div data-testid="bar-label-list" />,
-  Legend: () => null,
+  Legend: () => <div data-testid="dashboard-legend" />,
   XAxis: () => null,
   YAxis: () => null,
-  Tooltip: () => null,
+  Tooltip: () => <div data-testid="dashboard-tooltip" />,
 }));
 
 vi.mock("../../state/period", async () => {
@@ -81,7 +100,24 @@ const baseSummary = {
   finance_summary: { kpis: { gross_profit: null, margin_pct: null, profitability_pct: null, promotion_expenses: "0" } },
   cost_coverage: { covered_skus: 0, total_skus: 5, avg_cost_coverage_pct: "0", missing_skus: ["SKU-1"] },
   revenue_trend_daily: { points: [{ date: "2026-05-01", revenue: "100", net_profit: null, seller_profit: null }] },
-  finance_trend_daily: { points: [] },
+  finance_trend_daily: {
+    points: [
+      {
+        date: "2026-05-01",
+        sales_revenue: "100",
+        logistics: "10",
+        advertisement: "20",
+        returns_amount: "5",
+        payout: "80",
+        commission: "15",
+        storage_fee: "1",
+        penalties: "2",
+        deductions: "3",
+        acquiring: "4",
+        other: "0",
+      },
+    ],
+  },
   top_skus: {
     items: [
       {
@@ -253,10 +289,35 @@ describe("DashboardPage trust integration", () => {
     expect(screen.getAllByTestId("bar-label-list").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("C2: costs chart is a bar chart with Russian footer legend", async () => {
+  it("C2: cost structure stacked chart without payout", async () => {
     renderPage();
-    expect(await screen.findByText("Затраты и возвраты (по дням)")).toBeTruthy();
+    expect(await screen.findByText("Структура расходов и возвратов")).toBeTruthy();
     expect(screen.getAllByTestId("dashboard-bar-chart").length).toBe(2);
-    expect(screen.getByText(/Логистика · Продвижение · Возвраты · Выплаты/i)).toBeTruthy();
+    expect(screen.getAllByTestId("dashboard-legend").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByTestId("dashboard-tooltip").length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getByText(
+        /Комиссия · Логистика · Продвижение · Возвраты · Хранение · Штрафы · Удержания · Эквайринг/i,
+      ),
+    ).toBeTruthy();
+
+    const costBars = screen
+      .getAllByTestId("dashboard-bar")
+      .filter((el) => el.getAttribute("data-stack") === "cost-structure");
+    expect(costBars).toHaveLength(8);
+    expect(costBars.map((el) => el.getAttribute("data-name"))).toEqual([
+      "Комиссия",
+      "Логистика",
+      "Продвижение",
+      "Возвраты",
+      "Хранение",
+      "Штрафы",
+      "Удержания",
+      "Эквайринг",
+    ]);
+    expect(costBars.every((el) => el.getAttribute("data-key") !== "payout")).toBe(true);
+    expect(costBars.every((el) => el.getAttribute("data-key") !== "other_costs")).toBe(true);
+    expect(screen.queryByText("Выплаты")).toBeNull();
+    expect(screen.queryByText("Прочие расходы")).toBeNull();
   });
 });
