@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  buildDailyCostChart,
+  buildDailyTotalCostsChart,
   buildPeriodCostComposition,
   COST_CATEGORIES,
   mapFinanceTrendToCostStructure,
@@ -33,33 +33,33 @@ describe("buildPeriodCostComposition", () => {
   });
 });
 
-describe("buildDailyCostChart", () => {
-  it("keeps top categories and bags the rest", () => {
-    const { rows, series } = buildDailyCostChart(
-      [
-        {
-          date: "2026-07-01",
-          commission: "100",
-          logistics: "40",
-          advertisement: "30",
-          returns_amount: "20",
-          storage_fee: "5",
-          penalties: "4",
-          deductions: "3",
-          acquiring: "2",
-          other: "1",
-        },
-      ],
-      3,
-    );
-    expect(series.map((s) => s.dataKey).slice(0, 3)).toEqual([
-      "commission",
-      "logistics",
-      "advertisement",
+describe("buildDailyTotalCostsChart", () => {
+  it("sums expense categories and excludes returns", () => {
+    const { rows, hasData } = buildDailyTotalCostsChart([
+      {
+        date: "2026-07-01",
+        commission: "100",
+        logistics: "40",
+        advertisement: "30",
+        returns_amount: "999",
+        storage_fee: "5",
+        penalties: "4",
+        deductions: "3",
+        acquiring: "2",
+        other: "1",
+      },
     ]);
-    expect(series.some((s) => s.dataKey === "rest")).toBe(true);
-    expect(rows[0].commission).toBe(100);
-    expect(rows[0].rest).toBe(20 + 5 + 4 + 3 + 2 + 1);
+    expect(hasData).toBe(true);
+    expect(rows[0].total_costs).toBe(100 + 40 + 30 + 5 + 4 + 3 + 2 + 1);
+    expect(rows[0].total_costs).not.toBe(100 + 40 + 30 + 999 + 5 + 4 + 3 + 2 + 1);
+    expect(rows[0]).not.toHaveProperty("returns");
+  });
+
+  it("hasData is false when all expense zeros", () => {
+    const { hasData } = buildDailyTotalCostsChart([
+      { date: "2026-07-01", returns_amount: "50", commission: "0", logistics: "0" },
+    ]);
+    expect(hasData).toBe(false);
   });
 });
 

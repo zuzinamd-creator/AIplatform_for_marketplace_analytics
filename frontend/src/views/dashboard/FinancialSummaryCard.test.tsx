@@ -81,16 +81,18 @@ describe("FinancialSummaryCard R19 UX", () => {
   });
 
   it("uses seller-facing labels: Выплата от WB and Маржа, no Settlement", () => {
-    renderCard();
+    renderCard({ kpis: { commission: "1200" } });
     expect(screen.getByText(/Финансовая сводка/i)).toBeTruthy();
     expect(screen.getByText("Выплата от WB")).toBeTruthy();
+    expect(screen.getByText("Комиссия WB")).toBeTruthy();
     expect(screen.getByText("Маржа")).toBeTruthy();
     expect(screen.getByText("Чистая прибыль")).toBeTruthy();
     expect(screen.getByText("Деньги от Wildberries")).toBeTruthy();
-    expect(screen.getByText("Прибыль")).toBeTruthy();
+    expect(screen.queryByText("Прибыль")).toBeNull();
     expect(screen.getByText("Удержания WB")).toBeTruthy();
     expect(screen.queryByText(/Settlement/i)).toBeNull();
     expect(screen.queryByText("Маржинальность")).toBeNull();
+    expect(screen.queryByText("Выплата от WB − Себестоимость = Чистая прибыль")).toBeNull();
   });
 
   it("keeps disclosures closed by default", () => {

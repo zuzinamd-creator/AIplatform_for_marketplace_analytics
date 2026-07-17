@@ -25,5 +25,7 @@ export const CHART = {
     acquiring: "#2563eb",
     other: "#64748b",
     otherCosts: "#64748b",
+    /** Single-series daily total costs (Phase 9.15-B). */
+    costTotal: "#475569",
   },
 } as const;

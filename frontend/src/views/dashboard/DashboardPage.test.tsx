@@ -253,13 +253,13 @@ describe("DashboardPage trust integration", () => {
     expect(await screen.findByText("SKU-TOP")).toBeTruthy();
     expect(screen.getByText(/3 шт\./)).toBeTruthy();
     expect(screen.getAllByText(/Прибыль:\s*—/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Маржа:\s*—/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Маржа SKU:\s*—/).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: /В Экономику товаров/i }).getAttribute("href")).toBe(
       "/app/economics",
     );
     expect(screen.getByRole("tab", { name: "Выручка" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Прибыль" })).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "Маржа" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Маржа SKU" })).toBeTruthy();
     expect(topSkus).not.toHaveBeenCalled();
   });
 
@@ -293,7 +293,7 @@ describe("DashboardPage trust integration", () => {
     });
     renderPage();
     await screen.findByText("SKU-TOP");
-    fireEvent.click(screen.getByRole("tab", { name: "Маржа" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Маржа SKU" }));
     expect(await screen.findByText("SKU-MARGIN")).toBeTruthy();
     expect(topSkus).toHaveBeenCalledWith(expect.objectContaining({ sort: "margin", limit: 5 }));
     expect(screen.getByText("Требует внимания")).toBeTruthy();
@@ -305,21 +305,28 @@ describe("DashboardPage trust integration", () => {
     expect(screen.getAllByTestId("bar-label-list").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("C2: cost structure shows period composition and daily chart", async () => {
+  it("C2: cost structure shows period composition and daily total costs", async () => {
     renderPage();
     expect(await screen.findByTestId("cost-composition-legend")).toBeTruthy();
     expect(screen.getByText("Структура расходов за период")).toBeTruthy();
-    expect(screen.getByText("Динамика по дням")).toBeTruthy();
+    expect(screen.getByText("Общие затраты по дням")).toBeTruthy();
     expect(screen.getByText(/Комиссия WB:/)).toBeTruthy();
     expect(screen.getByText(/Удержания:/)).toBeTruthy();
     expect(screen.getByText(/Прочие списания WB/i)).toBeTruthy();
     expect(screen.getAllByTestId("dashboard-bar-chart").length).toBeGreaterThanOrEqual(2);
-    const dailyBars = screen
+    const totalBars = screen
       .getAllByTestId("dashboard-bar")
-      .filter((el) => el.getAttribute("data-stack") === "cost-structure");
-    expect(dailyBars.length).toBeGreaterThanOrEqual(1);
-    expect(dailyBars.every((el) => el.getAttribute("data-key") !== "payout")).toBe(true);
+      .filter((el) => el.getAttribute("data-key") === "total_costs");
+    expect(totalBars.length).toBe(1);
+    expect(totalBars[0].getAttribute("data-name")).toBe("Затраты");
     expect(screen.queryByText("Выплаты")).toBeNull();
+    const structureInsight = screen.getByTestId("cost-structure-insight");
+    expect(structureInsight.textContent).toMatch(/Основная часть расходов приходится на/i);
+    expect(structureInsight.textContent).not.toMatch(/%/);
+    expect(structureInsight.textContent).not.toMatch(/составляет/);
+    expect(screen.getByTestId("cost-dynamics-insight")).toBeTruthy();
+    expect(screen.getByTestId("top-sku-insight")).toBeTruthy();
+    expect(screen.getByTestId("sales-chart-insight")).toBeTruthy();
   });
 
   it("B13: shows cost business signal and hides SKU signal when trust insufficient", async () => {
@@ -327,6 +334,10 @@ describe("DashboardPage trust integration", () => {
     expect(await screen.findByTestId("business-signals-panel")).toBeTruthy();
     expect(screen.getByText("Бизнес-сигналы")).toBeTruthy();
     expect(screen.getByTestId("business-signal-cost").textContent).toMatch(/Комиссия WB составляет 46%/);
+    // Chart insight must not repeat the percentage share (Phase 9.15-B2).
+    const chartInsight = screen.getByTestId("cost-structure-insight").textContent ?? "";
+    expect(chartInsight).not.toMatch(/%/);
+    expect(chartInsight).not.toMatch(/составляет \d+%/);
     expect(screen.queryByTestId("business-signal-returns")).toBeNull();
     expect(screen.queryByTestId("business-signal-sku")).toBeNull();
   });

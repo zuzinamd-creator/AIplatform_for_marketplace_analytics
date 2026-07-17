@@ -37,7 +37,8 @@ export type CostFillKey =
   | "deductions"
   | "acquiring"
   | "other"
-  | "otherCosts";
+  | "otherCosts"
+  | "costTotal";
 
 export type CostCategoryKey =
   | "commission"
@@ -199,7 +200,65 @@ export function buildPeriodCostComposition(
 
 export const COST_STRUCTURE_STACK_ID = "cost-structure";
 
-/** Daily series: top N by period total + «Прочее» bag for the rest. */
+/** Categories included in daily total costs (returns excluded by product rule). */
+export const DAILY_TOTAL_COST_KEYS = [
+  "commission",
+  "logistics",
+  "advertisement",
+  "storage",
+  "penalties",
+  "deductions",
+  "acquiring",
+  "other",
+] as const satisfies readonly Exclude<CostCategoryKey, "returns">[];
+
+export type DailyTotalCostRow = {
+  date: string;
+  total_costs: number;
+  commission: number;
+  logistics: number;
+  advertisement: number;
+  storage: number;
+  penalties: number;
+  deductions: number;
+  acquiring: number;
+  other: number;
+};
+
+/** Daily total costs = sum of expense categories excluding returns. */
+export function buildDailyTotalCostsChart(
+  points: FinanceTrendCostPoint[] | null | undefined,
+): { rows: DailyTotalCostRow[]; hasData: boolean } {
+  const detailed = mapFinanceTrendToCostStructure(points);
+  const rows: DailyTotalCostRow[] = detailed.map((row) => {
+    const commission = row.commission;
+    const logistics = row.logistics;
+    const advertisement = row.advertisement;
+    const storage = row.storage;
+    const penalties = row.penalties;
+    const deductions = row.deductions;
+    const acquiring = row.acquiring;
+    const other = row.other;
+    const total_costs =
+      commission + logistics + advertisement + storage + penalties + deductions + acquiring + other;
+    return {
+      date: row.date,
+      total_costs,
+      commission,
+      logistics,
+      advertisement,
+      storage,
+      penalties,
+      deductions,
+      acquiring,
+      other,
+    };
+  });
+  const hasData = rows.some((r) => r.total_costs > 0);
+  return { rows, hasData };
+}
+
+/** @deprecated Prefer buildDailyTotalCostsChart (Phase 9.15-B). Kept for compat tests. */
 export const DAILY_TOP_N = 3;
 
 export type DailyCostSeriesDef = {
@@ -213,6 +272,7 @@ export type DailyCostChartRow = {
   [key: string]: string | number;
 };
 
+/** @deprecated Prefer buildDailyTotalCostsChart. */
 export function buildDailyCostChart(
   points: FinanceTrendCostPoint[] | null | undefined,
   topN: number = DAILY_TOP_N,

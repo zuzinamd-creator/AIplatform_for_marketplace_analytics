@@ -110,6 +110,7 @@ export function FinancialSummaryCard({
             <MetricRow label="Логистика" value={formatRub(financeKpis?.logistics)} />
             <MetricRow label="Хранение" value={formatRub(financeKpis?.storage_fee)} />
           </InlineDisclosure>
+          <MetricRow label="Комиссия WB" value={formatRub(financeKpis?.commission)} />
           <div className="space-y-2">
             <MetricRow label="Удержания WB" value={formatRub(financeKpis?.deductions)} />
             {hasDeductionBreakdown ? (
@@ -137,9 +138,8 @@ export function FinancialSummaryCard({
           />
         </section>
 
-        {/* Block 2: profit */}
+        {/* Block 2: COGS and net result (no standalone «Прибыль» heading) */}
         <section className="space-y-2.5 text-sm">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Прибыль</h3>
           <MetricRow label="Себестоимость" value={formatRub(financeKpis?.cogs)} />
           <MetricRow
             label={

@@ -53,6 +53,7 @@ import { TopSkusCard } from "./TopSkusCard";
 import { BusinessSignalsPanel } from "./BusinessSignalsPanel";
 import { CostStructurePanel } from "./CostStructurePanel";
 import { buildBusinessSignals } from "./business-signals";
+import { revenueProfitInsight } from "./chart-insights";
 
 export function DashboardPage() {
   useEffect(() => {
@@ -96,6 +97,10 @@ export function DashboardPage() {
     topSkus: data?.top_skus.items ?? null,
     trustInsufficient: trustCtx.trust === "insufficient",
   });
+  const salesInsight = revenueProfitInsight(
+    data?.revenue_trend_daily.points,
+    trustCtx.canShowProfit,
+  );
 
   return (
     <div className="page-shell">
@@ -332,6 +337,7 @@ export function DashboardPage() {
               Период: {start} → {end} · Обновлено: {freshness?.data_as_of ?? "—"}
               {completeness ? <> · Полнота данных: {formatPct(completeness)}</> : null}
             </div>
+            {salesInsight ? <div data-testid="sales-chart-insight">{salesInsight}</div> : null}
             {trustCtx.trust === "insufficient" ? (
               <div>Прибыль скрыта — загрузите себестоимость.</div>
             ) : trustCtx.trust === "partial" ? (

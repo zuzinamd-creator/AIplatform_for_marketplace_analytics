@@ -2,7 +2,6 @@ import {
   Bar,
   BarChart,
   Cell,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -10,11 +9,12 @@ import {
 } from "recharts";
 
 import { CHART } from "../../ui/chart-theme";
-import { formatPct, formatRub, chartRubTooltip } from "../../utils/format";
+import { formatPct, formatRub } from "../../utils/format";
+import { costDynamicsInsight, costStructureInsight } from "./chart-insights";
 import {
-  buildDailyCostChart,
+  buildDailyTotalCostsChart,
   buildPeriodCostComposition,
-  COST_STRUCTURE_STACK_ID,
+  type DailyTotalCostRow,
   type FinanceTrendCostPoint,
 } from "./cost-structure-chart";
 
@@ -25,6 +25,44 @@ export type CostStructurePanelProps = {
   trendPoints: FinanceTrendCostPoint[] | null | undefined;
 };
 
+const BREAKDOWN_TOOLTIP_FIELDS: Array<{ key: keyof DailyTotalCostRow; name: string }> = [
+  { key: "commission", name: "Комиссия WB" },
+  { key: "logistics", name: "Логистика" },
+  { key: "advertisement", name: "Продвижение" },
+  { key: "storage", name: "Хранение" },
+  { key: "penalties", name: "Штрафы" },
+  { key: "deductions", name: "Удержания" },
+  { key: "acquiring", name: "Эквайринг" },
+  { key: "other", name: "Прочее" },
+];
+
+function DailyTotalTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload?: DailyTotalCostRow; value?: number | string }>;
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload;
+  if (!row) return null;
+  return (
+    <div style={CHART.tooltip}>
+      <div className="mb-1 font-medium">{label}</div>
+      <div>{formatRub(row.total_costs)} · Всего затрат</div>
+      <ul className="mt-2 space-y-0.5 text-[11px]">
+        {BREAKDOWN_TOOLTIP_FIELDS.filter((f) => Number(row[f.key]) > 0).map((f) => (
+          <li key={f.key}>
+            {f.name}: {formatRub(row[f.key])}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function CostStructurePanel({
   periodStart,
   periodEnd,
@@ -32,7 +70,9 @@ export function CostStructurePanel({
   trendPoints,
 }: CostStructurePanelProps) {
   const composition = buildPeriodCostComposition(financeKpis);
-  const daily = buildDailyCostChart(trendPoints);
+  const daily = buildDailyTotalCostsChart(trendPoints);
+  const structureInsight = costStructureInsight(composition);
+  const dynamicsInsight = costDynamicsInsight(daily.rows);
 
   return (
     <div className="space-y-6">
@@ -96,41 +136,45 @@ export function CostStructurePanel({
                 </li>
               ))}
             </ul>
+            {structureInsight ? (
+              <div className="mt-3 text-xs text-ink-muted" data-testid="cost-structure-insight">
+                {structureInsight}
+              </div>
+            ) : null}
           </>
         )}
       </div>
 
       <div>
-        <div className="text-sm font-semibold text-ink">Динамика по дням</div>
+        <div className="text-sm font-semibold text-ink">Общие затраты по дням</div>
         <div className="mt-1 text-xs text-ink-muted">
-          Топ категорий расходов; остальное объединено
+          Сумма расходов WB без возвратов; в подсказке — разбивка по статьям
         </div>
-        {daily.series.length === 0 ? (
+        {!daily.hasData ? (
           <div className="mt-4 text-sm text-ink-muted">Нет дневных данных по расходам.</div>
         ) : (
-          <div className="chart-panel mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={daily.rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <XAxis dataKey="date" tick={CHART.axis} />
-                <YAxis tick={CHART.axis} />
-                <Tooltip
-                  contentStyle={CHART.tooltip}
-                  formatter={(value, name) => chartRubTooltip(value, String(name))}
-                />
-                <Legend />
-                {daily.series.map((series, index) => (
+          <>
+            <div className="chart-panel mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={daily.rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <XAxis dataKey="date" tick={CHART.axis} />
+                  <YAxis tick={CHART.axis} />
+                  <Tooltip content={<DailyTotalTooltip />} />
                   <Bar
-                    key={series.dataKey}
-                    dataKey={series.dataKey}
-                    name={series.name}
-                    stackId={COST_STRUCTURE_STACK_ID}
-                    fill={CHART.series[series.fillKey]}
-                    radius={index === daily.series.length - 1 ? [2, 2, 0, 0] : undefined}
+                    dataKey="total_costs"
+                    name="Затраты"
+                    fill={CHART.series.costTotal}
+                    radius={[2, 2, 0, 0]}
                   />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {dynamicsInsight ? (
+              <div className="mt-3 text-xs text-ink-muted" data-testid="cost-dynamics-insight">
+                {dynamicsInsight}
+              </div>
+            ) : null}
+          </>
         )}
       </div>
     </div>

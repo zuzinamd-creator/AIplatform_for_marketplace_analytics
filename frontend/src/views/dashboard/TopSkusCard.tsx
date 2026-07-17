@@ -11,6 +11,7 @@ import {
 import type { TopSkusResponse } from "../../state/types-analytics";
 import { formatRub } from "../../utils/format";
 import { Card } from "../../ui/card";
+import { topSkuInsight } from "./chart-insights";
 import {
   skuNeedsAttention,
   topSkuApiSortParam,
@@ -22,7 +23,7 @@ const ECONOMICS_ROUTE = "/app/economics";
 const SORT_TABS: Array<{ id: TopSkuSortTab; label: string }> = [
   { id: "revenue", label: "Выручка" },
   { id: "profit", label: "Прибыль" },
-  { id: "margin", label: "Маржа" },
+  { id: "margin", label: "Маржа SKU" },
 ];
 
 export type TopSkusCardProps = {
@@ -135,7 +136,7 @@ export function TopSkusCard({
                   <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-ink-faint">
                     <span>Прибыль: {formatProfitValue(row.net_profit, trustCtx.trust)}</span>
                     <span>·</span>
-                    <span>Маржа: {formatMarginValue(row.margin_pct, trustCtx.trust)}</span>
+                    <span>Маржа SKU: {formatMarginValue(row.margin_pct, trustCtx.trust)}</span>
                   </div>
                 </div>
               </div>
@@ -143,6 +144,15 @@ export function TopSkusCard({
           })
         )}
       </div>
+
+      {(() => {
+        const insight = topSkuInsight(items);
+        return insight ? (
+          <div className="mt-3 text-xs text-ink-muted" data-testid="top-sku-insight">
+            {insight}
+          </div>
+        ) : null;
+      })()}
 
       {(coverageMin || coverageMax || missingPeriodsCount > 0) && (
         <div className="mt-5 space-y-1 text-xs text-ink-muted">
