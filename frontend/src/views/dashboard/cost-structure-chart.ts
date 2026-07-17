@@ -1,4 +1,4 @@
-/** Map finance_trend_daily points → stacked cost-structure chart rows (Phase 9.12-B3). */
+/** Cost composition helpers for Dashboard (Phase 9.14-B). */
 
 export type FinanceTrendCostPoint = {
   date: string;
@@ -27,10 +27,128 @@ export type CostStructureChartRow = {
   other: number;
 };
 
-export type CostStructureSeriesDef = {
-  dataKey: keyof Omit<CostStructureChartRow, "date">;
+export type CostFillKey =
+  | "commission"
+  | "logistics"
+  | "ads"
+  | "returns"
+  | "storage"
+  | "penalties"
+  | "deductions"
+  | "acquiring"
+  | "other"
+  | "otherCosts";
+
+export type CostCategoryKey =
+  | "commission"
+  | "logistics"
+  | "advertisement"
+  | "returns"
+  | "storage"
+  | "penalties"
+  | "deductions"
+  | "acquiring"
+  | "other";
+
+export type CostCategoryDef = {
+  key: CostCategoryKey;
+  /** Short chart/legend label */
   name: string;
-  fillKey: "commission" | "logistics" | "ads" | "returns" | "storage" | "penalties" | "deductions" | "acquiring" | "other";
+  /** Plain-seller one-liner */
+  hint: string;
+  fillKey: CostFillKey;
+  /** finance_summary field (returns uses returns_amount) */
+  summaryField:
+    | "commission"
+    | "logistics"
+    | "advertisement"
+    | "returns_amount"
+    | "storage_fee"
+    | "penalties"
+    | "deductions"
+    | "acquiring"
+    | "other";
+};
+
+/** Seller-facing category dictionary (includes «Удержания»). */
+export const COST_CATEGORIES: readonly CostCategoryDef[] = [
+  {
+    key: "commission",
+    name: "Комиссия WB",
+    hint: "Комиссия маркетплейса за продажи",
+    fillKey: "commission",
+    summaryField: "commission",
+  },
+  {
+    key: "logistics",
+    name: "Логистика",
+    hint: "Доставка и обработка заказов",
+    fillKey: "logistics",
+    summaryField: "logistics",
+  },
+  {
+    key: "advertisement",
+    name: "Продвижение",
+    hint: "Реклама и продвижение на площадке",
+    fillKey: "ads",
+    summaryField: "advertisement",
+  },
+  {
+    key: "returns",
+    name: "Возвраты",
+    hint: "Сумма возвратов покупателей",
+    fillKey: "returns",
+    summaryField: "returns_amount",
+  },
+  {
+    key: "storage",
+    name: "Хранение",
+    hint: "Плата за хранение на складе WB",
+    fillKey: "storage",
+    summaryField: "storage_fee",
+  },
+  {
+    key: "penalties",
+    name: "Штрафы",
+    hint: "Штрафы и пени от маркетплейса",
+    fillKey: "penalties",
+    summaryField: "penalties",
+  },
+  {
+    key: "deductions",
+    name: "Удержания",
+    hint: "Прочие списания WB (в т.ч. услуги и подписки, если они в удержаниях отчёта)",
+    fillKey: "deductions",
+    summaryField: "deductions",
+  },
+  {
+    key: "acquiring",
+    name: "Эквайринг",
+    hint: "Комиссия за приём оплаты",
+    fillKey: "acquiring",
+    summaryField: "acquiring",
+  },
+  {
+    key: "other",
+    name: "Прочее",
+    hint: "Другие операции расходов",
+    fillKey: "other",
+    summaryField: "other",
+  },
+] as const;
+
+export type PeriodCostSlice = {
+  key: CostCategoryKey;
+  name: string;
+  hint: string;
+  fillKey: CostFillKey;
+  amount: number;
+  sharePct: number;
+};
+
+export type PeriodCostComposition = {
+  total: number;
+  slices: PeriodCostSlice[];
 };
 
 function num(value: string | number | null | undefined): number {
@@ -56,35 +174,116 @@ export function mapFinanceTrendToCostStructure(
   }));
 }
 
+/** Period composition from finance_summary (primary view). Sorted by amount desc; zeros omitted. */
+export function buildPeriodCostComposition(
+  kpis: Record<string, string | number | null | undefined> | null | undefined,
+): PeriodCostComposition {
+  const amounts = COST_CATEGORIES.map((cat) => ({
+    cat,
+    amount: num(kpis?.[cat.summaryField]),
+  }));
+  const total = amounts.reduce((s, row) => s + row.amount, 0);
+  const slices: PeriodCostSlice[] = amounts
+    .filter((row) => row.amount > 0)
+    .sort((a, b) => b.amount - a.amount)
+    .map((row) => ({
+      key: row.cat.key,
+      name: row.cat.name,
+      hint: row.cat.hint,
+      fillKey: row.cat.fillKey,
+      amount: row.amount,
+      sharePct: total > 0 ? (row.amount / total) * 100 : 0,
+    }));
+  return { total, slices };
+}
+
 export const COST_STRUCTURE_STACK_ID = "cost-structure";
 
-/** Core stack — always shown. */
-export const COST_STRUCTURE_CORE_SERIES: readonly CostStructureSeriesDef[] = [
-  { dataKey: "commission", name: "Комиссия", fillKey: "commission" },
-  { dataKey: "logistics", name: "Логистика", fillKey: "logistics" },
-  { dataKey: "advertisement", name: "Продвижение", fillKey: "ads" },
-  { dataKey: "returns", name: "Возвраты", fillKey: "returns" },
-  { dataKey: "storage", name: "Хранение", fillKey: "storage" },
-  { dataKey: "penalties", name: "Штрафы", fillKey: "penalties" },
-  { dataKey: "deductions", name: "Удержания", fillKey: "deductions" },
-  { dataKey: "acquiring", name: "Эквайринг", fillKey: "acquiring" },
-] as const;
+/** Daily series: top N by period total + «Прочее» bag for the rest. */
+export const DAILY_TOP_N = 3;
 
-const OTHER_SERIES: CostStructureSeriesDef = {
-  dataKey: "other",
-  name: "Прочее",
-  fillKey: "other",
+export type DailyCostSeriesDef = {
+  dataKey: string;
+  name: string;
+  fillKey: CostFillKey;
 };
 
-/** True when any day has non-zero ledger `other`. */
+export type DailyCostChartRow = {
+  date: string;
+  [key: string]: string | number;
+};
+
+export function buildDailyCostChart(
+  points: FinanceTrendCostPoint[] | null | undefined,
+  topN: number = DAILY_TOP_N,
+): { rows: DailyCostChartRow[]; series: DailyCostSeriesDef[] } {
+  const detailed = mapFinanceTrendToCostStructure(points);
+  const totals: Record<CostCategoryKey, number> = {
+    commission: 0,
+    logistics: 0,
+    advertisement: 0,
+    returns: 0,
+    storage: 0,
+    penalties: 0,
+    deductions: 0,
+    acquiring: 0,
+    other: 0,
+  };
+  for (const row of detailed) {
+    for (const cat of COST_CATEGORIES) {
+      totals[cat.key] += row[cat.key];
+    }
+  }
+  const ranked = [...COST_CATEGORIES]
+    .map((cat) => ({ cat, total: totals[cat.key] }))
+    .filter((r) => r.total > 0)
+    .sort((a, b) => b.total - a.total);
+
+  const top = ranked.slice(0, topN).map((r) => r.cat);
+  const rest = ranked.slice(topN).map((r) => r.cat);
+  const series: DailyCostSeriesDef[] = top.map((cat) => ({
+    dataKey: cat.key,
+    name: cat.name,
+    fillKey: cat.fillKey,
+  }));
+  if (rest.length > 0) {
+    series.push({ dataKey: "rest", name: "Остальное", fillKey: "otherCosts" });
+  }
+
+  const rows: DailyCostChartRow[] = detailed.map((row) => {
+    const out: DailyCostChartRow = { date: row.date };
+    for (const cat of top) {
+      out[cat.key] = row[cat.key];
+    }
+    if (rest.length > 0) {
+      out.rest = rest.reduce((s, cat) => s + row[cat.key], 0);
+    }
+    return out;
+  });
+
+  return { rows, series };
+}
+
+/** @deprecated naming — prefer COST_CATEGORIES / buildPeriodCostComposition */
+export type CostStructureSeriesDef = {
+  dataKey: CostCategoryKey;
+  name: string;
+  fillKey: CostFillKey;
+};
+
+export const COST_STRUCTURE_CORE_SERIES: readonly CostStructureSeriesDef[] = COST_CATEGORIES.filter(
+  (c) => c.key !== "other",
+).map((c) => ({ dataKey: c.key, name: c.name, fillKey: c.fillKey }));
+
 export function hasNonZeroOther(rows: CostStructureChartRow[]): boolean {
   return rows.some((r) => r.other > 0);
 }
 
-/** Legend / footer / bars — includes optional «Прочее» only when needed. */
 export function costStructureSeriesFor(rows: CostStructureChartRow[]): CostStructureSeriesDef[] {
-  return hasNonZeroOther(rows) ? [...COST_STRUCTURE_CORE_SERIES, OTHER_SERIES] : [...COST_STRUCTURE_CORE_SERIES];
+  const core = [...COST_STRUCTURE_CORE_SERIES];
+  return hasNonZeroOther(rows)
+    ? [...core, { dataKey: "other", name: "Прочее", fillKey: "other" }]
+    : core;
 }
 
-/** @deprecated use costStructureSeriesFor — kept for tests naming clarity */
 export const COST_STRUCTURE_SERIES = COST_STRUCTURE_CORE_SERIES;

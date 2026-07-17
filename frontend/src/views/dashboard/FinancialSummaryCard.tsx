@@ -175,14 +175,13 @@ export function FinancialSummaryCard({
         </section>
       </div>
 
-      <div className="mt-4 space-y-2 text-xs text-ink-muted">
-        <div>Выплата от WB − Себестоимость = Чистая прибыль</div>
-        {trustCtx.trust === "insufficient"
-          ? "Прибыль и маржа недоступны без себестоимости."
-          : trustCtx.trust === "partial"
-            ? "Прибыль показана как оценка; маржа скрыта при неполном покрытии COGS."
-            : "Показатели проверены при полном покрытии себестоимости."}
-      </div>
+      {(trustCtx.trust === "insufficient" || trustCtx.trust === "partial") && (
+        <div className="mt-4 space-y-2 text-xs text-ink-muted">
+          {trustCtx.trust === "insufficient"
+            ? "Прибыль и маржа недоступны без себестоимости."
+            : "Прибыль показана как оценка; маржа скрыта при неполной себестоимости."}
+        </div>
+      )}
     </Card>
   );
 }

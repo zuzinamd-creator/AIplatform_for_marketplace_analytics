@@ -51,12 +51,8 @@ import { FirstRunChecklist } from "../../ui/first-run-checklist";
 import { FinancialSummaryCard } from "./FinancialSummaryCard";
 import { TopSkusCard } from "./TopSkusCard";
 import { BusinessSignalsPanel } from "./BusinessSignalsPanel";
+import { CostStructurePanel } from "./CostStructurePanel";
 import { buildBusinessSignals } from "./business-signals";
-import {
-  COST_STRUCTURE_STACK_ID,
-  costStructureSeriesFor,
-  mapFinanceTrendToCostStructure,
-} from "./cost-structure-chart";
 
 export function DashboardPage() {
   useEffect(() => {
@@ -95,8 +91,6 @@ export function DashboardPage() {
   const completeness = data?.revenue_summary.integrity?.financial_completeness_score ?? null;
   const trustCtx = useProfitTrust(data?.revenue_summary.integrity, data?.cost_coverage ?? null);
 
-  const costStructureRows = mapFinanceTrendToCostStructure(data?.finance_trend_daily.points);
-  const costStructureSeries = costStructureSeriesFor(costStructureRows);
   const businessSignals = buildBusinessSignals({
     financeKpis: data?.finance_summary.kpis ?? null,
     topSkus: data?.top_skus.items ?? null,
@@ -277,7 +271,7 @@ export function DashboardPage() {
         <Card className="p-6 md:col-span-2">
           <div className="flex items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">
-              Тренд продаж и прибыли до учета операционных расходов и налогообложения (по дням)
+              Выручка и прибыль по дням
               <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
             </div>
             <StatusBadge tone={stale ? "warn" : "info"}>
@@ -335,20 +329,14 @@ export function DashboardPage() {
           </div>
           <div className="mt-3 space-y-1 text-xs text-ink-muted">
             <div>
-              Данные проанализированы за период: {start} → {end} · Последнее обновление:{" "}
-              {freshness?.data_as_of ?? "—"}
-              {completeness ? <> · Полнота аналитики: {formatPct(completeness)}</> : null}
+              Период: {start} → {end} · Обновлено: {freshness?.data_as_of ?? "—"}
+              {completeness ? <> · Полнота данных: {formatPct(completeness)}</> : null}
             </div>
             {trustCtx.trust === "insufficient" ? (
-              <div>График прибыли скрыт — загрузите себестоимость.</div>
+              <div>Прибыль скрыта — загрузите себестоимость.</div>
             ) : trustCtx.trust === "partial" ? (
-              <div>Прибыль на графике — оценка (приглушённый столбец); маржа недоступна при неполном покрытии COGS.</div>
-            ) : (
-              <div>
-                Прибыль на графике — прибыль продавца по дням (Выплата от WB − COGS; удержания WB уже
-                внутри выплаты).
-              </div>
-            )}
+              <div>Прибыль показана как оценка при неполной себестоимости.</div>
+            ) : null}
           </div>
           {integrityWarnings.length ? (
             <WarnCallout title="Предупреждения целостности" className="mt-4">
@@ -370,39 +358,17 @@ export function DashboardPage() {
           coverageMin={data?.coverage.available_min_date}
           coverageMax={data?.coverage.available_max_date}
           missingPeriodsCount={(data?.coverage.missing_periods ?? []).length}
-          recommendationsCount={(data?.coverage.recommendations ?? []).length}
         />
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card className="p-6 md:col-span-2">
-          <div className="text-sm font-semibold text-ink">Структура расходов и возвратов</div>
-          <div className="chart-panel mt-5">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={costStructureRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <XAxis dataKey="date" tick={CHART.axis} />
-                <YAxis tick={CHART.axis} />
-                <Tooltip
-                  contentStyle={CHART.tooltip}
-                  formatter={(value, name) => chartRubTooltip(value, String(name))}
-                />
-                <Legend />
-                {costStructureSeries.map((series, index) => (
-                  <Bar
-                    key={series.dataKey}
-                    dataKey={series.dataKey}
-                    name={series.name}
-                    stackId={COST_STRUCTURE_STACK_ID}
-                    fill={CHART.series[series.fillKey]}
-                    radius={index === costStructureSeries.length - 1 ? [2, 2, 0, 0] : undefined}
-                  />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-3 text-xs text-ink-muted">
-            {costStructureSeries.map((s) => s.name).join(" · ")}
-          </div>
+          <CostStructurePanel
+            periodStart={start}
+            periodEnd={end}
+            financeKpis={data?.finance_summary.kpis}
+            trendPoints={data?.finance_trend_daily.points}
+          />
         </Card>
 
         <FinancialSummaryCard

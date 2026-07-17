@@ -169,12 +169,10 @@ describe("FinancialSummaryCard R19 UX", () => {
     expect(within(izNikh as HTMLElement).getByText(/WB-продвижение/i)).toBeTruthy();
     expect(within(izNikh as HTMLElement).getByText(/Подписка Джем/i)).toBeTruthy();
 
-    expect(
-      screen.getByText("Выплата от WB − Себестоимость = Чистая прибыль"),
-    ).toBeTruthy();
     expect(screen.queryByText(/Settlement/i)).toBeNull();
     expect(screen.queryByText(/после ручных расходов/i)).toBeNull();
     expect(screen.queryByText(/без повторного вычета/i)).toBeNull();
+    expect(screen.queryByText("Выплата от WB − Себестоимость = Чистая прибыль")).toBeNull();
 
     // logistics hidden under services disclosure
     const services = Array.from(container.querySelectorAll("details")).find((d) =>

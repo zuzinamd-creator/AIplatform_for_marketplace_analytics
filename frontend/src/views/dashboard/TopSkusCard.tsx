@@ -29,13 +29,11 @@ export type TopSkusCardProps = {
   marketplace: string;
   start: string;
   end: string;
-  /** Embedded summary payload (revenue sort); used when tab = Выручка. */
   summaryTopSkus: TopSkusResponse | null | undefined;
   trustCtx: ProfitTrustContext;
   coverageMin?: string | null;
   coverageMax?: string | null;
   missingPeriodsCount?: number;
-  recommendationsCount?: number;
 };
 
 export function TopSkusCard({
@@ -47,7 +45,6 @@ export function TopSkusCard({
   coverageMin,
   coverageMax,
   missingPeriodsCount = 0,
-  recommendationsCount = 0,
 }: TopSkusCardProps) {
   const [sortTab, setSortTab] = useState<TopSkuSortTab>("revenue");
 
@@ -76,7 +73,7 @@ export function TopSkusCard({
         <div>
           <div className="text-sm font-semibold text-ink">Топ SKU</div>
           <div className="mt-2 text-xs text-ink-muted">
-            Период: {start} → {end} · {marketplace}
+            Период: {start} → {end}
           </div>
         </div>
         <Link to={ECONOMICS_ROUTE} className="link-muted shrink-0 text-xs">
@@ -106,7 +103,7 @@ export function TopSkusCard({
         })}
       </div>
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-5 space-y-4">
         {listLoading ? (
           <div className="text-sm text-ink-muted">Загрузка топа SKU…</div>
         ) : listError ? (
@@ -119,26 +116,26 @@ export function TopSkusCard({
             return (
               <div
                 key={row.sku}
-                className={`flex items-start justify-between gap-3 border-b border-surface-subtle/60 pb-2 last:border-0 last:pb-0 ${
-                  attention ? "rounded-md bg-amber-50/80 px-2 py-1.5 ring-1 ring-amber-200/80" : ""
+                className={`space-y-1.5 border-b border-surface-subtle/60 pb-3 last:border-0 last:pb-0 ${
+                  attention ? "rounded-md bg-amber-50/80 px-2 py-2 ring-1 ring-amber-200/80" : ""
                 }`}
               >
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-ink-secondary">{row.sku}</div>
-                  {attention ? (
-                    <div className="mt-0.5 text-[11px] text-amber-800">Требует внимания</div>
-                  ) : null}
+                <div className="break-all text-sm font-semibold text-ink" title={row.sku}>
+                  {row.sku}
                 </div>
-                <div className="shrink-0 text-right text-xs text-ink-muted">
-                  <div>
-                    {formatRub(row.revenue)}
-                    {" · "}
-                    {row.units_sold} шт.
+                {attention ? (
+                  <div className="text-[11px] text-amber-800">Требует внимания</div>
+                ) : null}
+                <div className="text-xs leading-relaxed text-ink-muted">
+                  <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                    <span>{formatRub(row.revenue)}</span>
+                    <span className="text-ink-faint">·</span>
+                    <span>{row.units_sold} шт.</span>
                   </div>
-                  <div className="mt-0.5 text-[11px] text-ink-faint">
-                    Прибыль: {formatProfitValue(row.net_profit, trustCtx.trust)}
-                    {" · "}
-                    Маржа: {formatMarginValue(row.margin_pct, trustCtx.trust)}
+                  <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-ink-faint">
+                    <span>Прибыль: {formatProfitValue(row.net_profit, trustCtx.trust)}</span>
+                    <span>·</span>
+                    <span>Маржа: {formatMarginValue(row.margin_pct, trustCtx.trust)}</span>
                   </div>
                 </div>
               </div>
@@ -147,13 +144,16 @@ export function TopSkusCard({
         )}
       </div>
 
-      <div className="mt-5 space-y-2 text-xs text-ink-muted">
-        <div>
-          Диапазон данных: {coverageMin ?? "—"} → {coverageMax ?? "—"}
+      {(coverageMin || coverageMax || missingPeriodsCount > 0) && (
+        <div className="mt-5 space-y-1 text-xs text-ink-muted">
+          {(coverageMin || coverageMax) && (
+            <div>
+              Данные: {coverageMin ?? "—"} → {coverageMax ?? "—"}
+            </div>
+          )}
+          {missingPeriodsCount > 0 ? <div>Есть пропуски в периоде: {missingPeriodsCount}</div> : null}
         </div>
-        {missingPeriodsCount ? <div>Есть пропуски в периодах: {missingPeriodsCount}</div> : null}
-        {recommendationsCount ? <div>Рекомендации: {recommendationsCount}</div> : null}
-      </div>
+      )}
     </Card>
   );
 }

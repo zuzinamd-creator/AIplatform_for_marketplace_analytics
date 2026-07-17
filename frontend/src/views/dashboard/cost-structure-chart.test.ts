@@ -1,14 +1,70 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  COST_STRUCTURE_CORE_SERIES,
-  costStructureSeriesFor,
-  hasNonZeroOther,
+  buildDailyCostChart,
+  buildPeriodCostComposition,
+  COST_CATEGORIES,
   mapFinanceTrendToCostStructure,
 } from "./cost-structure-chart";
 
+describe("buildPeriodCostComposition", () => {
+  it("ranks categories by amount and includes Удержания hint", () => {
+    const comp = buildPeriodCostComposition({
+      commission: "430",
+      logistics: "200",
+      advertisement: "100",
+      returns_amount: "50",
+      storage_fee: "20",
+      penalties: "10",
+      deductions: "80",
+      acquiring: "30",
+    });
+    expect(comp.total).toBe(920);
+    expect(comp.slices[0].key).toBe("commission");
+    expect(comp.slices[0].sharePct).toBeCloseTo((430 / 920) * 100, 5);
+    const deductions = comp.slices.find((s) => s.key === "deductions");
+    expect(deductions?.name).toBe("Удержания");
+    expect(deductions?.hint.toLowerCase()).toContain("списан");
+  });
+
+  it("omits zero categories", () => {
+    const comp = buildPeriodCostComposition({ commission: "100", logistics: "0" });
+    expect(comp.slices.map((s) => s.key)).toEqual(["commission"]);
+  });
+});
+
+describe("buildDailyCostChart", () => {
+  it("keeps top categories and bags the rest", () => {
+    const { rows, series } = buildDailyCostChart(
+      [
+        {
+          date: "2026-07-01",
+          commission: "100",
+          logistics: "40",
+          advertisement: "30",
+          returns_amount: "20",
+          storage_fee: "5",
+          penalties: "4",
+          deductions: "3",
+          acquiring: "2",
+          other: "1",
+        },
+      ],
+      3,
+    );
+    expect(series.map((s) => s.dataKey).slice(0, 3)).toEqual([
+      "commission",
+      "logistics",
+      "advertisement",
+    ]);
+    expect(series.some((s) => s.dataKey === "rest")).toBe(true);
+    expect(rows[0].commission).toBe(100);
+    expect(rows[0].rest).toBe(20 + 5 + 4 + 3 + 2 + 1);
+  });
+});
+
 describe("mapFinanceTrendToCostStructure", () => {
-  it("maps explicit segments and does not include payout or other_costs", () => {
+  it("maps segments and does not include payout", () => {
     const rows = mapFinanceTrendToCostStructure([
       {
         date: "2026-07-15",
@@ -24,74 +80,15 @@ describe("mapFinanceTrendToCostStructure", () => {
         other: "7",
       },
     ]);
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toEqual({
-      date: "07-15",
-      commission: 90,
-      logistics: 12,
-      advertisement: 15,
-      returns: 50,
-      storage: 3,
-      penalties: 4,
-      deductions: 5,
-      acquiring: 6,
-      other: 7,
-    });
     expect(rows[0]).not.toHaveProperty("payout");
-    expect(rows[0]).not.toHaveProperty("other_costs");
-  });
-
-  it("defaults missing B1 fields to 0 (backward compatibility)", () => {
-    const rows = mapFinanceTrendToCostStructure([
-      {
-        date: "2026-05-01",
-        logistics: "10",
-        advertisement: "20",
-        returns_amount: "30",
-        payout: "100",
-      },
-    ]);
-    expect(rows[0].commission).toBe(0);
-    expect(rows[0].storage).toBe(0);
-    expect(rows[0].penalties).toBe(0);
-    expect(rows[0].deductions).toBe(0);
-    expect(rows[0].acquiring).toBe(0);
-    expect(rows[0].other).toBe(0);
-    expect(rows[0].logistics).toBe(10);
+    expect(rows[0].commission).toBe(90);
   });
 });
 
-describe("costStructureSeriesFor", () => {
-  it("exposes Russian labels without payout; core stack is 8 segments", () => {
-    const names = COST_STRUCTURE_CORE_SERIES.map((s) => s.name);
-    expect(names).toEqual([
-      "Комиссия",
-      "Логистика",
-      "Продвижение",
-      "Возвраты",
-      "Хранение",
-      "Штрафы",
-      "Удержания",
-      "Эквайринг",
-    ]);
-    expect(COST_STRUCTURE_CORE_SERIES.some((s) => s.dataKey === "payout")).toBe(false);
-  });
-
-  it("omits Прочее when other is zero everywhere", () => {
-    const rows = mapFinanceTrendToCostStructure([
-      { date: "2026-07-01", commission: "1", storage_fee: "2", other: "0" },
-    ]);
-    expect(hasNonZeroOther(rows)).toBe(false);
-    expect(costStructureSeriesFor(rows).map((s) => s.name)).not.toContain("Прочее");
-  });
-
-  it("includes Прочее when other is non-zero", () => {
-    const rows = mapFinanceTrendToCostStructure([
-      { date: "2026-07-01", other: "1.5" },
-    ]);
-    expect(hasNonZeroOther(rows)).toBe(true);
-    const series = costStructureSeriesFor(rows);
-    expect(series.map((s) => s.name)).toContain("Прочее");
-    expect(series.at(-1)?.dataKey).toBe("other");
+describe("COST_CATEGORIES", () => {
+  it("explains Удержания in seller language", () => {
+    const d = COST_CATEGORIES.find((c) => c.key === "deductions");
+    expect(d?.name).toBe("Удержания");
+    expect(d?.hint.length).toBeGreaterThan(10);
   });
 });

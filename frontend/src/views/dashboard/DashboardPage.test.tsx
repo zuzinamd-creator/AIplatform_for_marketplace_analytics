@@ -63,6 +63,7 @@ vi.mock("recharts", () => ({
   ),
   LabelList: () => <div data-testid="bar-label-list" />,
   Legend: () => <div data-testid="dashboard-legend" />,
+  Cell: () => null,
   XAxis: () => null,
   YAxis: () => null,
   Tooltip: () => <div data-testid="dashboard-tooltip" />,
@@ -243,9 +244,7 @@ describe("DashboardPage trust integration", () => {
 
   it("B3: uses sales/profit bar chart title", async () => {
     renderPage();
-    expect(
-      await screen.findByText(/Тренд продаж и прибыли до учета операционных расходов и налогообложения/i),
-    ).toBeTruthy();
+    expect(await screen.findByText(/Выручка и прибыль по дням/i)).toBeTruthy();
     expect(screen.getAllByTestId("dashboard-bar-chart").length).toBeGreaterThanOrEqual(1);
   });
 
@@ -302,40 +301,25 @@ describe("DashboardPage trust integration", () => {
 
   it("C1: renders on-bar labels for sales chart when period is short", async () => {
     renderPage();
-    await screen.findByText(/Тренд продаж и прибыли до учета операционных расходов/i);
+    await screen.findByText(/Выручка и прибыль по дням/i);
     expect(screen.getAllByTestId("bar-label-list").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("C2: cost structure stacked chart without payout", async () => {
+  it("C2: cost structure shows period composition and daily chart", async () => {
     renderPage();
-    expect(await screen.findByText("Структура расходов и возвратов")).toBeTruthy();
-    expect(screen.getAllByTestId("dashboard-bar-chart").length).toBe(2);
-    expect(screen.getAllByTestId("dashboard-legend").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByTestId("dashboard-tooltip").length).toBeGreaterThanOrEqual(1);
-    expect(
-      screen.getByText(
-        /Комиссия · Логистика · Продвижение · Возвраты · Хранение · Штрафы · Удержания · Эквайринг/i,
-      ),
-    ).toBeTruthy();
-
-    const costBars = screen
+    expect(await screen.findByTestId("cost-composition-legend")).toBeTruthy();
+    expect(screen.getByText("Структура расходов за период")).toBeTruthy();
+    expect(screen.getByText("Динамика по дням")).toBeTruthy();
+    expect(screen.getByText(/Комиссия WB:/)).toBeTruthy();
+    expect(screen.getByText(/Удержания:/)).toBeTruthy();
+    expect(screen.getByText(/Прочие списания WB/i)).toBeTruthy();
+    expect(screen.getAllByTestId("dashboard-bar-chart").length).toBeGreaterThanOrEqual(2);
+    const dailyBars = screen
       .getAllByTestId("dashboard-bar")
       .filter((el) => el.getAttribute("data-stack") === "cost-structure");
-    expect(costBars).toHaveLength(8);
-    expect(costBars.map((el) => el.getAttribute("data-name"))).toEqual([
-      "Комиссия",
-      "Логистика",
-      "Продвижение",
-      "Возвраты",
-      "Хранение",
-      "Штрафы",
-      "Удержания",
-      "Эквайринг",
-    ]);
-    expect(costBars.every((el) => el.getAttribute("data-key") !== "payout")).toBe(true);
-    expect(costBars.every((el) => el.getAttribute("data-key") !== "other_costs")).toBe(true);
+    expect(dailyBars.length).toBeGreaterThanOrEqual(1);
+    expect(dailyBars.every((el) => el.getAttribute("data-key") !== "payout")).toBe(true);
     expect(screen.queryByText("Выплаты")).toBeNull();
-    expect(screen.queryByText("Прочие расходы")).toBeNull();
   });
 
   it("B13: shows cost business signal and hides SKU signal when trust insufficient", async () => {
