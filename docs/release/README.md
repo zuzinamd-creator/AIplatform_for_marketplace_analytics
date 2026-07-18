@@ -2,6 +2,12 @@
 
 | Release | Document | Status |
 |---------|----------|--------|
+| **Phase 9.16-C — Seller dashboard P0** | [phase_916c_production_baseline.md](phase_916c_production_baseline.md) | **CERTIFIED** (`7f65cfb`, bundle `DVVPbWvu`) |
+| Scope | Insight Engine V1, margin labels, flat Расходы WB, daily costs clarity | 2026-07-18 |
+| **Phase 9.15 — Seller feedback B** | *(see root CHANGELOG + baseline doc)* | Superseded by 9.16-C |
+| Scope | Commission row, total daily costs, early captions | `0579f09` / `BUMXPZet` |
+| **Phase 9.14 — Seller feedback UX** | *(see root CHANGELOG)* | Superseded by 9.15/9.16 |
+| Scope | Top SKU readability, cost structure period view | `8b04dff` |
 | **Phase 9.7-E — Partial Trust Live Validation** | [phase_97e_certification.md](phase_97e_certification.md) | **CERTIFIED** (docs-only, **GO** for 9.8-A) |
 | Scope | PARTIAL trust live validation, trust upgrade journey, hub readiness 82/100 | 2026-07-11 |
 | **Phase 9.7-D — Trust Closure & Hub Prep** | [phase_97d_certification.md](phase_97d_certification.md) | **CERTIFIED** (`0a59676`, bundle `index-BxNJPr4A.js`) |

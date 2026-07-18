@@ -62,20 +62,23 @@ Admin can revoke pending invites from **Администрирование → �
 
 Sellers receive **403** on all `/api/v1/admin/*` endpoints.
 
-## 2) Main dashboard (operational-first)
+## 2) Analytics overview (seller dashboard)
 
-Route: `/app/dashboard`
+Primary route: `/app/analytics` (Overview tab).  
+Legacy: `/app/dashboard` soft-redirects to the hub.
 
 Purpose:
 
-- Provide at-a-glance readiness and operational signals while financial KPI APIs are not yet available.
+- Period KPIs (revenue, profit, **Маржа по выплате**) with trust gating
+- Business Signals (cost share, returns, weak SKU)
+- Charts + Insight Engine V1 captions
+- Top SKU (**Маржа SKU**) and Financial Summary (flat **Расходы WB**)
 
-Current data sources:
+Data: `GET /api/v1/dashboard/summary` (and related analytics endpoints for sorted Top SKU).
 
-- Recent uploads: `GET /api/v1/reports`
-- Queue visibility: `GET /api/v1/ops/queue` (uses `status_counts` when available)
-- Runtime summary: `GET /api/v1/ops/runtime/summary`
-- AI ops: `GET /api/v1/ai/operational/status`
+Full UX: [seller_dashboard.md](seller_dashboard.md) · margins: [margin_semantics.md](../product/margin_semantics.md)
+
+Platform-admin ops KPIs (queue / runtime) remain on admin/ops surfaces, not the seller overview.
 
 ## 3) Report upload flow
 

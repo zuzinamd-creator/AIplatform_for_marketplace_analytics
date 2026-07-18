@@ -8,6 +8,10 @@
 - `/app/economics/sku/:sku` — **Drilldown по SKU** (почему убыточен, что ухудшилось)
 - `/app/economics/inventory` — **Склад и оборот** (замороженный капитал, slow movers, dead stock)
 
+Колонка маржи: **Маржа (юнит-экономика)** — не равна «Марже по выплате» на дашборде и не равна «Марже SKU» в топе. См. [margin_semantics.md](margin_semantics.md).
+
+Analytics Hub embeds Economics as a tab (`/app/analytics` → Экономика).
+
 ## Обязательные UX-инварианты
 
 - Период и сравнение периодов — в каждом экономическом экране

@@ -1,10 +1,10 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
-**Version:** Phase 9.8-B (Analytics Hub polish) · Phase 9.8-A (physical merge)  
-**Certified baseline:** git tag `certified-production` → `3d07b17`  
-**Frontend bundle (production):** `index-B16sFXhD.js` @ 2026-07-12  
-**Status:** Hub polish deployed · **GO** for Phase 9.8-C (optional)  
-**Last updated:** 2026-07-12
+**Version:** Phase **9.16-C** (seller dashboard Insight Engine V1 + margin semantics)  
+**Certified baseline:** `7f65cfb015dda2cc869afd3e16fa0e94b95d72a9`  
+**Frontend bundle (production):** `index-DVVPbWvu.js` @ 2026-07-18  
+**Status:** Production certified · docs reconciled in **9.16-D** · **GO**  
+**Last updated:** 2026-07-18
 
 ---
 
@@ -12,31 +12,24 @@
 
 | Field | Value |
 |-------|-------|
-| **Certified baseline (VPS)** | git tag `certified-production` → `3d07b17` (Phase 9.8-B) |
-| **Frontend bundle** | `index-B16sFXhD.js` @ 2026-07-12 |
-| **Phase 9.8-B certification** | [docs/release/phase_98b_certification.md](docs/release/phase_98b_certification.md) |
-| **Phase 9.8-A certification** | [docs/release/phase_98a_certification.md](docs/release/phase_98a_certification.md) |
-| **Phase 9.7-E certification** | [docs/release/phase_97e_certification.md](docs/release/phase_97e_certification.md) |
-| **Partial trust results** | [docs/product/partial_trust_validation_results.md](docs/product/partial_trust_validation_results.md) |
-| **Phase 9.7-D certification** | [docs/release/phase_97d_certification.md](docs/release/phase_97d_certification.md) |
-| **Trust matrix** | [docs/product/trust_matrix_certification.md](docs/product/trust_matrix_certification.md) |
+| **Production / GitHub / Release SHA** | `7f65cfb015dda2cc869afd3e16fa0e94b95d72a9` |
+| **Frontend bundle** | `index-DVVPbWvu.js` (`DVVPbWvu`) @ 2026-07-18 06:47 UTC |
+| **Phase 9.16-C baseline** | [docs/release/phase_916c_production_baseline.md](docs/release/phase_916c_production_baseline.md) |
+| **Seller dashboard** | [docs/frontend/seller_dashboard.md](docs/frontend/seller_dashboard.md) |
+| **Insight Engine V1** | [docs/product/dashboard_insight_engine.md](docs/product/dashboard_insight_engine.md) |
+| **Margin semantics** | [docs/product/margin_semantics.md](docs/product/margin_semantics.md) |
 | **Analytics Hub master spec** | [docs/product/analytics_hub_master_spec.md](docs/product/analytics_hub_master_spec.md) |
-| **Partial trust validation** | [docs/product/partial_trust_live_validation.md](docs/product/partial_trust_live_validation.md) |
-| **Phase 9.7-C certification** | [docs/release/phase_97c_deployment_certification.md](docs/release/phase_97c_deployment_certification.md) |
-| **Phase 9.7-B validation** | [docs/product/trust_ux_validation_report.md](docs/product/trust_ux_validation_report.md) |
-| **Phase 9.6B-3 certification** | [docs/release/phase_96b3_deployment_certification.md](docs/release/phase_96b3_deployment_certification.md) |
-| **Phase 9.6B-2A certification** | [docs/release/phase_96b2a_deployment_certification.md](docs/release/phase_96b2a_deployment_certification.md) |
-| **Historical safety baseline** | `11731e9` — 8.2.1a recovery stabilization |
-| **Safety stack** | 8.2.0 systemd preflight · 8.2.1a recovery tooling · 8.3.0 deploy guard |
-| **Feature release tag** | `v8.1-promotion-expenses-mvp` |
+| **Trust matrix** | [docs/product/trust_matrix_certification.md](docs/product/trust_matrix_certification.md) |
+| **Frontend deploy** | [docs/ops/frontend-deploy.md](docs/ops/frontend-deploy.md) |
+| **Safety stack** | 8.2.0 systemd preflight · 8.2.1a recovery · 8.3.0 deploy guard |
+| **Feature release tag (historical)** | `v8.1-promotion-expenses-mvp` |
 | **Auth phases** | 9.1A gate · 9.2B roles · 9.2C admin panel · 9.3A invites |
-| **Phase 8.1 manifest** | [docs/release/phase_81_production_release.md](docs/release/phase_81_production_release.md) |
 | **Safety docs** | [docs/operations/production_safety.md](docs/operations/production_safety.md) |
 | **Recovery runbook** | [docs/operations/production_recovery_runbook.md](docs/operations/production_recovery_runbook.md) |
 
-**Host:** `321997.fornex.cloud` · **Certification:** Production = Workspace · CI GREEN · AI VALIDATED
+**Host:** `321997.fornex.cloud` · **Branches:** `main` ≡ `release/task0-jam-subscription-expenses` ≡ production FE
 
-Pilot KPIs (2026-06-29 — 2026-07-05): Settlement Profit **100 530.15 ₽** · Promotion **9 925 ₽** · Profit After Promotion **90 605.15 ₽** · Impact **9.87%**
+**Recent seller-dashboard line:** 9.14 (cost structure UX) → 9.15 (total daily costs + commission row) → **9.16-C** (Insight Engine V1, margin labels, flat «Расходы WB»).
 
 ---
 
@@ -58,10 +51,35 @@ The platform treats marketplace reports as a **financial data platform** — not
 1. Upload WB realization report (`.xlsx` / `.csv`)
 2. ETL → ledger → aggregates → inventory snapshots
 3. Import COGS (`cost_history`) for margin/profit trust
-4. Enter **promotion expenses** per report (Reports UI or `PATCH /api/v1/reports/{id}`)
-5. Dashboard shows **Profit After Promotion** as primary profit KPI
-6. Period Intelligence AI run → executive summary + actionable recommendations (promotion-aware snapshot)
+4. Enter **promotion expenses** / Jam subscription where applicable (Reports / finance summary)
+5. Open **Analytics Hub** (`/app/analytics`) — overview KPIs, costs, Top SKU, financial summary
+6. Period Intelligence AI run → executive summary + actionable recommendations
 7. Seller actions: accept / dismiss / complete / snooze
+
+---
+
+## Seller Dashboard (Phase 9.11–9.16)
+
+Entry: **`/app/analytics`** (Overview). `/app/dashboard` redirects here.
+
+| Capability | What sellers see |
+|------------|------------------|
+| **Hero KPIs** | Revenue, net profit, **Маржа по выплате**, profitability (trust-gated) |
+| **Business Signals** | Up to 3 alerts: dominant cost share, returns pressure, weak high-revenue SKU |
+| **Charts** | Daily revenue/profit · period cost structure · daily **total** costs (returns excluded) |
+| **Insight Engine V1** | Deterministic captions: Fact + Driver + Attention (no LLM) |
+| **Top SKU** | Revenue / profit / **Маржа SKU** · contribution insight · link to Economics |
+| **Financial Summary** | Flat **Расходы WB** (commission, logistics, storage, deductions) → Выплата от WB |
+
+**Three margins (different math — do not merge):**
+
+| Label | Meaning |
+|-------|---------|
+| Маржа по выплате | `(Выплата − себестоимость) / выручка` |
+| Маржа SKU | SKU-attributed P&L / SKU revenue |
+| Маржа (юнит-экономика) | Contribution margin / revenue (Economics) |
+
+Docs: [seller_dashboard.md](docs/frontend/seller_dashboard.md) · [dashboard_insight_engine.md](docs/product/dashboard_insight_engine.md) · [margin_semantics.md](docs/product/margin_semantics.md)
 
 ---
 
@@ -577,13 +595,25 @@ bash scripts/production-recovery.sh --assess-only
 
 | Route | Purpose |
 |-------|---------|
-| `/app/dashboard` | KPI + Period Intelligence entry |
+| `/app/analytics` | **Primary** Analytics Hub (Overview / Comparison / Economics / Cost coverage) |
+| `/app/dashboard` | Soft redirect → `/app/analytics` |
 | `/app/reports/upload` | Upload WB report |
 | `/app/reports` | Reports list + promotion expenses edit |
 | `/app/costs` | COGS import and edit |
+| `/app/economics` | SKU unit economics (**Маржа (юнит-экономика)**) |
 | `/app/economics/inventory` | Frozen capital, slow movers, dead stock |
 | `/app/ai/recommendations` | AI recommendations list |
 | `/app/ai/today` | Today's Focus (priority queue) |
+
+### Frontend deploy (production)
+
+```bash
+cd /root/AIplatform_for_marketplace_analytics && bash scripts/deploy-frontend.sh
+# dirty-tree emergency: DEPLOY_FORCE_DIRTY=1 bash scripts/deploy-frontend.sh
+bash scripts/post_deploy_smoke_test.sh
+```
+
+Nginx document root: `/var/www/marketplace-analytics`. Details: [docs/ops/frontend-deploy.md](docs/ops/frontend-deploy.md).
 
 ### User roles (Phase 9.2B)
 

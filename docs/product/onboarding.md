@@ -40,7 +40,9 @@ Steps:
 5. **SKU mapping guidance** (documented; backend CRUD endpoints not exposed yet)
 6. **Cost import** → `/app/costs`
 7. **First AI analysis** → `POST /api/v1/ai/intelligence/runs`
-8. **Dashboard walkthrough**
+8. **Analytics walkthrough** → `/app/analytics` (Overview: KPIs, Business Signals, costs, Top SKU, Financial Summary)
+
+After onboarding, sellers should recognize three margin labels: **Маржа по выплате**, **Маржа SKU**, **Маржа (юнит-экономика)** — see [margin_semantics.md](margin_semantics.md).
 
 ## State model
 

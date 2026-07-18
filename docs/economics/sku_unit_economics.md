@@ -28,6 +28,9 @@ Key: `(user_id, sku, metric_date, marketplace)` (unique by `(sku, metric_date, m
 - `contribution_margin` = `gross_profit - fees - cogs`
 - `margin_pct` = `contribution_margin / revenue × 100` (if revenue > 0)
 
+**Seller UI label (Phase 9.16):** column **Маржа (юнит-экономика)** with hint «После всех расходов WB и себестоимости».  
+Do not confuse with Dashboard **Маржа по выплате** or Top SKU **Маржа SKU** — see [margin_semantics.md](../product/margin_semantics.md).
+
 ## Ratios
 
 - `return_rate` = `returns_amount / revenue × 100`

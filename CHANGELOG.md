@@ -1,5 +1,61 @@
 # Changelog
 
+## [9.16-D] — 2026-07-18 — Documentation reconciliation
+
+### Changed
+- README + docs hub aligned to production baseline `7f65cfb` / bundle `DVVPbWvu`.
+- Seller dashboard, Insight Engine V1, and margin semantics documented.
+
+### Added
+- `docs/release/phase_916c_production_baseline.md`
+- `docs/product/dashboard_insight_engine.md`
+- `docs/product/margin_semantics.md`
+- Rewrote `docs/frontend/seller_dashboard.md`
+
+---
+
+## [9.16-C] — 2026-07-18 — Seller feedback P0 (Insight Engine V1)
+
+### Added
+- **Insight Engine V1** — deterministic Fact + Driver + Attention captions on revenue, cost structure, daily costs, Top SKU (`chart-insights.ts`).
+- Margin labels + static hints: **Маржа по выплате**, **Маржа SKU**, **Маржа (юнит-экономика)**.
+- Period share strip and «% — доля от общей суммы расходов за период» under cost charts.
+
+### Changed
+- Financial Summary: flat **Расходы WB** (commission → logistics → storage → deductions); removed «Детализация услуг WB» accordion.
+- Daily costs subtitle documents total-cost formula (returns excluded).
+
+### Constraints
+- No backend profit formula changes; no AI-generated insights.
+- Production: `7f65cfb` · FE `index-DVVPbWvu.js`.
+
+---
+
+## [9.15] — 2026-07-17 — Seller feedback (commission, total daily costs, captions)
+
+### Added
+- Financial Summary **Комиссия WB** row; removed standalone «Прибыль» heading.
+- Daily chart **Общие затраты по дням** = sum of eight fee categories (excludes returns).
+- Early deterministic one-line chart captions (superseded by 9.16-C Insight Engine V1).
+- Top SKU label **Маржа SKU**.
+
+### Production
+- Commit `0579f09` · bundle `index-BUMXPZet.js`.
+
+---
+
+## [9.14] — 2026-07-16 — Seller feedback UX (readability & cost structure)
+
+### Changed
+- Top SKU: full name wrapping / vertical metrics layout.
+- Cost structure: period composition view + clearer copy.
+- Financial Summary footer / disclosure cleanup.
+
+### Production
+- Commit `8b04dff` (line continued into 9.15/9.16).
+
+---
+
 ## [9.8-B] — 2026-07-12 — Analytics Hub Polish & Dedup
 
 ### Changed

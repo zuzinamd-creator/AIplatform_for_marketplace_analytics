@@ -1,5 +1,14 @@
 # Production server inventory (pilot)
 
+## Production code baseline (Phase 9.16-C)
+
+| Field | Value |
+|-------|-------|
+| Git SHA | `7f65cfb015dda2cc869afd3e16fa0e94b95d72a9` |
+| Frontend bundle | `index-DVVPbWvu.js` |
+| WWW root | `/var/www/marketplace-analytics` |
+| Cert | [phase_916c_production_baseline.md](../release/phase_916c_production_baseline.md) |
+
 ## Services (systemd)
 
 | Unit | Role |

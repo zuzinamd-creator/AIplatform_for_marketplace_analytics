@@ -3,8 +3,9 @@
 Central index for the Marketplace Analytics Platform (WB / Ozon).
 
 **Project README:** [../README.md](../README.md)  
+**Production baseline:** [release/phase_916c_production_baseline.md](release/phase_916c_production_baseline.md) (`7f65cfb` · `DVVPbWvu`)  
 **Pre-v0.6 README archive:** [archive/README_pre_v06.md](archive/README_pre_v06.md)  
-**Current release:** [release/v0.6-mvp-intelligence.md](release/v0.6-mvp-intelligence.md)
+**Historical v0.6 notes:** [release/v0.6-mvp-intelligence.md](release/v0.6-mvp-intelligence.md)
 
 ---
 
@@ -58,6 +59,7 @@ Central index for the Marketplace Analytics Platform (WB / Ozon).
 | Document | Purpose |
 |----------|---------|
 | [analytics/financial_semantics.md](analytics/financial_semantics.md) | Financial KPI semantics |
+| [product/margin_semantics.md](product/margin_semantics.md) | Three seller-facing margin labels (9.16) |
 | [economics/sku_unit_economics.md](economics/sku_unit_economics.md) | SKU unit economics |
 | [economics/cost_coverage.md](economics/cost_coverage.md) | COGS coverage & trust gating |
 | [economics/inventory_economics.md](economics/inventory_economics.md) | Inventory economics model |
@@ -69,10 +71,11 @@ Central index for the Marketplace Analytics Platform (WB / Ozon).
 
 | Document | Purpose |
 |----------|---------|
+| [frontend/seller_dashboard.md](frontend/seller_dashboard.md) | Dashboard UX (9.16 production) |
+| [product/dashboard_insight_engine.md](product/dashboard_insight_engine.md) | Insight Engine V1 |
 | [product/refined_roadmap.md](product/refined_roadmap.md) | Product roadmap (seller-focused) |
 | [product/seller_workflows.md](product/seller_workflows.md) | Seller workflows |
 | [product/onboarding.md](product/onboarding.md) | Onboarding |
-| [frontend/seller_dashboard.md](frontend/seller_dashboard.md) | Dashboard UX |
 | [frontend/localization.md](frontend/localization.md) | UI localization |
 | [ops/frontend-deploy.md](ops/frontend-deploy.md) | Frontend VPS deploy |
 
@@ -93,7 +96,10 @@ Central index for the Marketplace Analytics Platform (WB / Ozon).
 
 | Document | Purpose |
 |----------|---------|
-| [release/v0.6-mvp-intelligence.md](release/v0.6-mvp-intelligence.md) | v0.6 release notes |
+| [release/phase_916c_production_baseline.md](release/phase_916c_production_baseline.md) | **Current** production baseline (9.16-C) |
+| [release/README.md](release/README.md) | Release index |
+| [../CHANGELOG.md](../CHANGELOG.md) | Root changelog (includes 9.14–9.16) |
+| [release/v0.6-mvp-intelligence.md](release/v0.6-mvp-intelligence.md) | v0.6 release notes (historical) |
 | [release/readme_cutover_report.md](release/readme_cutover_report.md) | README cutover report (6.4.2) |
 | [archive/README_pre_v06.md](archive/README_pre_v06.md) | Full pre-v0.6 README snapshot (2923 lines) |
 | [archive/README.md](archive/README.md) | Archive index |

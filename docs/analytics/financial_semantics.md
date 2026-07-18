@@ -43,11 +43,36 @@ COGS is computed from `cost_history` effective on the sale date.
 
 ### Margin (%)
 
+Ledger-style margin on aggregates / SKU daily metrics:
+
 `margin_pct` = `net_profit / revenue * 100` (when revenue > 0).
+
+### Settlement margin (Dashboard / Financial Summary)
+
+Seller settlement KPIs (`seller_kpis`):
+
+- `total_to_pay` = payout_for_goods − logistics − storage − deductions  
+- `seller_profit` = `total_to_pay − COGS`  
+- `margin_pct` = `seller_profit / revenue × 100`
+
+**UI label (Phase 9.16):** **Маржа по выплате** — not the same as Top SKU or Economics margin.  
+See [margin_semantics.md](../product/margin_semantics.md).
+
+### Unit-economics margin (Economics)
+
+`margin_pct` = `contribution_margin / revenue × 100` on `sku_unit_economics_daily`.  
+**UI label:** **Маржа (юнит-экономика)**.
+
+## Cost charts (Dashboard UI)
+
+| Chart | Returns | Notes |
+|-------|---------|-------|
+| Period cost structure | Included as a slice when present | Shares are % of period expense total |
+| Daily total costs | **Excluded** | Sum of commission + logistics + advertisement + storage + penalties + deductions + acquiring + other |
 
 ## Why payout != profit
 
 - Payout represents **transfer to seller** (cash settlement).
 - Profit represents **economic result** of selling (revenue minus costs/fees/returns/COGS).
 - Including payout inside profit can cause impossible relationships like **profit > revenue**.
-
+- Dashboard «Выплата от WB» is cash; «Чистая прибыль» / margins are trust-gated P&L after COGS.
