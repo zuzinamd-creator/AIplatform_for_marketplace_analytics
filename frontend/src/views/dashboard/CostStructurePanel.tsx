@@ -136,6 +136,9 @@ export function CostStructurePanel({
                 </li>
               ))}
             </ul>
+            <div className="mt-2 text-xs text-ink-muted" data-testid="cost-share-note">
+              % — доля от общей суммы расходов за период
+            </div>
             {structureInsight ? (
               <div className="mt-3 text-xs text-ink-muted" data-testid="cost-structure-insight">
                 {structureInsight}
@@ -148,7 +151,8 @@ export function CostStructurePanel({
       <div>
         <div className="text-sm font-semibold text-ink">Общие затраты по дням</div>
         <div className="mt-1 text-xs text-ink-muted">
-          Сумма расходов WB без возвратов; в подсказке — разбивка по статьям
+          Сумма расходов WB без возвратов (комиссия + логистика + продвижение + хранение + штрафы +
+          удержания + эквайринг + прочее)
         </div>
         {!daily.hasData ? (
           <div className="mt-4 text-sm text-ink-muted">Нет дневных данных по расходам.</div>
@@ -169,6 +173,28 @@ export function CostStructurePanel({
                 </BarChart>
               </ResponsiveContainer>
             </div>
+
+            {composition.slices.length > 0 ? (
+              <div
+                className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-secondary"
+                data-testid="daily-costs-period-strip"
+              >
+                {composition.slices.map((s) => (
+                  <span key={s.key} className="inline-flex items-center gap-1.5">
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-sm"
+                      style={{ background: CHART.series[s.fillKey] }}
+                      aria-hidden
+                    />
+                    {s.name} {Math.round(s.sharePct)}%
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            <div className="mt-1 text-xs text-ink-muted" data-testid="daily-costs-share-note">
+              % — доля от общей суммы расходов за период
+            </div>
+
             {dynamicsInsight ? (
               <div className="mt-3 text-xs text-ink-muted" data-testid="cost-dynamics-insight">
                 {dynamicsInsight}

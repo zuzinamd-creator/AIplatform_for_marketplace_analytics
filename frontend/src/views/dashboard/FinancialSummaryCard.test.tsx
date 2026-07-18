@@ -4,6 +4,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { deriveProfitTrustContext } from "../../state/profit-trust";
 import type { FinancialKpiSummaryResponse } from "../../state/types-analytics";
 import { FinancialSummaryCard } from "./FinancialSummaryCard";
+import { MARGIN_PAYOUT_HINT, MARGIN_PAYOUT_LABEL } from "./margin-labels";
 
 type FinanceKpis = FinancialKpiSummaryResponse["kpis"];
 
@@ -39,21 +40,21 @@ function baseKpis(overrides: Partial<FinanceKpis> = {}): FinanceKpis {
 function trustFull() {
   return deriveProfitTrustContext(
     { warnings: [], profit_metrics_trust: "full" },
-    { covered_skus: 5, total_skus: 5, sku_cost_coverage_pct: "100", missing_skus: [] },
+    { covered_skus: 5, total_skus: 5, avg_cost_coverage_pct: "100", missing_skus: [] },
   );
 }
 
 function trustPartial() {
   return deriveProfitTrustContext(
     { warnings: [], profit_metrics_trust: "partial" },
-    { covered_skus: 3, total_skus: 5, sku_cost_coverage_pct: "60", missing_skus: ["A"] },
+    { covered_skus: 3, total_skus: 5, avg_cost_coverage_pct: "60", missing_skus: ["A"] },
   );
 }
 
 function trustInsufficient() {
   return deriveProfitTrustContext(
     { warnings: [], profit_metrics_trust: "insufficient" },
-    { covered_skus: 0, total_skus: 5, sku_cost_coverage_pct: "0", missing_skus: ["A"] },
+    { covered_skus: 0, total_skus: 5, avg_cost_coverage_pct: "0", missing_skus: ["A"] },
   );
 }
 
@@ -80,22 +81,44 @@ describe("FinancialSummaryCard R19 UX", () => {
     cleanup();
   });
 
-  it("uses seller-facing labels: Выплата от WB and Маржа, no Settlement", () => {
+  it("uses seller-facing labels: Выплата от WB and Маржа по выплате", () => {
     renderCard({ kpis: { commission: "1200" } });
     expect(screen.getByText(/Финансовая сводка/i)).toBeTruthy();
     expect(screen.getByText("Выплата от WB")).toBeTruthy();
     expect(screen.getByText("Комиссия WB")).toBeTruthy();
-    expect(screen.getByText("Маржа")).toBeTruthy();
+    expect(screen.getByText(MARGIN_PAYOUT_LABEL)).toBeTruthy();
+    expect(screen.getByLabelText(MARGIN_PAYOUT_HINT)).toBeTruthy();
     expect(screen.getByText("Чистая прибыль")).toBeTruthy();
     expect(screen.getByText("Деньги от Wildberries")).toBeTruthy();
+    expect(screen.getByText("Расходы WB")).toBeTruthy();
     expect(screen.queryByText("Прибыль")).toBeNull();
     expect(screen.getByText("Удержания WB")).toBeTruthy();
     expect(screen.queryByText(/Settlement/i)).toBeNull();
     expect(screen.queryByText("Маржинальность")).toBeNull();
-    expect(screen.queryByText("Выплата от WB − Себестоимость = Чистая прибыль")).toBeNull();
+    expect(screen.queryByText(/^Маржа$/)).toBeNull();
   });
 
-  it("keeps disclosures closed by default", () => {
+  it("shows WB expenses flat without services accordion", () => {
+    renderCard({ kpis: { commission: "1200", logistics: "1000", storage_fee: "100" } });
+    expect(screen.queryByText(/Детализация услуг WB/i)).toBeNull();
+    expect(screen.getByText("Комиссия WB")).toBeTruthy();
+    expect(screen.getByText("Логистика")).toBeTruthy();
+    expect(screen.getByText("Хранение")).toBeTruthy();
+    expect(screen.getByText("Удержания WB")).toBeTruthy();
+
+    const wbSection = screen.getByText("Деньги от Wildberries").closest("section");
+    expect(wbSection).toBeTruthy();
+    const labels = ["Выручка", "К перечислению за товар", "Комиссия WB", "Логистика", "Хранение", "Удержания WB", "Выплата от WB"];
+    const text = wbSection?.textContent ?? "";
+    let last = -1;
+    for (const label of labels) {
+      const idx = text.indexOf(label);
+      expect(idx).toBeGreaterThan(last);
+      last = idx;
+    }
+  });
+
+  it("keeps allowed disclosures closed by default", () => {
     const { container } = renderCard({
       kpis: {
         promotion_expenses: "9925",
@@ -104,12 +127,12 @@ describe("FinancialSummaryCard R19 UX", () => {
       },
     });
     const details = container.querySelectorAll("details");
-    expect(details.length).toBeGreaterThanOrEqual(3);
+    // Из них + Ещё показатели only (no services accordion)
+    expect(details.length).toBe(2);
     for (const el of details) {
       expect(el.open).toBe(false);
-      expect(el.hasAttribute("open")).toBe(false);
     }
-    expect(screen.getByText(/Детализация услуг WB/i)).toBeTruthy();
+    expect(screen.queryByText(/Детализация услуг WB/i)).toBeNull();
     expect(screen.getByText(/^Из них$/i)).toBeTruthy();
     expect(screen.getByText(/Ещё показатели/i)).toBeTruthy();
   });
@@ -125,7 +148,6 @@ describe("FinancialSummaryCard R19 UX", () => {
     expect(screen.queryByText(/^Из них$/i)).toBeNull();
     expect(screen.queryByText(/WB-продвижение/i)).toBeNull();
     expect(screen.queryByText(/Подписка Джем/i)).toBeNull();
-    expect(screen.queryByText(/Затраты на продвижение/i)).toBeNull();
   });
 
   it("B: shows only WB-продвижение under Из них when jam is zero", () => {
@@ -154,8 +176,8 @@ describe("FinancialSummaryCard R19 UX", () => {
     expect(screen.queryByText(/WB-продвижение/i)).toBeNull();
   });
 
-  it("D: promo/jam under deductions disclosure; formula footer; no second-subtract", () => {
-    const { container } = renderCard({
+  it("D: promo/jam under Из них; logistics visible without accordion", () => {
+    renderCard({
       kpis: {
         promotion_expenses: "9925",
         jam_subscription_expenses: "500",
@@ -171,18 +193,9 @@ describe("FinancialSummaryCard R19 UX", () => {
     expect(within(izNikh as HTMLElement).getByText(/WB-продвижение/i)).toBeTruthy();
     expect(within(izNikh as HTMLElement).getByText(/Подписка Джем/i)).toBeTruthy();
 
-    expect(screen.queryByText(/Settlement/i)).toBeNull();
-    expect(screen.queryByText(/после ручных расходов/i)).toBeNull();
-    expect(screen.queryByText(/без повторного вычета/i)).toBeNull();
-    expect(screen.queryByText("Выплата от WB − Себестоимость = Чистая прибыль")).toBeNull();
-
-    // logistics hidden under services disclosure
-    const services = Array.from(container.querySelectorAll("details")).find((d) =>
-      d.textContent?.includes("Детализация услуг WB"),
-    );
-    expect(services).toBeTruthy();
-    expect(within(services as HTMLElement).getByText("Логистика")).toBeTruthy();
-    expect(within(services as HTMLElement).getByText("Хранение")).toBeTruthy();
+    expect(screen.queryByText(/Детализация услуг WB/i)).toBeNull();
+    expect(screen.getByText("Логистика")).toBeTruthy();
+    expect(screen.getByText("Хранение")).toBeTruthy();
   });
 
   it("shows profit trust badge and hides profit when COGS trust is insufficient", () => {

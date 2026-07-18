@@ -253,7 +253,8 @@ describe("DashboardPage trust integration", () => {
     expect(await screen.findByText("SKU-TOP")).toBeTruthy();
     expect(screen.getByText(/3 шт\./)).toBeTruthy();
     expect(screen.getAllByText(/Прибыль:\s*—/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Маржа SKU:\s*—/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Маржа SKU/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: /В Экономику товаров/i }).getAttribute("href")).toBe(
       "/app/economics",
     );
@@ -320,23 +321,26 @@ describe("DashboardPage trust integration", () => {
     expect(totalBars.length).toBe(1);
     expect(totalBars[0].getAttribute("data-name")).toBe("Затраты");
     expect(screen.queryByText("Выплаты")).toBeNull();
+    expect(screen.getByTestId("daily-costs-period-strip")).toBeTruthy();
+    expect(screen.getByTestId("daily-costs-share-note").textContent).toMatch(
+      /% — доля от общей суммы расходов за период/,
+    );
+    expect(screen.getAllByTestId("cost-share-note").length).toBeGreaterThanOrEqual(1);
     const structureInsight = screen.getByTestId("cost-structure-insight");
-    expect(structureInsight.textContent).toMatch(/Основная часть расходов приходится на/i);
-    expect(structureInsight.textContent).not.toMatch(/%/);
-    expect(structureInsight.textContent).not.toMatch(/составляет/);
+    expect(structureInsight.textContent).toMatch(/занимает \d+% всех расходов/);
     expect(screen.getByTestId("cost-dynamics-insight")).toBeTruthy();
-    expect(screen.getByTestId("top-sku-insight")).toBeTruthy();
+    expect(screen.getByTestId("top-sku-insight").textContent).toMatch(/формирует 50% выручки периода/);
     expect(screen.getByTestId("sales-chart-insight")).toBeTruthy();
+    expect(screen.getAllByText(/Маржа по выплате/i).length).toBeGreaterThanOrEqual(2);
   });
 
-  it("B13: shows cost business signal and hides SKU signal when trust insufficient", async () => {
+  it("B13: shows cost business signal alongside chart insight with share", async () => {
     renderPage();
     expect(await screen.findByTestId("business-signals-panel")).toBeTruthy();
     expect(screen.getByText("Бизнес-сигналы")).toBeTruthy();
     expect(screen.getByTestId("business-signal-cost").textContent).toMatch(/Комиссия WB составляет 46%/);
-    // Chart insight must not repeat the percentage share (Phase 9.15-B2).
     const chartInsight = screen.getByTestId("cost-structure-insight").textContent ?? "";
-    expect(chartInsight).not.toMatch(/%/);
+    expect(chartInsight).toMatch(/Комиссия WB занимает \d+%/);
     expect(chartInsight).not.toMatch(/составляет \d+%/);
     expect(screen.queryByTestId("business-signal-returns")).toBeNull();
     expect(screen.queryByTestId("business-signal-sku")).toBeNull();

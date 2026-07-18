@@ -220,7 +220,7 @@ export function EconomicsPage() {
               <option value="contribution_margin">Маржинальный вклад</option>
               <option value="gross_profit">Валовая прибыль</option>
               <option value="revenue">Выручка</option>
-              <option value="margin_pct">Маржа %</option>
+              <option value="margin_pct">Маржа (юнит-экономика)</option>
               <option value="returns">Возвраты</option>
               <option value="ads">Реклама</option>
               <option value="return_rate">Доля возвратов</option>
@@ -253,7 +253,14 @@ export function EconomicsPage() {
                 </th>
                 <th className="py-2">
                   <span className="inline-flex items-center gap-1.5">
-                    Маржа
+                    Маржа (юнит-экономика)
+                    <span
+                      className="inline-flex h-3.5 w-3.5 shrink-0 cursor-help items-center justify-center rounded-full text-[9px] font-semibold text-ink-faint ring-1 ring-ink-faint/40"
+                      title="После всех расходов WB и себестоимости"
+                      aria-label="После всех расходов WB и себестоимости"
+                    >
+                      i
+                    </span>
                     <ProfitTrustBadge trust={trustCtx.trust} metric="margin" showLabel={false} />
                   </span>
                 </th>

@@ -12,6 +12,8 @@ import type { TopSkusResponse } from "../../state/types-analytics";
 import { formatRub } from "../../utils/format";
 import { Card } from "../../ui/card";
 import { topSkuInsight } from "./chart-insights";
+import { MetricInfoHint } from "./MetricInfoHint";
+import { MARGIN_SKU_HINT, MARGIN_SKU_LABEL } from "./margin-labels";
 import {
   skuNeedsAttention,
   topSkuApiSortParam,
@@ -23,7 +25,7 @@ const ECONOMICS_ROUTE = "/app/economics";
 const SORT_TABS: Array<{ id: TopSkuSortTab; label: string }> = [
   { id: "revenue", label: "Выручка" },
   { id: "profit", label: "Прибыль" },
-  { id: "margin", label: "Маржа SKU" },
+  { id: "margin", label: MARGIN_SKU_LABEL },
 ];
 
 export type TopSkusCardProps = {
@@ -136,7 +138,10 @@ export function TopSkusCard({
                   <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-ink-faint">
                     <span>Прибыль: {formatProfitValue(row.net_profit, trustCtx.trust)}</span>
                     <span>·</span>
-                    <span>Маржа SKU: {formatMarginValue(row.margin_pct, trustCtx.trust)}</span>
+                    <span className="inline-flex items-center gap-1">
+                      <MetricInfoHint label={`${MARGIN_SKU_LABEL}:`} hint={MARGIN_SKU_HINT} />
+                      {formatMarginValue(row.margin_pct, trustCtx.trust)}
+                    </span>
                   </div>
                 </div>
               </div>

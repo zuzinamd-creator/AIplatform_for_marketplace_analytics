@@ -9,6 +9,8 @@ import {
 } from "../../state/profit-trust";
 import { formatRub } from "../../utils/format";
 import type { FinancialKpiSummaryResponse } from "../../state/types-analytics";
+import { MetricInfoHint } from "./MetricInfoHint";
+import { MARGIN_PAYOUT_HINT, MARGIN_PAYOUT_LABEL } from "./margin-labels";
 
 type FinanceKpis = FinancialKpiSummaryResponse["kpis"];
 
@@ -71,7 +73,7 @@ function InlineDisclosure({
 }
 
 /**
- * Financial summary card (Phase 9.9-R19 UX): two blocks, disclosures, seller-facing labels.
+ * Financial summary card (Phase 9.16-C): flat WB expenses, payout margin label.
  * Data sources and profit math are unchanged — presentation only.
  */
 export function FinancialSummaryCard({
@@ -106,30 +108,35 @@ export function FinancialSummaryCard({
             label="К перечислению за товар"
             value={formatRub(financeKpis?.payout_for_goods ?? financeKpis?.payout)}
           />
-          <InlineDisclosure summary="Детализация услуг WB">
+
+          <div className="space-y-2 rounded-md bg-surface-inset/40 px-2.5 py-2">
+            <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+              Расходы WB
+            </div>
+            <MetricRow label="Комиссия WB" value={formatRub(financeKpis?.commission)} />
             <MetricRow label="Логистика" value={formatRub(financeKpis?.logistics)} />
             <MetricRow label="Хранение" value={formatRub(financeKpis?.storage_fee)} />
-          </InlineDisclosure>
-          <MetricRow label="Комиссия WB" value={formatRub(financeKpis?.commission)} />
-          <div className="space-y-2">
-            <MetricRow label="Удержания WB" value={formatRub(financeKpis?.deductions)} />
-            {hasDeductionBreakdown ? (
-              <InlineDisclosure summary="Из них">
-                {wbPromotionExpenses > 0 ? (
-                  <MetricRow
-                    label="WB-продвижение"
-                    value={formatRub(financeKpis?.promotion_expenses)}
-                  />
-                ) : null}
-                {jamSubscriptionExpenses > 0 ? (
-                  <MetricRow
-                    label="Подписка Джем"
-                    value={formatRub(financeKpis?.jam_subscription_expenses)}
-                  />
-                ) : null}
-              </InlineDisclosure>
-            ) : null}
+            <div className="space-y-2">
+              <MetricRow label="Удержания WB" value={formatRub(financeKpis?.deductions)} />
+              {hasDeductionBreakdown ? (
+                <InlineDisclosure summary="Из них">
+                  {wbPromotionExpenses > 0 ? (
+                    <MetricRow
+                      label="WB-продвижение"
+                      value={formatRub(financeKpis?.promotion_expenses)}
+                    />
+                  ) : null}
+                  {jamSubscriptionExpenses > 0 ? (
+                    <MetricRow
+                      label="Подписка Джем"
+                      value={formatRub(financeKpis?.jam_subscription_expenses)}
+                    />
+                  ) : null}
+                </InlineDisclosure>
+              ) : null}
+            </div>
           </div>
+
           <MetricRow
             label="Выплата от WB"
             value={formatRub(financeKpis?.total_to_pay)}
@@ -138,7 +145,7 @@ export function FinancialSummaryCard({
           />
         </section>
 
-        {/* Block 2: COGS and net result (no standalone «Прибыль» heading) */}
+        {/* Block 2: COGS and net result */}
         <section className="space-y-2.5 text-sm">
           <MetricRow label="Себестоимость" value={formatRub(financeKpis?.cogs)} />
           <MetricRow
@@ -160,7 +167,7 @@ export function FinancialSummaryCard({
           <MetricRow
             label={
               <>
-                Маржа
+                <MetricInfoHint label={MARGIN_PAYOUT_LABEL} hint={MARGIN_PAYOUT_HINT} />
                 <ProfitTrustBadge trust={trustCtx.trust} metric="margin" showLabel={false} />
               </>
             }

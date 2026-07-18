@@ -236,7 +236,14 @@ export function SkuDrilldownPage() {
         <KpiCard
           label={
             <span className="inline-flex flex-wrap items-center gap-2">
-              Маржа
+              Маржа (юнит-экономика)
+              <span
+                className="ml-1 inline-flex h-3.5 w-3.5 shrink-0 cursor-help items-center justify-center rounded-full text-[9px] font-semibold text-ink-faint ring-1 ring-ink-faint/40"
+                title="После всех расходов WB и себестоимости"
+                aria-label="После всех расходов WB и себестоимости"
+              >
+                i
+              </span>
               <ProfitTrustBadge trust={trustCtx.trust} metric="margin" />
             </span>
           }

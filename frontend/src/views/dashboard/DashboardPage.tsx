@@ -100,6 +100,7 @@ export function DashboardPage() {
   const salesInsight = revenueProfitInsight(
     data?.revenue_trend_daily.points,
     trustCtx.canShowProfit,
+    data?.finance_trend_daily.points,
   );
 
   return (
@@ -235,7 +236,8 @@ export function DashboardPage() {
             sub={
               <span>
                 Чистая прибыль: {formatProfitValue(data?.revenue_summary.kpis.total_profit, trustCtx.trust)}
-                {" · "}Маржа: {formatMarginValue(data?.revenue_summary.kpis.margin_pct, trustCtx.trust)}
+                {" · "}Маржа по выплате:{" "}
+                {formatMarginValue(data?.revenue_summary.kpis.margin_pct, trustCtx.trust)}
                 {" · "}Рентабельность:{" "}
                 {formatProfitabilityValue(data?.revenue_summary.kpis.profitability_pct, trustCtx.trust)}
               </span>
