@@ -133,13 +133,14 @@ Previous single chunk: `index-DVVPbWvu.js` ~1044 KB / ~292 KB gzip. Main first-l
 
 | Pointer | SHA / value |
 |---------|-------------|
-| Commit / HEAD | `094646adb058f5c5ff901e7cbba2c341208e3a63` |
-| `origin/main` | `094646adb058f5c5ff901e7cbba2c341208e3a63` |
-| `origin/release/task0-jam-subscription-expenses` | `094646adb058f5c5ff901e7cbba2c341208e3a63` |
-| Backend runtime stamp | `094646adb058f5c5ff901e7cbba2c341208e3a63` |
-| Frontend deploy stamp | `094646adb058f5c5ff901e7cbba2c341208e3a63` |
-| FE bundle | `index-0fnrG7B4.js` |
-| Tag `certified-production` | → tip after docs seal |
+| Commit / HEAD / Deploy | `d64db8572c1ed0e9811de2e8cd6990ceaf9cbc2e` |
+| Code change SHA (P0 impl) | `094646adb058f5c5ff901e7cbba2c341208e3a63` |
+| `origin/main` | `d64db8572c1ed0e9811de2e8cd6990ceaf9cbc2e` |
+| `origin/release/task0-jam-subscription-expenses` | `d64db8572c1ed0e9811de2e8cd6990ceaf9cbc2e` |
+| GitHub `certified-production` | `d64db8572c1ed0e9811de2e8cd6990ceaf9cbc2e` |
+| Backend runtime stamp | `d64db8572c1ed0e9811de2e8cd6990ceaf9cbc2e` |
+| Frontend deploy stamp | `d64db8572c1ed0e9811de2e8cd6990ceaf9cbc2e` |
+| FE bundle | `index-0fnrG7B4.js` (+ `recharts-DlIxri3H.js`) |
 
 ---
 
