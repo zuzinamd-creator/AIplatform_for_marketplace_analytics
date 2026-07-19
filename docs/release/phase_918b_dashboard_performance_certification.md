@@ -133,14 +133,13 @@ Previous single chunk: `index-DVVPbWvu.js` ~1044 KB / ~292 KB gzip. Main first-l
 
 | Pointer | SHA / value |
 |---------|-------------|
-| Commit / HEAD / Deploy | `d64db8572c1ed0e9811de2e8cd6990ceaf9cbc2e` |
-| Code change SHA (P0 impl) | `094646adb058f5c5ff901e7cbba2c341208e3a63` |
-| `origin/main` | `d64db8572c1ed0e9811de2e8cd6990ceaf9cbc2e` |
-| `origin/release/task0-jam-subscription-expenses` | `d64db8572c1ed0e9811de2e8cd6990ceaf9cbc2e` |
-| GitHub `certified-production` | `d64db8572c1ed0e9811de2e8cd6990ceaf9cbc2e` |
-| Backend runtime stamp | `d64db8572c1ed0e9811de2e8cd6990ceaf9cbc2e` |
-| Frontend deploy stamp | `d64db8572c1ed0e9811de2e8cd6990ceaf9cbc2e` |
-| FE bundle | `index-0fnrG7B4.js` (+ `recharts-DlIxri3H.js`) |
+| **Code (P0 impl)** | `094646adb058f5c5ff901e7cbba2c341208e3a63` |
+| **Certification seal (AFTER metrics in tree)** | `d64db8572c1ed0e9811de2e8cd6990ceaf9cbc2e` |
+| **Identity tip** (`HEAD` = `main` = `release` = tag = runtime/FE stamps) | `c143f3a2d577a151db6c8eed002ec7da5b784d02` |
+| FE bundle | `index-0fnrG7B4.js` (+ deferred `recharts-DlIxri3H.js`) |
+
+`git diff 094646a..c143f3a -- app/ frontend/src/` → **empty** (docs-only after P0 code).
+
 
 ---
 
