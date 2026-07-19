@@ -7,7 +7,7 @@
 - Carry-forward openings loaded via PostgreSQL **DISTINCT ON** (latest `actual_stock` per sku/nm_id/warehouse).
 
 ### Added
-- Migration `0037_inventory_stream_covering_index` — covering index for stream ORDER BY.
+- Migration `0037_inv_stream_idx` — covering index for stream ORDER BY.
 - Metrics **`phase2_ms`** / **`phase3_ms`** on persist phase commits.
 - Tests `test_safe_incremental_stream_v1.py`; script `scripts/validate_safe_incremental_stream_v1.py`.
 

@@ -1,6 +1,6 @@
 """Covering index for Safe Incremental Stream v1 inventory rebuild.
 
-Revision ID: 0037_inventory_stream_covering_index
+Revision ID: 0037_inv_stream_idx
 Revises: 0036_jam_subscription_expenses
 """
 
@@ -10,7 +10,7 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = "0037_inventory_stream_covering_index"
+revision: str = "0037_inv_stream_idx"
 down_revision: str | Sequence[str] | None = "0036_jam_subscription_expenses"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
