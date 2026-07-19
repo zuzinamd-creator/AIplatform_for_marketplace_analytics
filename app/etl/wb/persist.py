@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from datetime import date
 from uuid import UUID
 
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.observability import get_logger
+from app.core.observability.etl_metrics import record_metrics
 from app.core.queue.etl_retry_policy import EtlRetryableError, RetryReason
 from app.core.security_context import TenantSession
 from app.domain.finance.types import SkuCostSnapshot
@@ -255,16 +257,20 @@ class WbFinancialPersistService(WbPersistLayersMixin, WbPersistAggregatesMixin):
             await self._persist_reconciliation(report_id=report.id, result=result)
             await self.db.flush()
 
+        phase2_started = time.perf_counter()
         if in_transaction:
             await _phase2()
         else:
             async with TenantSession.transaction(self.db, self.user_id):
                 await _phase2()
+        phase2_ms = round((time.perf_counter() - phase2_started) * 1000, 2)
+        record_metrics(phase2_ms=phase2_ms)
         await self._assert_phase1_counts(report=report, result=result, job_id=job_id, phase_label=2)
         logger.info(
             "wb_persist_phase_committed",
             extra={
                 "phase": 2,
+                "phase2_ms": phase2_ms,
                 "job_id": str(job_id) if job_id else None,
                 "report_id": str(report.id),
             },
@@ -298,16 +304,20 @@ class WbFinancialPersistService(WbPersistLayersMixin, WbPersistAggregatesMixin):
                 raise
             await self.db.flush()
 
+        phase3_started = time.perf_counter()
         if in_transaction:
             await _phase3()
         else:
             async with TenantSession.transaction(self.db, self.user_id):
                 await _phase3()
+        phase3_ms = round((time.perf_counter() - phase3_started) * 1000, 2)
+        record_metrics(phase3_ms=phase3_ms)
         await self._assert_phase1_counts(report=report, result=result, job_id=job_id, phase_label=3)
         logger.info(
             "wb_persist_phase_committed",
             extra={
                 "phase": 3,
+                "phase3_ms": phase3_ms,
                 "job_id": str(job_id) if job_id else None,
                 "report_id": str(report.id),
             },

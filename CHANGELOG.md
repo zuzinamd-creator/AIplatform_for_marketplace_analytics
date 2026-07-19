@@ -1,5 +1,21 @@
 # Changelog
 
+## [9.17-E] — 2026-07-19 — Safe Incremental Stream v1
+
+### Changed
+- Inventory ledger stream uses **Variant B** SQL filter: window rows for carry-forward keys; full history only for hole keys (`inventory_ledger_streaming.py`).
+- Carry-forward openings loaded via PostgreSQL **DISTINCT ON** (latest `actual_stock` per sku/nm_id/warehouse).
+
+### Added
+- Migration `0037_inventory_stream_covering_index` — covering index for stream ORDER BY.
+- Metrics **`phase2_ms`** / **`phase3_ms`** on persist phase commits.
+- Tests `test_safe_incremental_stream_v1.py`; script `scripts/validate_safe_incremental_stream_v1.py`.
+
+### Constraints
+- Stock math unchanged; naive date-only filter not used.
+
+---
+
 ## [9.17-B1] — 2026-07-19 — Auto-AI off + full AI inventory (release)
 
 ### Changed

@@ -24,16 +24,27 @@ class InventorySnapshotStore:
         self.user_id = user_id
 
     async def load_carry_forward_openings(self, rebuild_from: date) -> dict[LedgerKey, int]:
+        """
+        Latest ``actual_stock`` per (sku, nm_id, warehouse) before rebuild_from.
+
+        Phase 9.17-E: PostgreSQL DISTINCT ON — equivalent to the prior Python
+        first-wins loop over snapshot_date DESC.
+        """
         stmt = (
             select(WarehouseStockSnapshot)
             .where(
                 WarehouseStockSnapshot.user_id == self.user_id,
                 WarehouseStockSnapshot.snapshot_date < rebuild_from,
             )
+            .distinct(
+                WarehouseStockSnapshot.sku,
+                WarehouseStockSnapshot.nm_id,
+                WarehouseStockSnapshot.warehouse_name,
+            )
             .order_by(
                 WarehouseStockSnapshot.sku.asc().nulls_first(),
-                WarehouseStockSnapshot.warehouse_name.asc().nulls_first(),
                 WarehouseStockSnapshot.nm_id.asc().nulls_first(),
+                WarehouseStockSnapshot.warehouse_name.asc().nulls_first(),
                 WarehouseStockSnapshot.snapshot_date.desc(),
             )
         )
@@ -41,8 +52,7 @@ class InventorySnapshotStore:
         carry: dict[LedgerKey, int] = {}
         for snap in result.scalars():
             key: LedgerKey = (snap.sku, snap.nm_id, snap.warehouse_name)
-            if key not in carry:
-                carry[key] = snap.actual_stock
+            carry[key] = snap.actual_stock
         return carry
 
     async def delete_window(self, rebuild_from: date, rebuild_to: date) -> None:
