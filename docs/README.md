@@ -40,6 +40,7 @@ Central index for the Marketplace Analytics Platform (WB / Ozon).
 | [ai/operating_director_architecture.md](ai/operating_director_architecture.md) | Operating Director (scaffold) |
 | [product/ai_trigger_policy.md](product/ai_trigger_policy.md) | AI only on explicit seller action (9.17-B) |
 | [release/phase_917b1_ai_inventory.md](release/phase_917b1_ai_inventory.md) | Full AI inventory (9.17-B1) |
+| [release/phase_917b1_production_certification.md](release/phase_917b1_production_certification.md) | 9.17-B1 production certification |
 
 ---
 
