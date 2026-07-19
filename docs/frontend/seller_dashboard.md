@@ -1,10 +1,14 @@
 # Seller financial dashboard (Analytics Overview)
 
-**Production baseline:** platform `f85dea6` · FE bundle `index-DVVPbWvu.js` · dashboard surface Phase **9.16-C** (Insight Engine V1)  
-**Release cert:** [phase_917f_release_certification.md](../release/phase_917f_release_certification.md)
+**Production baseline:** platform post–**9.18-B** (slim dashboard summary) · dashboard surface Phase **9.16-C** (Insight Engine V1)  
+**Release cert:** [phase_918b_dashboard_performance_certification.md](../release/phase_918b_dashboard_performance_certification.md)
 
 Primary seller overview lives under **Analytics Hub** (`/app/analytics`, Overview tab).  
 Legacy route `/app/dashboard` soft-redirects to the hub (Phase 9.8-B).
+
+### Performance note (9.18-B)
+
+`GET /dashboard/summary` is optimized for first paint: AI priority queues and full recommendation bodies are **not** embedded (use AI pages). Charts (Recharts) load via deferred chunks.
 
 ## Goals
 

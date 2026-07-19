@@ -150,7 +150,7 @@ const baseSummary = {
   },
   coverage: { available_min_date: null, available_max_date: null, missing_periods: [], recommendations: [] },
   queue: { status_counts: { queued: 2 } },
-  recommendations: { items: [{ id: "r1" }] },
+  recommendations: { items: [], page: { total: 1, skip: 0, limit: 0 } },
   runtime: { rebuild: { running: 1, pending_dispatch: 0 } },
   ai_ops: { degraded_intelligence_mode: true },
   todays_focus: { dangerous: [] },

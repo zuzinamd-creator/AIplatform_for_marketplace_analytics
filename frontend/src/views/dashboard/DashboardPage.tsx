@@ -2,16 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Bot, Database, LineChart as LineChartIcon, Server, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
-import {
-  Bar,
-  BarChart,
-  LabelList,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 
 import { useAuth } from "../../state/auth";
 import { api } from "../../state/http";
@@ -20,23 +10,13 @@ import { isDemoMode } from "../../state/settings";
 import { trackUsage } from "../../state/usage";
 import { isPlatformAdmin } from "../../state/userRoles";
 import {
-  chartTrustNumeric,
   formatMarginValue,
   formatProfitValue,
   formatProfitabilityValue,
   showInlineCostTrustBanner,
   useProfitTrust,
 } from "../../state/profit-trust";
-import { formatCompactRub, formatMetric, formatPct, formatRub, chartRubTooltip } from "../../utils/format";
-
-/** Hide on-bar labels when the period has too many days (mobile / dense charts). */
-const MAX_LABELED_CHART_POINTS = 14;
-
-function chartBarLabel(value: unknown): string {
-  if (value == null || value === "") return "";
-  return formatCompactRub(value);
-}
-import { CHART } from "../../ui/chart-theme";
+import { formatMetric, formatPct, formatRub } from "../../utils/format";
 import { Card } from "../../ui/card";
 import { CollapsibleSection } from "../../ui/collapsible-section";
 import { CostCoverageIndicator } from "../../ui/cost-coverage-indicator";
@@ -51,7 +31,7 @@ import { FirstRunChecklist } from "../../ui/first-run-checklist";
 import { FinancialSummaryCard } from "./FinancialSummaryCard";
 import { TopSkusCard } from "./TopSkusCard";
 import { BusinessSignalsPanel } from "./BusinessSignalsPanel";
-import { CostStructurePanel } from "./CostStructurePanel";
+import { DeferredCostStructurePanel, DeferredRevenueTrendChart } from "./DeferredCharts";
 import { buildBusinessSignals } from "./business-signals";
 import { revenueProfitInsight } from "./chart-insights";
 
@@ -84,7 +64,9 @@ export function DashboardPage() {
 
   const statusCounts = data?.queue.status_counts ?? {};
   const queued = Object.values(statusCounts).reduce((a, b) => a + b, 0);
-  const recCount = data?.recommendations.items?.length ?? 0;
+  // Slim summary returns items=[] with page.total (9.18-B); fall back to items.length for tests/legacy.
+  const recCount =
+    data?.recommendations.page?.total ?? data?.recommendations.items?.length ?? 0;
   const rebuild = (data?.runtime.rebuild ?? {}) as Record<string, number>;
   const freshness = data?.revenue_summary.freshness;
   const stale = freshness?.stale_data_warning ?? false;
@@ -287,52 +269,10 @@ export function DashboardPage() {
             </StatusBadge>
           </div>
           <div className="chart-panel mt-5">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={(data?.revenue_trend_daily.points ?? []).map((p) => ({
-                  date: p.date.slice(5),
-                  revenue: Number(p.revenue),
-                  profit: chartTrustNumeric(p.seller_profit ?? p.net_profit, trustCtx.trust),
-                }))}
-                margin={{ top: 18, right: 8, left: 0, bottom: 0 }}
-              >
-                <XAxis dataKey="date" tick={CHART.axis} />
-                <YAxis tick={CHART.axis} />
-                <Tooltip
-                  contentStyle={CHART.tooltip}
-                  formatter={(value, name) => chartRubTooltip(value, String(name))}
-                />
-                <Legend />
-                <Bar dataKey="revenue" name="Выручка" fill={CHART.series.revenue} radius={[2, 2, 0, 0]}>
-                  {(data?.revenue_trend_daily.points ?? []).length <= MAX_LABELED_CHART_POINTS ? (
-                    <LabelList
-                      dataKey="revenue"
-                      position="top"
-                      formatter={chartBarLabel}
-                      style={{ fill: "#64748b", fontSize: 10 }}
-                    />
-                  ) : null}
-                </Bar>
-                {trustCtx.canShowProfit ? (
-                  <Bar
-                    dataKey="profit"
-                    name="Прибыль"
-                    fill={CHART.series.profit}
-                    radius={[2, 2, 0, 0]}
-                    fillOpacity={trustCtx.trust === "partial" ? 0.55 : 1}
-                  >
-                    {(data?.revenue_trend_daily.points ?? []).length <= MAX_LABELED_CHART_POINTS ? (
-                      <LabelList
-                        dataKey="profit"
-                        position="top"
-                        formatter={chartBarLabel}
-                        style={{ fill: "#64748b", fontSize: 10 }}
-                      />
-                    ) : null}
-                  </Bar>
-                ) : null}
-              </BarChart>
-            </ResponsiveContainer>
+            <DeferredRevenueTrendChart
+              points={data?.revenue_trend_daily.points}
+              trustCtx={trustCtx}
+            />
           </div>
           <div className="mt-3 space-y-1 text-xs text-ink-muted">
             <div>
@@ -371,7 +311,7 @@ export function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card className="p-6 md:col-span-2">
-          <CostStructurePanel
+          <DeferredCostStructurePanel
             periodStart={start}
             periodEnd={end}
             financeKpis={data?.finance_summary.kpis}

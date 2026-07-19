@@ -1,4 +1,9 @@
-"""Single-request dashboard aggregation (parallel server-side fan-out)."""
+"""Single-request dashboard aggregation (parallel server-side fan-out).
+
+Phase 9.18-B: slim first-screen payload — omit AI priority queues / full
+recommendation bodies / queue job rows / cost-coverage SKU tables that the
+dashboard UI does not render. Ops branches run only for platform admins.
+"""
 
 from __future__ import annotations
 
@@ -10,15 +15,20 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import SessionLocal
+from app.core.user_roles import is_platform_admin
 from app.models.report import Marketplace
 from app.models.user import User
+from app.runtime.control_plane.state import (
+    RuntimeHealthSeverity,
+    TenantOperationalState,
+    WorkloadState,
+)
 from app.schemas.ai_intelligence import (
     AIOperationalStatusResponse,
     PaginatedRecommendationsResponse,
-    PriorityQueueItemResponse,
-    RecommendationResponse,
     TodaysFocusResponse,
 )
+from app.schemas.ai import PageMeta as AiPageMeta
 from app.schemas.analytics import (
     AnalyticsCoverageResponse,
     CostCoverageResponse,
@@ -29,13 +39,88 @@ from app.schemas.analytics import (
     TopSkusResponse,
 )
 from app.schemas.dashboard import DashboardSummaryResponse
-from app.schemas.ops import PaginatedQueueResponse, QueueJobOpsResponse
+from app.schemas.ops import PageMeta as OpsPageMeta, PaginatedQueueResponse
+from app.schemas.ops_runtime import (
+    RuntimeHealthResponse,
+    RuntimeQueueSnapshotResponse,
+    RuntimeRebuildSnapshotResponse,
+    RuntimeSummaryResponse,
+)
 from app.services.ai_service import AIService
 from app.services.analytics_service import AnalyticsService, Period
 from app.services.cost_coverage_service import CostCoverageService, CoveragePeriod
 from app.services.ops_service import OpsService
 
 T = TypeVar("T")
+
+# Dashboard only shows a short sample of missing SKUs in trust banners.
+_MISSING_SKUS_CAP = 20
+
+
+def _empty_runtime() -> RuntimeSummaryResponse:
+    return RuntimeSummaryResponse(
+        tenant_state=TenantOperationalState.HEALTHY,
+        workload_state=WorkloadState.IDLE,
+        queue=RuntimeQueueSnapshotResponse(
+            pending_count=0,
+            processing_count=0,
+            dead_letter_count=0,
+        ),
+        rebuild=RuntimeRebuildSnapshotResponse(
+            pending_dispatch=0,
+            deferred=0,
+            running=0,
+            failed=0,
+        ),
+        health=RuntimeHealthResponse(
+            overall_score=100.0,
+            overall_severity=RuntimeHealthSeverity.OK,
+            dimensions=[],
+            recommendations=[],
+        ),
+        policy_autonomy_enabled=False,
+        policy_queue_overload_threshold=0,
+    )
+
+
+def _empty_ai_ops() -> AIOperationalStatusResponse:
+    return AIOperationalStatusResponse(
+        overall_score=100.0,
+        degraded_intelligence_mode=False,
+        runs_total=0,
+        success_rate=1.0,
+        pending_approvals=0,
+        avg_confidence=None,
+        recommendations=[],
+    )
+
+
+def _slim_todays_focus(focus_raw) -> TodaysFocusResponse:
+    """Keep fields the dashboard renders; drop priority_queue payload bloat."""
+    return TodaysFocusResponse(
+        generated_at=focus_raw.generated_at,
+        headline=focus_raw.headline,
+        requires_attention_today=[],
+        can_wait=[],
+        dangerous=list(focus_raw.dangerous)[:5],
+        highest_upside=[],
+        top_actions=[],
+        critical_alerts=[],
+        quick_wins=[],
+        priority_queue=[],
+        advisory_notice=focus_raw.advisory_notice,
+    )
+
+
+def _slim_cost_coverage(cost_coverage) -> CostCoverageResponse:
+    payload = CostCoverageResponse.model_validate(cost_coverage)
+    if len(payload.missing_skus) > _MISSING_SKUS_CAP:
+        payload = payload.model_copy(
+            update={"missing_skus": list(payload.missing_skus)[:_MISSING_SKUS_CAP]}
+        )
+    if payload.items:
+        payload = payload.model_copy(update={"items": []})
+    return payload
 
 
 class DashboardService:
@@ -60,13 +145,11 @@ class DashboardService:
         user = self.user
         user_id: UUID = user.id
         period = Period(start=start, end=end)
+        admin = is_platform_admin(user.role)
 
+        # Critical path for first screen (all roles).
         coros: list = [
-            self._run(lambda db: OpsService(db, user).list_queue_jobs(skip=0, limit=10)),
-            self._run(lambda db: OpsService(db, user).runtime_summary()),
-            self._run(lambda db: AIService(db, user_id).operational_status()),
             self._run(lambda db: AIService(db, user_id).todays_focus()),
-            self._run(lambda db: AIService(db, user_id).list_recommendations(skip=0, limit=5)),
             self._run(
                 lambda db: AnalyticsService(db, user).revenue_summary(marketplace=marketplace, period=period)
             ),
@@ -89,12 +172,27 @@ class DashboardService:
                 lambda db: CostCoverageService(db, user_id).analyze(
                     marketplace=marketplace,
                     period=CoveragePeriod(start=start, end=end),
-                    limit=20,
+                    # Dashboard trust UI uses aggregates + missing_skus sample only.
+                    limit=0,
                 )
             ),
         ]
+        # Admin KPI strip: status counts / rebuild / AI mode / recommendation total.
+        # Sellers do not render these; TrustBanners already polls AI ops for admins.
+        if admin:
+            coros.extend(
+                [
+                    self._run(lambda db: OpsService(db, user).list_queue_jobs(skip=0, limit=0)),
+                    self._run(lambda db: OpsService(db, user).runtime_summary()),
+                    self._run(lambda db: AIService(db, user_id).operational_status()),
+                    self._run(lambda db: AIService(db, user_id).count_recommendations()),
+                ]
+            )
+
+        compare_idx: int | None = None
         if compare_start is not None and compare_end is not None:
             compare_period = Period(start=compare_start, end=compare_end)
+            compare_idx = len(coros)
             coros.append(
                 self._run(
                     lambda db: AnalyticsService(db, user).revenue_summary(
@@ -105,28 +203,27 @@ class DashboardService:
 
         results = await asyncio.gather(*coros)
 
-        queue_rows, queue_total, status_counts = results[0]
-        runtime = results[1]
-        ai_ops_raw = results[2]
-        focus_raw = results[3]
-        rec_rows, rec_total = results[4]
-        revenue = results[5]
-        revenue_trend = results[6]
-        finance = results[7]
-        finance_trend = results[8]
-        top_skus = results[9]
-        coverage = results[10]
-        cost_coverage = results[11]
-        revenue_compare = results[12] if len(results) > 12 else None
+        focus_raw = results[0]
+        revenue = results[1]
+        revenue_trend = results[2]
+        finance = results[3]
+        finance_trend = results[4]
+        top_skus = results[5]
+        coverage = results[6]
+        cost_coverage = results[7]
 
-        return DashboardSummaryResponse(
-            queue=PaginatedQueueResponse(
-                items=[QueueJobOpsResponse.model_validate(r) for r in queue_rows],
-                page=OpsService.page_meta(queue_total, 0, 10),
+        if admin:
+            _queue_rows, queue_total, status_counts = results[8]
+            runtime = results[9]
+            ai_ops_raw = results[10]
+            rec_total = int(results[11])
+            queue = PaginatedQueueResponse(
+                items=[],
+                page=OpsService.page_meta(queue_total, 0, 0),
                 status_counts=status_counts,
-            ),
-            runtime=runtime,
-            ai_ops=AIOperationalStatusResponse(
+            )
+            runtime_payload = runtime
+            ai_ops = AIOperationalStatusResponse(
                 overall_score=ai_ops_raw.overall_score,
                 degraded_intelligence_mode=ai_ops_raw.degraded_intelligence_mode,
                 runs_total=ai_ops_raw.runs_total,
@@ -134,35 +231,32 @@ class DashboardService:
                 pending_approvals=ai_ops_raw.pending_approvals,
                 avg_confidence=ai_ops_raw.avg_confidence,
                 recommendations=list(ai_ops_raw.recommendations),
-            ),
-            todays_focus=TodaysFocusResponse(
-                generated_at=focus_raw.generated_at,
-                headline=focus_raw.headline,
-                requires_attention_today=list(focus_raw.requires_attention_today),
-                can_wait=list(focus_raw.can_wait),
-                dangerous=list(focus_raw.dangerous),
-                highest_upside=list(focus_raw.highest_upside),
-                top_actions=list(focus_raw.top_actions),
-                critical_alerts=list(focus_raw.critical_alerts),
-                quick_wins=list(focus_raw.quick_wins),
-                priority_queue=[
-                    PriorityQueueItemResponse(
-                        recommendation_id=i.recommendation_id,
-                        title=i.title,
-                        summary=i.summary,
-                        recommendation_score=i.recommendation_score,
-                        priority_tier=i.priority_tier,
-                        priority_score=i.priority_score,
-                        seller_usefulness=i.seller_usefulness,
-                    )
-                    for i in focus_raw.priority_queue
-                ],
-                advisory_notice=focus_raw.advisory_notice,
-            ),
-            recommendations=PaginatedRecommendationsResponse(
-                items=[RecommendationResponse.model_validate(r) for r in rec_rows],
-                page=AIService.page_meta(rec_total, 0, 5),
-            ),
+            )
+            recommendations = PaginatedRecommendationsResponse(
+                items=[],
+                page=AiPageMeta(total=rec_total, skip=0, limit=0),
+            )
+        else:
+            queue = PaginatedQueueResponse(
+                items=[],
+                page=OpsPageMeta(total=0, skip=0, limit=0),
+                status_counts={},
+            )
+            runtime_payload = _empty_runtime()
+            ai_ops = _empty_ai_ops()
+            recommendations = PaginatedRecommendationsResponse(
+                items=[],
+                page=AiPageMeta(total=0, skip=0, limit=0),
+            )
+
+        revenue_compare = results[compare_idx] if compare_idx is not None else None
+
+        return DashboardSummaryResponse(
+            queue=queue,
+            runtime=runtime_payload,
+            ai_ops=ai_ops,
+            todays_focus=_slim_todays_focus(focus_raw),
+            recommendations=recommendations,
             revenue_summary=RevenueKpiSummaryResponse.model_validate(revenue),
             revenue_summary_compare=(
                 RevenueKpiSummaryResponse.model_validate(revenue_compare)
@@ -174,6 +268,6 @@ class DashboardService:
             finance_trend_daily=FinancialTrendsResponse.model_validate(finance_trend),
             top_skus=TopSkusResponse.model_validate(top_skus),
             coverage=AnalyticsCoverageResponse.model_validate(coverage),
-            cost_coverage=CostCoverageResponse.model_validate(cost_coverage),
+            cost_coverage=_slim_cost_coverage(cost_coverage),
             generated_at=datetime.now(UTC).isoformat(),
         )

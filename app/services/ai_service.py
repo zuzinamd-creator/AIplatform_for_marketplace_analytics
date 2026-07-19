@@ -130,6 +130,33 @@ class AIService:
             ).scalars().all()
         return list(rows), int(total)
 
+    async def count_recommendations(
+        self,
+        *,
+        seller_state: str | None = None,
+        group: str | None = None,
+    ) -> int:
+        """Count-only path for dashboard KPI (avoids loading full recommendation bodies)."""
+        from app.models.ai_intelligence import SellerWorkflowState
+
+        async with TenantSession.transaction(self.db, self.user_id):
+            await self._reactivate_expired_snoozes()
+            filters = [AIRecommendation.user_id == self.user_id]
+            if seller_state:
+                filters.append(AIRecommendation.seller_workflow_state == seller_state)
+            elif group == "inbox":
+                filters.append(
+                    AIRecommendation.seller_workflow_state.in_(
+                        (SellerWorkflowState.ACTIVE.value, SellerWorkflowState.SAVED.value)
+                    )
+                )
+            total = (
+                await self.db.execute(
+                    select(func.count()).select_from(AIRecommendation).where(*filters)
+                )
+            ).scalar_one()
+        return int(total)
+
     async def _reactivate_expired_snoozes(self) -> None:
         from app.models.ai_intelligence import SellerWorkflowState
 

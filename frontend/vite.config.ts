@@ -11,6 +11,18 @@ export default defineConfig({
     environment: "jsdom",
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules/recharts") || id.includes("node_modules/victory-vendor")) {
+            return "recharts";
+          }
+          return undefined;
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     host: true,

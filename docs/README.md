@@ -3,7 +3,8 @@
 Central index for the Marketplace Analytics Platform (WB / Ozon).
 
 **Project README:** [../README.md](../README.md)  
-**Production baseline:** [release/phase_917g_runtime_alignment_certification.md](release/phase_917g_runtime_alignment_certification.md) (HEAD = backend = FE = production)  
+**Production baseline:** [release/phase_918b_dashboard_performance_certification.md](release/phase_918b_dashboard_performance_certification.md) (Dashboard P0)  
+**Prior identity align:** [release/phase_917g_runtime_alignment_certification.md](release/phase_917g_runtime_alignment_certification.md)  
 **Release reconciliation (9.17-F):** [release/phase_917f_release_certification.md](release/phase_917f_release_certification.md)  
 **ETL performance (9.17-E1):** [release/phase_917e1_production_performance_certification.md](release/phase_917e1_production_performance_certification.md)  
 **Seller dashboard FE surface (9.16-C):** [release/phase_916c_production_baseline.md](release/phase_916c_production_baseline.md)  

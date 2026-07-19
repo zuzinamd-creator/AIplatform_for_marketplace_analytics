@@ -2,6 +2,7 @@
 
 | Release | Document | Status |
 |---------|----------|--------|
+| **Phase 9.18-B — Dashboard performance P0** | [phase_918b_dashboard_performance_certification.md](phase_918b_dashboard_performance_certification.md) | **IN PROGRESS → CERTIFIED after deploy** |
 | **Phase 9.17-G — Runtime alignment** | [phase_917g_runtime_alignment_certification.md](phase_917g_runtime_alignment_certification.md) | **CERTIFIED** (HEAD=BE=FE=PRODUCTION) |
 | **Phase 9.17-F — Release reconciliation** | [phase_917f_release_certification.md](phase_917f_release_certification.md) | **CERTIFIED** (`f85dea6` runtime + docs tip) |
 | **Phase 9.17-E1 — ETL performance** | [phase_917e1_production_performance_certification.md](phase_917e1_production_performance_certification.md) | **GO** |

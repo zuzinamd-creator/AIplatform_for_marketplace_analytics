@@ -1,5 +1,27 @@
 # Changelog
 
+## [9.18-B] — 2026-07-20 — Dashboard performance optimization (P0)
+
+### Changed
+- `GET /dashboard/summary` returns a **slim first-screen payload**: empty `todays_focus.priority_queue`, empty `recommendations.items` (count via `page.total`), empty `queue.items`, `cost_coverage.items=[]` with capped `missing_skus`.
+- Sellers skip admin ops fan-out (queue / runtime / ai_ops / rec count); admins keep KPI fields with lighter queries (`count_recommendations`, queue `limit=0`, cost `limit=0`).
+- Frontend: lazy-load revenue/cost Recharts panels; Vite `recharts` manual chunk; rec KPI uses `page.total`.
+
+### Measured (pilot `caefecb3`, period 2026-07-06..12, production HTTPS)
+- **BEFORE:** summary median **6850.5 ms**, payload **513 668 B**, TTFB median **6847.8 ms**.
+- **AFTER:** _(filled after deploy in release cert)_
+
+### Added
+- `docs/release/phase_918b_dashboard_performance_certification.md`
+- `tests/unit/test_dashboard_summary_slim.py`
+- `frontend/src/views/dashboard/DeferredCharts.tsx`
+
+### Constraints
+- No Premium UI / visual redesign (9.18-C).
+- P0 only — SQL/cache tuning deferred to P1.
+
+---
+
 ## [9.17-G] — 2026-07-19 — Runtime alignment certification
 
 ### Changed

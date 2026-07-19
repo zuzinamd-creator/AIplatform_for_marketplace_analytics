@@ -367,13 +367,14 @@ Systemd unit files: `deploy/systemd/`. Backend, worker, and orchestrator use **`
 | **9.17-E1** | **ETL performance certification** — Inventory 820s→79s / 112s→31s on pilot | ✅ GO |
 | **9.17-F** | **Release reconciliation** — README/docs ≡ git ≡ production | ✅ GO |
 | **9.17-G** | **Runtime alignment** — backend restart + FE redeploy at tip | ✅ GO |
+| **9.18-B** | **Dashboard performance P0** — slim `/dashboard/summary` + lazy Recharts | ✅ See release cert |
 
 ### Next
 
 | Phase | Focus |
 |-------|-------|
-| **9.18-A** | Dashboard Performance Audit |
-| **9.18-B** | Premium UI Audit |
+| **9.18-C** | Premium UI (visual only — after performance baseline) |
+| **P1** | Dashboard SQL/cache follow-ups (finance/coverage) |
 
 ### Historical roadmap (Phase 6.x)
 
