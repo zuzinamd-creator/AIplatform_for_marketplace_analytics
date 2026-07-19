@@ -1,6 +1,7 @@
 # Seller financial dashboard (Analytics Overview)
 
-**Production baseline:** `7f65cfb` · FE bundle `index-DVVPbWvu.js` · Phase **9.16-C** (2026-07-18)
+**Production baseline:** platform `f85dea6` · FE bundle `index-DVVPbWvu.js` · dashboard surface Phase **9.16-C** (Insight Engine V1)  
+**Release cert:** [phase_917f_release_certification.md](../release/phase_917f_release_certification.md)
 
 Primary seller overview lives under **Analytics Hub** (`/app/analytics`, Overview tab).  
 Legacy route `/app/dashboard` soft-redirects to the hub (Phase 9.8-B).

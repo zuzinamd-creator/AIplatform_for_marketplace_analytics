@@ -1,10 +1,10 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
-**Version:** Phase **9.16-C** (seller dashboard Insight Engine V1 + margin semantics)  
-**Certified baseline:** `7f65cfb015dda2cc869afd3e16fa0e94b95d72a9`  
-**Frontend bundle (production):** `index-DVVPbWvu.js` @ 2026-07-18  
-**Status:** Production certified · docs reconciled in **9.16-D** · **GO**  
-**Last updated:** 2026-07-18
+**Version:** Phase **9.17-F** (ETL Safe Incremental Stream + release reconciliation)  
+**Certified baseline:** `f85dea6151cc8b222b4aa794d72fac1939c5f1cd`  
+**Frontend bundle (production):** `index-DVVPbWvu.js` @ 2026-07-18 (unchanged since 9.16-C)  
+**Status:** Production certified · docs reconciled in **9.17-F** · **GO**  
+**Last updated:** 2026-07-19
 
 ---
 
@@ -12,10 +12,14 @@
 
 | Field | Value |
 |-------|-------|
-| **Production / GitHub / Release SHA** | `7f65cfb015dda2cc869afd3e16fa0e94b95d72a9` |
+| **Production / GitHub / Release SHA** | `f85dea6151cc8b222b4aa794d72fac1939c5f1cd` |
 | **Frontend bundle** | `index-DVVPbWvu.js` (`DVVPbWvu`) @ 2026-07-18 06:47 UTC |
-| **Phase 9.16-C baseline** | [docs/release/phase_916c_production_baseline.md](docs/release/phase_916c_production_baseline.md) |
-| **Seller dashboard** | [docs/frontend/seller_dashboard.md](docs/frontend/seller_dashboard.md) |
+| **Alembic** | `0037_inv_stream_idx` (head) |
+| **Phase 9.17-F release cert** | [docs/release/phase_917f_release_certification.md](docs/release/phase_917f_release_certification.md) |
+| **ETL performance (9.17-E1)** | [docs/release/phase_917e1_production_performance_certification.md](docs/release/phase_917e1_production_performance_certification.md) |
+| **Safe Incremental Stream (9.17-E)** | [docs/release/phase_917e_safe_incremental_stream_certification.md](docs/release/phase_917e_safe_incremental_stream_certification.md) |
+| **AI trigger policy (9.17-B)** | [docs/product/ai_trigger_policy.md](docs/product/ai_trigger_policy.md) |
+| **Seller dashboard (FE surface 9.16-C)** | [docs/frontend/seller_dashboard.md](docs/frontend/seller_dashboard.md) |
 | **Insight Engine V1** | [docs/product/dashboard_insight_engine.md](docs/product/dashboard_insight_engine.md) |
 | **Margin semantics** | [docs/product/margin_semantics.md](docs/product/margin_semantics.md) |
 | **Analytics Hub master spec** | [docs/product/analytics_hub_master_spec.md](docs/product/analytics_hub_master_spec.md) |
@@ -27,9 +31,9 @@
 | **Safety docs** | [docs/operations/production_safety.md](docs/operations/production_safety.md) |
 | **Recovery runbook** | [docs/operations/production_recovery_runbook.md](docs/operations/production_recovery_runbook.md) |
 
-**Host:** `321997.fornex.cloud` · **Branches:** `main` ≡ `release/task0-jam-subscription-expenses` ≡ production FE
+**Host:** `321997.fornex.cloud` · **Branches:** `main` ≡ `release/task0-jam-subscription-expenses` ≡ production backend
 
-**Recent seller-dashboard line:** 9.14 (cost structure UX) → 9.15 (total daily costs + commission row) → **9.16-C** (Insight Engine V1, margin labels, flat «Расходы WB»).
+**Recent line:** 9.16-C (Insight Engine V1 / FE) → 9.17-B (auto-AI off) → **9.17-E** (Safe Incremental Stream) → **9.17-E1** (perf cert) → **9.17-F** (release reconciliation).
 
 ---
 
@@ -284,7 +288,7 @@ flowchart TB
 | Layer | Key modules | Responsibility |
 |-------|-------------|----------------|
 | **Domain** | `app/domain/finance/`, `app/domain/inventory/` | Money rules, ledger semantics, inventory intelligence |
-| **ETL** | `app/etl/worker.py`, `app/etl/wb/` | Parse WB reports, append ledger, rebuild projections |
+| **ETL** | `app/etl/worker.py`, `app/etl/wb/` | Parse WB reports, append ledger, rebuild projections; Phase **9.17-E** Safe Incremental Stream (date-bounded inventory ledger + covering index `0037`) |
 | **Analytics** | `app/services/analytics_*` | Read APIs, KPI, economics, inventory economics |
 | **AI Engine** | `app/services/ai_service.py`, `app/ai/` | Period Intelligence, analysts, executive, persistence |
 | **Product** | `app/ai/product/` | Seller usefulness, prioritization, fatigue, today's focus |
@@ -354,12 +358,17 @@ Systemd unit files: `deploy/systemd/`. Backend, worker, and orchestrator use **`
 | **9.2B-R1** | **Recovery assess alignment** — `production-recovery.sh` SHA pointer for 9.2 | ✅ In repo *(CERTIFIED_SHA update in 9.3X-C)* |
 | **9.2C** | **Admin panel (read-only users)** — `/api/v1/admin/users`, UI «Пользователи» | ✅ Committed (`b85854c`) |
 | **9.3A** | **Invite system** — `registration_invites`, admin invites API/UI, invite registration | ✅ Certified (`certified-production`) |
+| **9.16-C** | **Seller dashboard Insight Engine V1** + margin labels + flat «Расходы WB» | ✅ FE bundle `DVVPbWvu` |
+| **9.17-B1** | **Auto-AI off** after finance ETL (`AI_AUTO_RECOMMEND_AFTER_REPORT=false`) | ✅ Certified |
+| **9.17-E** | **Safe Incremental Stream v1** — inventory rebuild SQL filter + `0037` index | ✅ Certified (`f85dea6`) |
+| **9.17-E1** | **ETL performance certification** — Inventory 820s→79s / 112s→31s on pilot | ✅ GO |
+| **9.17-F** | **Release reconciliation** — README/docs ≡ git ≡ production | ✅ GO |
 
 ### Next
 
 | Phase | Focus |
 |-------|-------|
-| **8.2+** | AI recommendation quality, WB Ads auto-import, legacy snapshot cleanup |
+| **9.18+** | Remaining ETL Phase 3 aggregate cost; AI recommendation quality; WB Ads auto-import |
 
 ### Historical roadmap (Phase 6.x)
 

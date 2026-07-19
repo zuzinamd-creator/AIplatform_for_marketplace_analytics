@@ -3,7 +3,7 @@
 Production UI is served by **nginx** from `/var/www/marketplace-analytics`.  
 `marketplace-frontend.service` (Vite preview on port 4173) is **optional** — disable it on VPS to save RAM.
 
-**Current production FE (Phase 9.16-C):** commit `7f65cfb` · bundle `index-DVVPbWvu.js` · certified [phase_916c_production_baseline.md](../release/phase_916c_production_baseline.md).
+**Current production FE:** bundle `index-DVVPbWvu.js` (Phase 9.16-C seller dashboard surface; platform SHA `f85dea6` — see [phase_917f_release_certification.md](../release/phase_917f_release_certification.md)).
 
 ## One-command deploy
 

@@ -1,13 +1,14 @@
 # Production server inventory (pilot)
 
-## Production code baseline (Phase 9.16-C)
+## Production code baseline (Phase 9.17-F)
 
 | Field | Value |
 |-------|-------|
-| Git SHA | `7f65cfb015dda2cc869afd3e16fa0e94b95d72a9` |
-| Frontend bundle | `index-DVVPbWvu.js` |
+| Git SHA | `f85dea6151cc8b222b4aa794d72fac1939c5f1cd` |
+| Frontend bundle | `index-DVVPbWvu.js` (FE surface since 9.16-C) |
+| Alembic | `0037_inv_stream_idx` |
 | WWW root | `/var/www/marketplace-analytics` |
-| Cert | [phase_916c_production_baseline.md](../release/phase_916c_production_baseline.md) |
+| Cert | [phase_917f_release_certification.md](../release/phase_917f_release_certification.md) |
 
 ## Services (systemd)
 

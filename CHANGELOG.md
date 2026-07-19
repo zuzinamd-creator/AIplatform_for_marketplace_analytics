@@ -1,5 +1,32 @@
 # Changelog
 
+## [9.17-F] — 2026-07-19 — Production reconciliation & release certification
+
+### Changed
+- README + docs hub + release index aligned to production runtime SHA `f85dea6` (post–9.17-E).
+- Production inventory / FE deploy docs updated: backend at `f85dea6`; FE bundle still `DVVPbWvu` (no FE code change since 9.16-C).
+
+### Added
+- `docs/release/phase_917f_release_certification.md`
+- `docs/release/phase_917e1_production_performance_certification.md`
+
+### Constraints
+- No application logic changes in this phase — documentation + release identity only.
+
+---
+
+## [9.17-E1] — 2026-07-19 — Production ETL performance certification
+
+### Measured (pilot `caefecb3`, post–9.17-E deploy)
+- Job A′ (30 rows, window 07-06..12): inventory **820 s → 79 s**; total ETL **~14 min → ~1.4 min**.
+- Job B′ (4032 rows, same window): inventory **112 s → 31 s**; total ETL **~6 min → ~1.6 min**.
+- Metrics: `phase2_ms` / `phase3_ms` / `rebuild_duration_ms` from production worker logs.
+
+### Verdict
+- **GO** — Safe Incremental Stream v1 performance certified on production. No code changes in E1.
+
+---
+
 ## [9.17-E] — 2026-07-19 — Safe Incremental Stream v1
 
 ### Changed

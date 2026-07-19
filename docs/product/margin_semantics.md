@@ -1,6 +1,6 @@
 # Margin semantics (seller-facing)
 
-**Production baseline:** Phase 9.16-C (`7f65cfb`)  
+**Production baseline:** FE surface Phase 9.16-C (bundle `DVVPbWvu`); platform SHA `f85dea6`  
 **Rule:** labels and hints only — **no formula changes**.
 
 Three different margins exist in the product. They must not share a bare «Маржа» label.

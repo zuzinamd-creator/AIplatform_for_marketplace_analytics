@@ -1,13 +1,13 @@
-# AI trigger policy (Phase 9.17-B)
+# AI trigger policy (Phase 9.17-B · re-certified 9.17-F)
 
 ## Product rule
 
 1. Seller uploads a marketplace report.  
-2. ETL builds ledgers, snapshots, and analytics aggregates.  
+2. ETL builds ledgers, snapshots, and analytics aggregates (9.17-E Safe Incremental Stream for inventory).  
 3. Report becomes **`processed`** — dashboard KPIs/charts are available.  
 4. **AI analysis starts only** when the seller explicitly clicks **«Запустить анализ»** (or calls the AI intelligence API).
 
-Automatic AI after every upload is **disabled by default** to avoid token spend and worker queue delay.
+Automatic AI after every upload is **disabled by default** to avoid token spend and worker queue delay. Re-certified production: `AI_AUTO_RECOMMEND_AFTER_REPORT=false` → worker logs `post_report_ai_skipped_disabled`.
 
 ## Configuration
 

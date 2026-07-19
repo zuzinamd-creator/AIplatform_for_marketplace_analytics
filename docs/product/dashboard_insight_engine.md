@@ -1,6 +1,6 @@
 # Dashboard Insight Engine V1 (Phase 9.16-C)
 
-**Status:** Production (`7f65cfb`, bundle `DVVPbWvu`)  
+**Status:** Production (FE bundle `DVVPbWvu`; platform SHA `f85dea6`)  
 **Location:** `frontend/src/views/dashboard/chart-insights.ts`  
 **Mode:** Deterministic frontend only — **no AI / no LLM**
 

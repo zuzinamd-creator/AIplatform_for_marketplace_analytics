@@ -2,7 +2,11 @@
 
 | Release | Document | Status |
 |---------|----------|--------|
-| **Phase 9.16-C — Seller dashboard P0** | [phase_916c_production_baseline.md](phase_916c_production_baseline.md) | **CERTIFIED** (`7f65cfb`, bundle `DVVPbWvu`) |
+| **Phase 9.17-F — Release reconciliation** | [phase_917f_release_certification.md](phase_917f_release_certification.md) | **CERTIFIED** (`f85dea6`, FE `DVVPbWvu`) |
+| **Phase 9.17-E1 — ETL performance** | [phase_917e1_production_performance_certification.md](phase_917e1_production_performance_certification.md) | **GO** |
+| **Phase 9.17-E — Safe Incremental Stream** | [phase_917e_safe_incremental_stream_certification.md](phase_917e_safe_incremental_stream_certification.md) | **CERTIFIED** |
+| **Phase 9.17-B1 — Auto-AI off** | [phase_917b1_production_certification.md](phase_917b1_production_certification.md) | **CERTIFIED** |
+| **Phase 9.16-C — Seller dashboard P0** | [phase_916c_production_baseline.md](phase_916c_production_baseline.md) | FE surface baseline (`DVVPbWvu`) |
 | Scope | Insight Engine V1, margin labels, flat Расходы WB, daily costs clarity | 2026-07-18 |
 | **Phase 9.15 — Seller feedback B** | *(see root CHANGELOG + baseline doc)* | Superseded by 9.16-C |
 | Scope | Commission row, total daily costs, early captions | `0579f09` / `BUMXPZet` |

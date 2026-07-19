@@ -19,12 +19,16 @@ Domain stock math unchanged; Variant B ≡ legacy Python skip.
 - Existing inventory equivalence / reconstruction / rebuild-window suites — pass
 - Unit suite (ignore pre-existing sku decimal module) — pass
 
-## Performance (expected vs 9.17-C baseline)
+## Performance (measured production — Phase 9.17-E1)
 
-| Stage | Before (Job A / Job B) | After (expected) |
-|-------|------------------------|------------------|
-| Inventory rebuild | 820 s / 112 s | Lower via SQL filter + DISTINCT ON + covering index |
-| Phase 3 | ~5 s / ~199 s | Unchanged (out of scope) |
-| Total ETL | ~14 min / ~6 min | Dominated by remaining Phase2/3 |
+| Stage | Before (Job A / Job B) | After (A′ / B′) |
+|-------|------------------------|----------------|
+| Inventory rebuild | 820 s / 112 s | **79 s / 31 s** |
+| Phase 3 | ~5 s / ~199 s | ~2 s / ~2 s* |
+| Total ETL | ~14 min / ~6 min | **~1.4 min / ~1.6 min** |
 
-Measured production after numbers filled in post-deploy section.
+\*Phase 3 on B′ is warm reprocess; inventory gains are the 9.17-E scope. Full evidence: [phase_917e1_production_performance_certification.md](phase_917e1_production_performance_certification.md).
+
+## Verdict
+
+**GO** — fingerprint IDENTICAL pre-deploy; production timings certified in 9.17-E1.
