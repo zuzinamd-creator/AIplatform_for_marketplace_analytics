@@ -2,17 +2,17 @@
 
 **Date:** 2026-07-19 (UTC)  
 **Mode:** Audit + docs fix + certification  
-**Certified runtime SHA:** `f85dea6151cc8b222b4aa794d72fac1939c5f1cd`  
-**Docs reconciliation:** see git `main` tip after 9.17-F docs commits
+**Certified runtime SHA (ETL/AI deploy):** `f85dea6151cc8b222b4aa794d72fac1939c5f1cd`  
+**Docs reconciliation HEAD:** `ac2849fb2b9c64a191c0d9a4f8e11956d353c549` (this phase; app/ unchanged)
 
 ## Identity matrix
 
 | Component | Value |
 |-----------|-------|
-| Local HEAD | `f85dea6…` |
-| `origin/main` | `f85dea6…` |
-| `release/task0-jam-subscription-expenses` | `f85dea6…` |
-| Production backend / worker cwd | same repo @ `f85dea6…` (restart 17:36 UTC) |
+| Local HEAD | `ac2849f…` |
+| `origin/main` | `ac2849f…` (after push) |
+| `release/task0-jam-subscription-expenses` | `ac2849f…` (after FF) |
+| Production app code | `f85dea6…` (identical `app/` through docs tip) · services started 17:36 UTC |
 | Alembic | `0037_inv_stream_idx` |
 | Frontend bundle | `index-DVVPbWvu.js` @ 2026-07-18 06:47 UTC |
 
