@@ -135,7 +135,7 @@ Previous single chunk: `index-DVVPbWvu.js` ~1044 KB / ~292 KB gzip. Main first-l
 |---------|-------------|
 | **Code (P0 impl)** | `094646adb058f5c5ff901e7cbba2c341208e3a63` |
 | **Certification seal (AFTER metrics)** | `d64db8572c1ed0e9811de2e8cd6990ceaf9cbc2e` |
-| **Identity tip** | `git rev-parse HEAD` / `origin/main` / `certified-production` / `/var/lib/marketplace-analytics/{runtime,frontend_deploy}_sha` — must match; at close **`7f01cabc5ab98321d9289cdb96b19321de2af404`** |
+| **Identity tip** | Must match `HEAD` = `origin/main` = `release/*` = `certified-production` = runtime/FE stamps. **Do not pin tip inside this cell** (docs commits would self-desync). Operators: `git rev-parse HEAD` and `cat /var/lib/marketplace-analytics/runtime_sha`. |
 | FE bundle | `index-0fnrG7B4.js` (+ deferred `recharts-DlIxri3H.js`) |
 
 `git diff 094646a..HEAD -- app/ frontend/src/` → **empty** after the P0 code commit (subsequent commits are docs-only).
