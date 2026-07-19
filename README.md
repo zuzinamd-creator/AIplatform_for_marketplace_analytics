@@ -1,7 +1,7 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
 **Version:** Phase **9.17-F** (ETL Safe Incremental Stream + release reconciliation)  
-**Certified baseline:** `f85dea6151cc8b222b4aa794d72fac1939c5f1cd`  
+**Certified baseline:** `f1bbbded54451d163fe1ea5e43c3560431daa932` (runtime app `f85dea6…`; docs reconciliation tip)
 **Frontend bundle (production):** `index-DVVPbWvu.js` @ 2026-07-18 (unchanged since 9.16-C)  
 **Status:** Production certified · docs reconciled in **9.17-F** · **GO**  
 **Last updated:** 2026-07-19
@@ -12,7 +12,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Production / GitHub / Release SHA** | `f85dea6151cc8b222b4aa794d72fac1939c5f1cd` |
+| **Production / GitHub / Release SHA** | `f1bbbded54451d163fe1ea5e43c3560431daa932` |
 | **Frontend bundle** | `index-DVVPbWvu.js` (`DVVPbWvu`) @ 2026-07-18 06:47 UTC |
 | **Alembic** | `0037_inv_stream_idx` (head) |
 | **Phase 9.17-F release cert** | [docs/release/phase_917f_release_certification.md](docs/release/phase_917f_release_certification.md) |
@@ -718,7 +718,7 @@ OpenAPI: `http://localhost:8000/docs` (when `DEBUG=true` or enabled).
 
 ## Release Notes
 
-**Certified baseline:** `05992e2` — Phase 9.3A (tag `certified-production`, 2026-07-09)
+**Certified baseline:** `f1bbbded54451d163fe1ea5e43c3560431daa932` (runtime app `f85dea6…`; docs reconciliation tip)
 
 **Feature commit:** `2920e42` — invite system MVP and documentation alignment
 
