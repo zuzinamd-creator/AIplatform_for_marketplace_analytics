@@ -1,5 +1,21 @@
 # Changelog
 
+## [9.17-G] — 2026-07-19 — Runtime alignment certification
+
+### Changed
+- Restarted production `marketplace-backend` + `marketplace-worker` so process identity matches git tip.
+- Redeployed frontend from tip (bundle hash unchanged `DVVPbWvu` — `frontend/src` identical since 9.16-C).
+- Runtime/FE deploy stamps under `/var/lib/marketplace-analytics/`.
+
+### Added
+- `docs/release/phase_917g_runtime_alignment_certification.md`
+- 9.18 readiness notes (Dashboard Performance + Premium UI audit scopes)
+
+### Constraints
+- No application logic changes; docs + process/FE publish identity only.
+
+---
+
 ## [9.17-F] — 2026-07-19 — Production reconciliation & release certification
 
 ### Changed

@@ -1,9 +1,10 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
-**Version:** Phase **9.17-F** (ETL Safe Incremental Stream + release reconciliation)  
-**Certified baseline:** `f1bbbded54451d163fe1ea5e43c3560431daa932` (runtime app `f85dea6…`; docs reconciliation tip)
-**Frontend bundle (production):** `index-DVVPbWvu.js` @ 2026-07-18 (unchanged since 9.16-C)  
-**Status:** Production certified · docs reconciled in **9.17-F** · **GO**  
+**Version:** Phase **9.17-G** (runtime identity aligned)  
+**Certified baseline:** see `git rev-parse HEAD` / tag `certified-production`  
+**Runtime app deploy lineage:** ETL `f85dea6` · docs tip · **processes restarted at tip (9.17-G)**  
+**Frontend bundle (production):** `index-DVVPbWvu.js` @ 2026-07-19 (rebuild; hash stable since 9.16-C)  
+**Status:** Production certified · runtime aligned in **9.17-G** · **GO**  
 **Last updated:** 2026-07-19
 
 ---
@@ -12,9 +13,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Production / GitHub / Release SHA** | `f1bbbded54451d163fe1ea5e43c3560431daa932` |
-| **Frontend bundle** | `index-DVVPbWvu.js` (`DVVPbWvu`) @ 2026-07-18 06:47 UTC |
+| **Production / GitHub / Release SHA** | `git rev-parse HEAD` (tip; tag `certified-production`) |
+| **Backend runtime SHA** | `/var/lib/marketplace-analytics/runtime_sha` (= HEAD after 9.17-G restart) |
+| **Frontend bundle** | `index-DVVPbWvu.js` (`DVVPbWvu`) · redeployed 2026-07-19 23:04 UTC |
 | **Alembic** | `0037_inv_stream_idx` (head) |
+| **Phase 9.17-G runtime alignment** | [docs/release/phase_917g_runtime_alignment_certification.md](docs/release/phase_917g_runtime_alignment_certification.md) |
 | **Phase 9.17-F release cert** | [docs/release/phase_917f_release_certification.md](docs/release/phase_917f_release_certification.md) |
 | **ETL performance (9.17-E1)** | [docs/release/phase_917e1_production_performance_certification.md](docs/release/phase_917e1_production_performance_certification.md) |
 | **Safe Incremental Stream (9.17-E)** | [docs/release/phase_917e_safe_incremental_stream_certification.md](docs/release/phase_917e_safe_incremental_stream_certification.md) |
@@ -31,9 +34,9 @@
 | **Safety docs** | [docs/operations/production_safety.md](docs/operations/production_safety.md) |
 | **Recovery runbook** | [docs/operations/production_recovery_runbook.md](docs/operations/production_recovery_runbook.md) |
 
-**Host:** `321997.fornex.cloud` · **Branches:** `main` ≡ `release/task0-jam-subscription-expenses` ≡ production backend
+**Host:** `321997.fornex.cloud` · **Branches:** `main` ≡ `release/task0-jam-subscription-expenses` ≡ production
 
-**Recent line:** 9.16-C (Insight Engine V1 / FE) → 9.17-B (auto-AI off) → **9.17-E** (Safe Incremental Stream) → **9.17-E1** (perf cert) → **9.17-F** (release reconciliation).
+**Recent line:** 9.17-E (Safe Incremental Stream) → 9.17-E1 (perf) → 9.17-F (docs) → **9.17-G** (runtime identity).
 
 ---
 
@@ -363,12 +366,14 @@ Systemd unit files: `deploy/systemd/`. Backend, worker, and orchestrator use **`
 | **9.17-E** | **Safe Incremental Stream v1** — inventory rebuild SQL filter + `0037` index | ✅ Certified (`f85dea6`) |
 | **9.17-E1** | **ETL performance certification** — Inventory 820s→79s / 112s→31s on pilot | ✅ GO |
 | **9.17-F** | **Release reconciliation** — README/docs ≡ git ≡ production | ✅ GO |
+| **9.17-G** | **Runtime alignment** — backend restart + FE redeploy at tip | ✅ GO |
 
 ### Next
 
 | Phase | Focus |
 |-------|-------|
-| **9.18+** | Remaining ETL Phase 3 aggregate cost; AI recommendation quality; WB Ads auto-import |
+| **9.18-A** | Dashboard Performance Audit |
+| **9.18-B** | Premium UI Audit |
 
 ### Historical roadmap (Phase 6.x)
 

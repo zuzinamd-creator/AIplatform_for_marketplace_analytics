@@ -2,7 +2,8 @@
 
 | Release | Document | Status |
 |---------|----------|--------|
-| **Phase 9.17-F — Release reconciliation** | [phase_917f_release_certification.md](phase_917f_release_certification.md) | **CERTIFIED** (`f85dea6`, FE `DVVPbWvu`) |
+| **Phase 9.17-G — Runtime alignment** | [phase_917g_runtime_alignment_certification.md](phase_917g_runtime_alignment_certification.md) | **CERTIFIED** (HEAD=BE=FE=PRODUCTION) |
+| **Phase 9.17-F — Release reconciliation** | [phase_917f_release_certification.md](phase_917f_release_certification.md) | **CERTIFIED** (`f85dea6` runtime + docs tip) |
 | **Phase 9.17-E1 — ETL performance** | [phase_917e1_production_performance_certification.md](phase_917e1_production_performance_certification.md) | **GO** |
 | **Phase 9.17-E — Safe Incremental Stream** | [phase_917e_safe_incremental_stream_certification.md](phase_917e_safe_incremental_stream_certification.md) | **CERTIFIED** |
 | **Phase 9.17-B1 — Auto-AI off** | [phase_917b1_production_certification.md](phase_917b1_production_certification.md) | **CERTIFIED** |
