@@ -9,7 +9,8 @@
 
 ### Measured (pilot `caefecb3`, period 2026-07-06..12, production HTTPS)
 - **BEFORE:** summary median **6850.5 ms**, payload **513 668 B**, TTFB median **6847.8 ms**.
-- **AFTER:** _(filled after deploy in release cert)_
+- **AFTER:** summary median **4161.3 ms** (−39.3%), payload **13 335 B** (−97.4%), TTFB median **4156.2 ms**.
+- FE main chunk **530.9 KB** gzip **145.5 KB** (Recharts split to deferred chunk).
 
 ### Added
 - `docs/release/phase_918b_dashboard_performance_certification.md`

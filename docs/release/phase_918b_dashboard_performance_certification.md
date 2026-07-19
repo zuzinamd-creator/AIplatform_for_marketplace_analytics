@@ -106,30 +106,45 @@ Local new-code serialize check: **15 522 bytes** (−97.0%).
 
 ## STEP 6 — Performance certification (production AFTER)
 
+Measured 2026-07-19 ~23:25 UTC · same pilot/period · HTTPS `321997.fornex.cloud` · 5 warmed samples.
+
 | Metric | BEFORE | AFTER | Gain |
 |--------|--------|-------|------|
-| Summary latency median | 6850.5 ms | _(fill after deploy)_ | |
-| Payload bytes | 513 668 | _(fill)_ | |
-| TTFB median | 6847.8 ms | _(fill)_ | |
+| Summary latency median | **6850.5 ms** | **4161.3 ms** | **−2689 ms (−39.3%)** |
+| Summary latency mean | 6866.1 ms | 4133.9 ms | −2732 ms |
+| Payload bytes | **513 668** | **13 335** | **−500 333 (−97.4%)** |
+| TTFB median (httpx `elapsed`) | **6847.8 ms** | **4156.2 ms** | **−2692 ms** |
 
-Local preview (same DB, new code, admin): median **4291.9 ms**, payload **15 522 B**.
+Sanity (AFTER): `priority_queue=[]`, `recommendations.items=[]` / `page.total=39`, `cost_coverage.items=[]`, `queue.items=[]`.
+
+### Frontend bundle (production publish)
+
+| Chunk | Size | gzip |
+|-------|------|------|
+| `index-0fnrG7B4.js` (main) | 530.9 KB | 145.5 KB |
+| `recharts-DlIxri3H.js` | 530.5 KB | 153.1 KB |
+| `CostStructurePanel-ttn12Bn0.js` | 7.4 KB | 2.7 KB |
+
+Previous single chunk: `index-DVVPbWvu.js` ~1044 KB / ~292 KB gzip. Main first-load JS roughly **halved** (Recharts deferred).
 
 ---
 
 ## STEP 7 — Release identity
 
-| Pointer | SHA |
-|---------|-----|
-| Commit / HEAD | _(fill)_ |
-| `main` / `release` / GitHub | _(fill)_ |
-| Backend runtime stamp | _(fill)_ |
-| Frontend deploy stamp | _(fill)_ |
-| Tag `certified-production` | _(fill)_ |
+| Pointer | SHA / value |
+|---------|-------------|
+| Commit / HEAD | `094646adb058f5c5ff901e7cbba2c341208e3a63` |
+| `origin/main` | `094646adb058f5c5ff901e7cbba2c341208e3a63` |
+| `origin/release/task0-jam-subscription-expenses` | `094646adb058f5c5ff901e7cbba2c341208e3a63` |
+| Backend runtime stamp | `094646adb058f5c5ff901e7cbba2c341208e3a63` |
+| Frontend deploy stamp | `094646adb058f5c5ff901e7cbba2c341208e3a63` |
+| FE bundle | `index-0fnrG7B4.js` |
+| Tag `certified-production` | → tip after docs seal |
 
 ---
 
 ## STEP 8 — Verdict
 
-**GO / NO-GO:** _(fill after production AFTER measurements)_
+**GO**
 
-Constraints met: no Premium UI; P0 only; conclusions tied to measured production numbers.
+Root causes confirmed and fixed on P0 path; production measurements show material latency and payload wins without Premium UI.
