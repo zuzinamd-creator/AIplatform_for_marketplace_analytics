@@ -49,11 +49,12 @@ The platform treats marketplace reports as a **financial data platform** — not
 **Primary workflows:**
 
 1. Upload WB realization report (`.xlsx` / `.csv`)
-2. ETL → ledger → aggregates → inventory snapshots
+2. ETL → ledger → aggregates → inventory snapshots → report **`processed`** (dashboard ready)
 3. Import COGS (`cost_history`) for margin/profit trust
 4. Enter **promotion expenses** / Jam subscription where applicable (Reports / finance summary)
-5. Open **Analytics Hub** (`/app/analytics`) — overview KPIs, costs, Top SKU, financial summary
-6. Period Intelligence AI run → executive summary + actionable recommendations
+5. Open **Analytics Hub** (`/app/analytics`) — overview KPIs, costs, Top SKU, financial summary, Business Signals
+6. **Explicit** Period Intelligence AI run («Запустить анализ» / AI API) → executive summary + recommendations  
+   — AI does **not** run automatically after upload (`AI_AUTO_RECOMMEND_AFTER_REPORT=false` by default; Phase 9.17-B)
 7. Seller actions: accept / dismiss / complete / snooze
 
 ---
@@ -444,6 +445,7 @@ See `.env.example` and [docs/product/local_deployment.md](docs/product/local_dep
 | `AI_PROVIDER` | `mock` (deterministic) or `openai` |
 | `AI_OPENAI_API_KEY` | LLM provider key |
 | `AI_ENABLED` | Master AI toggle |
+| `AI_AUTO_RECOMMEND_AFTER_REPORT` | **`false`** — auto AI after finance ETL (legacy; keep off) |
 
 Full list: [docs/operations/environment_variables.md](docs/operations/environment_variables.md) and `.env.example`.
 

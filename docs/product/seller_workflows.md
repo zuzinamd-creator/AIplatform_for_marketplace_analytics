@@ -11,8 +11,8 @@ This doc formalizes the intended “real seller” workflows and where they live
    - `/app/ops/queue`
 3. **Review anomalies**
    - `/app/ops/anomalies`
-4. **Review AI recommendations**
-   - `/app/ai/recommendations`
+4. **Run AI only when needed** (explicit — not after every upload; Phase 9.17-B)
+   - `/app/ai/recommendations` → «Запустить анализ»
    - Accept/reject with rating + rationale
 
 ## Weekly analysis workflow (30–60 min)

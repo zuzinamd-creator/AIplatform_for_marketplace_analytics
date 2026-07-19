@@ -38,6 +38,8 @@ Central index for the Marketplace Analytics Platform (WB / Ozon).
 | [ai/inventory_priority_calibration_audit.md](ai/inventory_priority_calibration_audit.md) | Calibration root-cause audit |
 | [ai/threshold_catalog.md](ai/threshold_catalog.md) | Threshold registry (6.5.1) |
 | [ai/operating_director_architecture.md](ai/operating_director_architecture.md) | Operating Director (scaffold) |
+| [product/ai_trigger_policy.md](product/ai_trigger_policy.md) | AI only on explicit seller action (9.17-B) |
+| [release/phase_917b1_ai_inventory.md](release/phase_917b1_ai_inventory.md) | Full AI inventory (9.17-B1) |
 
 ---
 
@@ -76,6 +78,8 @@ Central index for the Marketplace Analytics Platform (WB / Ozon).
 | [product/refined_roadmap.md](product/refined_roadmap.md) | Product roadmap (seller-focused) |
 | [product/seller_workflows.md](product/seller_workflows.md) | Seller workflows |
 | [product/onboarding.md](product/onboarding.md) | Onboarding |
+| [release/phase_917b_etl_bottleneck_audit.md](release/phase_917b_etl_bottleneck_audit.md) | ETL bottleneck audit (9.17-B) |
+| [release/phase_917b_ux_status_flow_audit.md](release/phase_917b_ux_status_flow_audit.md) | Upload status UX audit (9.17-B) |
 | [frontend/localization.md](frontend/localization.md) | UI localization |
 | [ops/frontend-deploy.md](ops/frontend-deploy.md) | Frontend VPS deploy |
 

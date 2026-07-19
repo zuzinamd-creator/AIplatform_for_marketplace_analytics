@@ -74,6 +74,7 @@ See [docs/runtime/runtime_architecture.md](../runtime/runtime_architecture.md) f
 | Variable | Description |
 |----------|-------------|
 | `AI_ENABLED` | Master switch for AI runs |
+| `AI_AUTO_RECOMMEND_AFTER_REPORT` | **`false` (default)** — if `true`, legacy auto `revenue_insight` after finance ETL; product default is explicit-only AI (Phase 9.17-B). See [ai_trigger_policy.md](../product/ai_trigger_policy.md) |
 | `AI_PROVIDER` | `mock` (default) or `openai` / `openai_compatible` |
 | `AI_OPENAI_API_KEY` | External LLM API key |
 | `AI_OPENAI_BASE_URL` | Custom OpenAI-compatible base URL |

@@ -1,5 +1,24 @@
 # Changelog
 
+## [9.17-B1] — 2026-07-19 — Auto-AI off + full AI inventory (release)
+
+### Changed
+- **`AI_AUTO_RECOMMEND_AFTER_REPORT` default `false`** — finance ETL no longer auto-runs Period Intelligence; AI only via «Запустить анализ» / AI API / explicit `run_intelligence`.
+- Post-ETL hook `maybe_generate_recommendation_after_report` still called by worker but **no-ops** when auto is off (`post_report_ai_skipped_disabled`).
+
+### Added
+- `docs/product/ai_trigger_policy.md` — product AI trigger rule
+- `docs/release/phase_917b_etl_bottleneck_audit.md` — ETL timeline & bottlenecks (audit only)
+- `docs/release/phase_917b_ux_status_flow_audit.md` — upload status UX audit (no FE change)
+- `docs/release/phase_917b1_ai_inventory.md` — full AI usage inventory
+- `tests/unit/test_post_report_ai_policy.py`
+
+### Constraints
+- Dashboard / analytics / KPIs unchanged; no ETL performance code changes.
+- Token spend only on explicit intelligence / legacy run endpoints (and ops CLI).
+
+---
+
 ## [9.16-D] — 2026-07-18 — Documentation reconciliation
 
 ### Changed

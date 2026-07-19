@@ -56,12 +56,25 @@ async def maybe_generate_recommendation_after_report(
     report_id: UUID,
 ) -> None:
     """
-    Run revenue_insight intelligence once per processed finance report.
+    Optional post-ETL intelligence hook (legacy auto path).
 
-    ETL only creates a pending ai_insights slot; recommendations appear after
-    intelligence runs. This hook closes the gap for seller-facing value.
+    Product rule (Phase 9.17-B): AI analysis starts only when the seller
+    explicitly runs intelligence (UI «Запустить анализ» / AI API).
+    Default ``ai_auto_recommend_after_report=False`` — this hook no-ops.
+
+    Set ``AI_AUTO_RECOMMEND_AFTER_REPORT=true`` only for emergency/legacy
+    tenants that still want auto recommendations after finance ETL.
     """
     if not settings.ai_enabled or not settings.ai_auto_recommend_after_report:
+        logger.info(
+            "post_report_ai_skipped_disabled",
+            extra={
+                "user_id": str(user_id),
+                "report_id": str(report_id),
+                "ai_enabled": settings.ai_enabled,
+                "ai_auto_recommend_after_report": settings.ai_auto_recommend_after_report,
+            },
+        )
         return
 
     async with TenantSession.transaction(db, user_id):
