@@ -3,15 +3,15 @@
 **Date:** 2026-07-19 (UTC)  
 **Mode:** Audit + docs fix + certification  
 **Certified runtime SHA (ETL/AI deploy):** `f85dea6151cc8b222b4aa794d72fac1939c5f1cd`  
-**Docs reconciliation HEAD:** `ac2849fb2b9c64a191c0d9a4f8e11956d353c549` (this phase; app/ unchanged)
+**Docs reconciliation HEAD:** `925dd1229a6672459c11c4648244414cebabec23`
 
 ## Identity matrix
 
 | Component | Value |
 |-----------|-------|
-| Local HEAD | `ac2849f…` |
-| `origin/main` | `ac2849f…` (after push) |
-| `release/task0-jam-subscription-expenses` | `ac2849f…` (after FF) |
+| Local HEAD | `925dd12…` |
+| `origin/main` | `925dd12…` |
+| `release/task0-jam-subscription-expenses` | `925dd12…` |
 | Production app code | `f85dea6…` (identical `app/` through docs tip) · services started 17:36 UTC |
 | Alembic | `0037_inv_stream_idx` |
 | Frontend bundle | `index-DVVPbWvu.js` @ 2026-07-18 06:47 UTC |
@@ -53,7 +53,7 @@ Live `.env`: `AI_AUTO_RECOMMEND_AFTER_REPORT=false`, `AI_ENABLED=true`.
 
 | # | Item | Status |
 |---|------|--------|
-| 1–4 | Commit / GitHub / Release / Backend SHA | `f85dea6…` |
+| 1–4 | Commit / GitHub / Release / Backend app SHA | docs tip `925dd12…` · runtime `f85dea6…` |
 | 5 | Frontend bundle | `DVVPbWvu` |
 | 6 | Deploy timestamp (BE) | 2026-07-19 17:36 UTC |
 | 7 | README | Aligned to 9.17-F |
