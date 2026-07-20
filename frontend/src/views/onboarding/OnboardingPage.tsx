@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -16,19 +16,17 @@ import { Input, Label, Select } from "../../ui/field";
 import { StatusBadge } from "../../ui/status-badge";
 import { toast } from "../../ui/toast";
 
-type StepId =
-  | "welcome"
+export type StepId =
+  | "value-intro"
   | "workspace"
   | "marketplace"
   | "upload"
-  | "sku_mapping"
   | "cost_import"
-  | "first_ai"
-  | "walkthrough";
+  | "complete";
 
-const steps: Array<{ id: StepId; title: string; why: string }> = [
+export const ONBOARDING_STEPS: Array<{ id: StepId; title: string; why: string; optional?: boolean }> = [
   {
-    id: "welcome",
+    id: "value-intro",
     title: "Добро пожаловать",
     why: "Короткая настройка, чтобы финансовая аналитика стала полезной как можно быстрее.",
   },
@@ -36,6 +34,7 @@ const steps: Array<{ id: StepId; title: string; why: string }> = [
     id: "workspace",
     title: "Профиль рабочего пространства",
     why: "Название помогает отделять демо и реальные магазины (локально, без влияния на данные).",
+    optional: true,
   },
   {
     id: "marketplace",
@@ -45,27 +44,18 @@ const steps: Array<{ id: StepId; title: string; why: string }> = [
   {
     id: "upload",
     title: "Первая загрузка отчёта",
-    why: "Отчёты формируют леджер, агрегаты и основу для ИИ. Нет отчётов — нет аналитики.",
-  },
-  {
-    id: "sku_mapping",
-    title: "Сопоставление SKU (подсказки)",
-    why: "Сопоставление SKU нужно для устойчивой себестоимости и прибыльности.",
+    why: "Отчёты формируют леджер, агрегаты и основу для аналитики. Нет отчётов — нет KPI.",
   },
   {
     id: "cost_import",
     title: "Загрузка себестоимости",
     why: "Себестоимость нужна для валовой прибыли и маржинальности. Без неё KPI неполные.",
+    optional: true,
   },
   {
-    id: "first_ai",
-    title: "Первый запуск ИИ-анализа",
-    why: "Рекомендации ИИ точнее, когда есть свежие данные и понятна свежесть/полнота аналитики.",
-  },
-  {
-    id: "walkthrough",
-    title: "Куда смотреть каждый день",
-    why: "Покажем ежедневный маршрут: загрузки → статус → KPI → предупреждения → ИИ-действия.",
+    id: "complete",
+    title: "Готово",
+    why: "Базовая настройка завершена — переходите к панели аналитики.",
   },
 ];
 
@@ -85,8 +75,11 @@ function StepHeader(props: { idx: number; total: number; title: string; why: str
 
 export function OnboardingPage() {
   const nav = useNavigate();
-  const [stepIdx, setStepIdx] = useState(() => (isOnboardingDone() ? steps.length - 1 : 0));
-  const step = steps[stepIdx]!;
+  const [stepIdx, setStepIdx] = useState(() =>
+    isOnboardingDone() ? ONBOARDING_STEPS.length - 1 : 0,
+  );
+  const step = ONBOARDING_STEPS[stepIdx]!;
+  const [marketplaceError, setMarketplaceError] = useState<string | null>(null);
 
   const [profile, setProfile] = useState<WorkspaceProfile>(() => loadWorkspaceProfile());
 
@@ -98,50 +91,45 @@ export function OnboardingPage() {
     queryKey: ["costs", "list"],
     queryFn: () => api.costs.list(),
   });
-  const runs = useQuery({
-    queryKey: ["ai", "runs", 0, 1],
-    queryFn: () => api.ai.runs(0, 1),
-  });
 
   const hasUpload = (reports.data?.length ?? 0) > 0;
   const hasCosts = (costs.data?.length ?? 0) > 0;
-  const hasAiRuns = ((runs.data as any)?.items?.length ?? 0) > 0;
 
   const suggestedNext = useMemo(() => {
     if (!hasUpload) return "Загрузите первый отчёт, чтобы запустить обработку и KPI.";
-    if (!hasCosts) return "Загрузите себестоимость, чтобы включить финансово корректную прибыль и маржу.";
-    if (!hasAiRuns) return "Запустите первый ИИ-анализ для рекомендаций.";
+    if (!hasCosts) return "При необходимости загрузите себестоимость для точной прибыли.";
     return "Готово — можно переходить к панели аналитики.";
-  }, [hasUpload, hasCosts, hasAiRuns]);
+  }, [hasUpload, hasCosts]);
 
-  const runFirstAi = useMutation({
-    mutationFn: async () => {
-      const reportId = reports.data?.[0]?.id ?? null;
-      // Uses in-code prompt registry: app/ai/prompts/registry.py
-      return await api.ai.runIntelligence({
-        workflow: "inventory_insight",
-        prompt_id: "inventory.insight.v1",
-        semantics_version: "1.0",
-        report_id: reportId,
-      });
-    },
-    onSuccess: (res) => {
-      toast("ИИ-анализ запущен", res.summary || "Создан запуск.");
-    },
-    onError: (err) => toast("ИИ-анализ не запустился", err instanceof Error ? err.message : "Неизвестная ошибка"),
-  });
-
-  const next = () => setStepIdx((i) => Math.min(i + 1, steps.length - 1));
+  const next = () => setStepIdx((i) => Math.min(i + 1, ONBOARDING_STEPS.length - 1));
   const back = () => setStepIdx((i) => Math.max(i - 1, 0));
+
+  const tryAdvanceFromMarketplace = () => {
+    if (profile.marketplace === "unknown") {
+      setMarketplaceError("Выберите маркетплейс, чтобы продолжить настройку.");
+      return;
+    }
+    setMarketplaceError(null);
+    saveWorkspaceProfile(profile);
+    next();
+  };
+
+  const handleNext = () => {
+    if (step.id === "marketplace") {
+      tryAdvanceFromMarketplace();
+      return;
+    }
+    next();
+  };
 
   const finish = () => {
     setOnboardingDone(true);
     toast("Настройка завершена", "Можно переходить к панели аналитики.");
-    nav("/app/dashboard");
+    nav("/app/analytics");
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="onboarding-page">
       <Card className="p-5">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
@@ -151,24 +139,28 @@ export function OnboardingPage() {
           <div className="flex flex-wrap gap-2">
             <StatusBadge tone={hasUpload ? "ok" : "warn"}>Отчёты</StatusBadge>
             <StatusBadge tone={hasCosts ? "ok" : "warn"}>Себестоимость</StatusBadge>
-            <StatusBadge tone={hasAiRuns ? "ok" : "warn"}>ИИ</StatusBadge>
           </div>
         </div>
       </Card>
 
       <Card className="p-5">
-        <StepHeader key={step.id} idx={stepIdx} total={steps.length} title={step.title} why={step.why} />
+        <StepHeader
+          key={step.id}
+          idx={stepIdx}
+          total={ONBOARDING_STEPS.length}
+          title={step.title}
+          why={step.why}
+        />
 
-        <div className="mt-6">
-          {step.id === "welcome" ? (
+        <div className="mt-6" data-testid={`onboarding-step-${step.id}`}>
+          {step.id === "value-intro" ? (
             <div className="space-y-3 text-sm text-ink-secondary">
               <div>
-                Эта настройка сделана с <span className="font-medium">минимальной когнитивной нагрузкой</span>: только шаги,
-                которые реально повышают пользу финансовой панели.
+                Эта настройка сделана с <span className="font-medium">минимальной когнитивной нагрузкой</span>: только
+                шаги, которые реально повышают пользу финансовой панели.
               </div>
               <div className="rounded-lg border border-surface-subtle bg-surface-inset p-3 text-xs text-ink-secondary">
                 Подсказка: если где-то “пусто”, чаще всего система ждёт первую загрузку или завершение пересборки.
-                Операционные страницы — только для просмотра.
               </div>
             </div>
           ) : null}
@@ -186,15 +178,20 @@ export function OnboardingPage() {
                   Хранится локально. При необходимости можно добавить серверные настройки позже, не меняя ETL/леджер.
                 </div>
               </div>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  saveWorkspaceProfile(profile);
-                  toast("Сохранено", "Профиль сохранён локально.");
-                }}
-              >
-                Сохранить
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    saveWorkspaceProfile(profile);
+                    toast("Сохранено", "Профиль сохранён локально.");
+                  }}
+                >
+                  Сохранить
+                </Button>
+                <Button variant="ghost" onClick={next} data-testid="onboarding-skip-workspace">
+                  Пропустить
+                </Button>
+              </div>
             </div>
           ) : null}
 
@@ -204,18 +201,28 @@ export function OnboardingPage() {
                 <Label>Основной маркетплейс</Label>
                 <Select
                   value={profile.marketplace}
-                  onChange={(e) =>
-                    setProfile((p) => ({ ...p, marketplace: e.target.value as WorkspaceProfile["marketplace"] }))
-                  }
+                  onChange={(e) => {
+                    setProfile((p) => ({ ...p, marketplace: e.target.value as WorkspaceProfile["marketplace"] }));
+                    setMarketplaceError(null);
+                  }}
                 >
                   <option value="unknown">Пока не знаю</option>
                   <option value="wildberries">Wildberries</option>
                   <option value="ozon">Ozon</option>
                 </Select>
+                {marketplaceError ? (
+                  <div className="text-xs text-semantic-danger" data-testid="onboarding-marketplace-error">
+                    {marketplaceError}
+                  </div>
+                ) : null}
               </div>
               <Button
                 variant="secondary"
                 onClick={() => {
+                  if (profile.marketplace === "unknown") {
+                    setMarketplaceError("Выберите маркетплейс, чтобы сохранить настройку.");
+                    return;
+                  }
                   saveWorkspaceProfile(profile);
                   toast("Сохранено", "Выбор маркетплейса сохранён локально.");
                 }}
@@ -228,10 +235,13 @@ export function OnboardingPage() {
           {step.id === "upload" ? (
             <div className="space-y-4 text-sm">
               <div className="text-ink-secondary">
-                Загрузите первый отчёт. Прогресс обработки виден в “Отчёты” и “Очередь”.
+                Загрузите первый отчёт. Прогресс обработки виден в разделе «Отчёты».
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link to="/app/reports/upload" className="rounded-lg bg-sky-500/90 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400">
+                <Link
+                  to="/app/reports/upload"
+                  className="rounded-lg bg-sky-500/90 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400"
+                >
                   Перейти к загрузке
                 </Link>
                 <Link to="/app/reports" className="btn-secondary">
@@ -246,34 +256,21 @@ export function OnboardingPage() {
             </div>
           ) : null}
 
-          {step.id === "sku_mapping" ? (
-            <div className="space-y-3 text-sm text-ink-secondary">
-              <div>
-                Сопоставление SKU — реальная потребность продавца, но сейчас нет API для управления сопоставлениями.
-              </div>
-              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">
-                Подсказка: позже можно добавить API сопоставлений как tenant-scoped проекцию (без редизайна ETL/леджера).
-              </div>
-              <div className="text-xs text-ink-muted">
-                Рекомендуемый подход:
-                <ul className="mt-2 list-disc space-y-1 pl-5">
-                  <li>Определите внутренние SKU (ваш мастер-каталог).</li>
-                  <li>Сопоставьте SKU маркетплейса → внутренний SKU.</li>
-                  <li>Используйте внутренний SKU для себестоимости и прибыльности.</li>
-                </ul>
-              </div>
-            </div>
-          ) : null}
-
           {step.id === "cost_import" ? (
             <div className="space-y-4 text-sm">
               <div className="text-ink-secondary">
                 Загрузите себестоимость, чтобы валовая прибыль и маржинальность стали финансово корректными.
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link to="/app/costs" className="rounded-lg bg-sky-500/90 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400">
+                <Link
+                  to="/app/costs"
+                  className="rounded-lg bg-sky-500/90 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400"
+                >
                   Перейти к себестоимости
                 </Link>
+                <Button variant="ghost" onClick={next} data-testid="onboarding-skip-costs">
+                  Пропустить
+                </Button>
               </div>
               {hasCosts ? (
                 <div className="text-xs text-emerald-200">Обнаружено: себестоимость уже загружена.</div>
@@ -283,56 +280,18 @@ export function OnboardingPage() {
             </div>
           ) : null}
 
-          {step.id === "first_ai" ? (
-            <div className="space-y-4 text-sm">
-              <div className="text-ink-secondary">
-                Запустите первый ИИ-анализ (инвентарь). Он создаст запуск и может сформировать рекомендацию.
-              </div>
-              <div className="rounded-lg border border-surface-subtle bg-surface-inset p-3 text-xs text-ink-secondary">
-                Используется prompt id <span className="font-mono">inventory.insight.v1</span> и workflow{" "}
-                <span className="font-mono">inventory_insight</span>.
+          {step.id === "complete" ? (
+            <div className="space-y-4 text-sm text-ink-secondary">
+              <div>
+                Базовая настройка завершена. На панели аналитики вы увидите выручку, приоритетные действия и топ SKU за
+                выбранный период.
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="secondary"
-                  disabled={runFirstAi.isPending}
-                  onClick={() => runFirstAi.mutate()}
-                >
-                  {runFirstAi.isPending ? "Запуск…" : "Запустить ИИ-анализ"}
+                <Button onClick={finish} data-testid="onboarding-open-dashboard">
+                  Открыть панель
                 </Button>
                 <Link to="/app/ai/recommendations" className="btn-secondary">
-                  Открыть рекомендации
-                </Link>
-                <Link to="/app/ai/runs" className="btn-secondary">
-                  История запусков
-                </Link>
-              </div>
-              {hasAiRuns ? (
-                <div className="text-xs text-emerald-200">Обнаружено: уже есть хотя бы один запуск ИИ.</div>
-              ) : null}
-            </div>
-          ) : null}
-
-          {step.id === "walkthrough" ? (
-            <div className="space-y-4 text-sm text-ink-secondary">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <Card className="p-4">
-                  <div className="text-sm font-semibold">Ежедневный ритм</div>
-                  <div className="mt-2 text-xs text-ink-secondary">
-                    Загрузка → статус обработки → KPI/предупреждения → рекомендации ИИ.
-                  </div>
-                </Card>
-                <Card className="p-4">
-                  <div className="text-sm font-semibold">Если что-то выглядит странно</div>
-                  <div className="mt-2 text-xs text-ink-secondary">
-                    Проверьте очередь/пересборки/дрейф, затем детали аномалий и объяснимость ИИ.
-                  </div>
-                </Card>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button onClick={finish}>Завершить</Button>
-                <Link to="/app/dashboard" className="btn-secondary">
-                  Перейти к панели
+                  ИИ-помощник
                 </Link>
               </div>
             </div>
@@ -344,16 +303,17 @@ export function OnboardingPage() {
             Назад
           </Button>
           <div className="flex gap-2">
-            <Link to="/app/dashboard" className="btn-secondary h-9">
+            <Link to="/app/analytics" className="btn-secondary h-9">
               Пропустить и перейти к панели
             </Link>
-            <Button variant="secondary" onClick={next} disabled={stepIdx === steps.length - 1}>
-              Далее
-            </Button>
+            {step.id !== "complete" ? (
+              <Button variant="secondary" onClick={handleNext} data-testid="onboarding-next">
+                Далее
+              </Button>
+            ) : null}
           </div>
         </div>
       </Card>
     </div>
   );
 }
-
