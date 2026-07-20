@@ -109,7 +109,24 @@ describe("Ledger design tokens", () => {
     expect(TRUST_BADGE_SPEC.placement).toBe("under-primary-answer");
     expect(TRUST_BADGE_SPEC.omitActionTrustBlocker).toBe(true);
   });
+
+  it("keeps chart seriesRevenue distinct from action/brand (data vs interactive)", () => {
+    // seriesRevenue is CHART.series.revenue — not action (#0B6BCB) and not legacy #2563eb.
+    expect(LEDGER_LIGHT.seriesRevenue).toBe("#2F6FED");
+    expect(LEDGER_LIGHT.seriesRevenue).not.toBe(LEDGER_LIGHT.action);
+    expect(LEDGER_LIGHT.seriesRevenue.toLowerCase()).not.toBe("#2563eb");
+    expect(LEDGER_DARK.seriesRevenue).not.toBe(LEDGER_DARK.action);
+  });
 });
+
+/** Action Strip costs-nudge uses Card panel + ink / ink-secondary / brand CTA (see ActionStrip.tsx). */
+function costsNudgePairs(tokens: typeof LEDGER_LIGHT): SoftPair[] {
+  return [
+    { name: "costs-nudge title (ink / panel)", fg: tokens.neutral900, bg: tokens.panel },
+    { name: "costs-nudge body (ink-secondary / panel)", fg: tokens.neutral700, bg: tokens.panel },
+    { name: "costs-nudge CTA (action / panel)", fg: tokens.action, bg: tokens.panel },
+  ];
+}
 
 describe("Ledger WCAG AA — light", () => {
   it.each(inkOnSurfacePairs(LEDGER_LIGHT))("text $name ≥ 4.5", ({ fg, bg }) => {
@@ -121,6 +138,10 @@ describe("Ledger WCAG AA — light", () => {
   });
 
   it.each(softPairs(LEDGER_LIGHT))("soft surface $name ≥ 4.5", ({ fg, bg }) => {
+    expect(contrast(fg, bg)).toBeGreaterThanOrEqual(TEXT_AA);
+  });
+
+  it.each(costsNudgePairs(LEDGER_LIGHT))("costs-nudge $name ≥ 4.5", ({ fg, bg }) => {
     expect(contrast(fg, bg)).toBeGreaterThanOrEqual(TEXT_AA);
   });
 });
@@ -135,6 +156,10 @@ describe("Ledger WCAG AA — dark", () => {
   });
 
   it.each(softPairs(LEDGER_DARK))("soft surface $name ≥ 4.5", ({ fg, bg }) => {
+    expect(contrast(fg, bg)).toBeGreaterThanOrEqual(TEXT_AA);
+  });
+
+  it.each(costsNudgePairs(LEDGER_DARK))("costs-nudge $name ≥ 4.5", ({ fg, bg }) => {
     expect(contrast(fg, bg)).toBeGreaterThanOrEqual(TEXT_AA);
   });
 });

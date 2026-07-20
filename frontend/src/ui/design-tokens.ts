@@ -29,7 +29,9 @@ export const LEDGER_LIGHT = {
   panel: "#FFFFFF",
   hairline: "#E6E8EC",
   inset: "#F1F3F5",
-  /** Chart series (no purple; action blue not used as category fill) */
+  /** Chart series (no purple; action blue not used as categorical/series fill).
+   * seriesRevenue (#2F6FED) is intentionally distinct from action (#0B6BCB)
+   * so plotted data is not confused with interactive/brand chrome. */
   seriesRevenue: "#2F6FED",
   seriesProfit: "#0F7B5A",
   seriesCommission: "#0F766E",
