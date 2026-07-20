@@ -2,6 +2,7 @@
 
 | Release | Document | Status |
 |---------|----------|--------|
+| **Phase 9.18-D1 — Dashboard P1 HTTPS** | [phase_918d1_production_https_certification.md](phase_918d1_production_https_certification.md) | **CERTIFIED GO** (~1.7 s HTTPS) |
 | **Phase 9.18-B — Dashboard performance P0** | [phase_918b_dashboard_performance_certification.md](phase_918b_dashboard_performance_certification.md) | **CERTIFIED GO** (−39% latency, −97% payload) |
 | **Phase 9.17-G — Runtime alignment** | [phase_917g_runtime_alignment_certification.md](phase_917g_runtime_alignment_certification.md) | **CERTIFIED** (HEAD=BE=FE=PRODUCTION) |
 | **Phase 9.17-F — Release reconciliation** | [phase_917f_release_certification.md](phase_917f_release_certification.md) | **CERTIFIED** (`f85dea6` runtime + docs tip) |

@@ -1,5 +1,23 @@
 # Changelog
 
+## [9.18-D / 9.18-D1] — 2026-07-20 — Dashboard P1 + production HTTPS cert
+
+### Changed
+- Dashboard summary fan-out: one TenantSession per branch (skip repeated `set_config`); request-scoped reuse of `runtime_summary` / freshness / seller KPIs / integrity validate (A+B+C+D).
+
+### Measured (production HTTPS, pilot admin, period 2026-07-06..12)
+- Summary latency median **~4161–5763 ms → 1737 ms**; SQL **359 → 85**; `set_config` **208 → 30**.
+
+### Added
+- `app/services/dashboard_query_cache.py`
+- `docs/release/phase_918d1_production_https_certification.md`
+- Unit tests for tenant bind skip + slim fan-out admin branch count
+
+### Constraints
+- No KPI/formula/API schema changes; no Redis/TTL/pool/indexes; no Premium UI; no FE source change.
+
+---
+
 ## [9.18-B] — 2026-07-20 — Dashboard performance optimization (P0)
 
 ### Changed
