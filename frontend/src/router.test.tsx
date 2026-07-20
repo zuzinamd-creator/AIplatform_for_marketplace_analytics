@@ -103,7 +103,7 @@ describe("seller lifecycle routes", () => {
   });
 });
 
-describe("ai today redirect", () => {
+describe("canonical route redirects", () => {
   afterEach(() => {
     cleanup();
   });
@@ -121,5 +121,69 @@ describe("ai today redirect", () => {
     );
 
     expect(await screen.findByText("today-page")).toBeTruthy();
+  });
+
+  it("redirects /app/economics to /app/analytics/economics without cycles", async () => {
+    render(
+      <MemoryRouter initialEntries={["/app/economics"]}>
+        <Routes>
+          <Route path="/app">
+            <Route path="economics" element={<Navigate to="/app/analytics/economics" replace />} />
+            <Route path="analytics/economics" element={<div>economics-page</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("economics-page")).toBeTruthy();
+  });
+
+  it("redirects /app/finance/cost-coverage to /app/analytics/cost-coverage without cycles", async () => {
+    render(
+      <MemoryRouter initialEntries={["/app/finance/cost-coverage"]}>
+        <Routes>
+          <Route path="/app">
+            <Route
+              path="finance/cost-coverage"
+              element={<Navigate to="/app/analytics/cost-coverage" replace />}
+            />
+            <Route path="analytics/cost-coverage" element={<div>cost-coverage-page</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("cost-coverage-page")).toBeTruthy();
+  });
+
+  it("redirects /app/finance/costs to /app/costs without cycles", async () => {
+    render(
+      <MemoryRouter initialEntries={["/app/finance/costs"]}>
+        <Routes>
+          <Route path="/app">
+            <Route path="finance/costs" element={<Navigate to="/app/costs" replace />} />
+            <Route path="costs" element={<div>costs-page</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("costs-page")).toBeTruthy();
+  });
+
+  it("redirects /app/analytics/overview to /app/analytics without cycles", async () => {
+    render(
+      <MemoryRouter initialEntries={["/app/analytics/overview"]}>
+        <Routes>
+          <Route path="/app/analytics">
+            <Route path="overview" element={<Navigate to="/app/analytics" replace />} />
+            <Route index element={<div>analytics-overview</div>} />
+          </Route>
+          <Route path="/app/analytics" element={<div>analytics-overview</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("analytics-overview")).toBeTruthy();
   });
 });

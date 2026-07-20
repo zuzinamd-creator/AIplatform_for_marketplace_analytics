@@ -18,6 +18,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { isOnboardingDone } from "../state/onboarding";
 import { isPlatformAdmin } from "../state/userRoles";
 import type { UserResponse } from "../state/types";
 
@@ -33,32 +34,31 @@ export type NavSection = {
   items: NavItem[];
 };
 
-const dashboardItems: NavItem[] = [
+const overviewItems: NavItem[] = [
   { to: "/app/analytics", label: "Панель", icon: LayoutDashboard },
   { to: "/app/today", label: "Сегодня", icon: Gauge },
 ];
 
 const analyticsItems: NavItem[] = [
-  { to: "/app/analytics", label: "Аналитика", icon: BarChart3 },
   { to: "/app/analytics/weekly", label: "Сравнение периодов", icon: BarChart3 },
   { to: "/app/analytics/economics", label: "Экономика SKU", icon: LineChart },
-  { to: "/app/analytics/cost-coverage", label: "Покрытие себестоимости", icon: Shield },
   { to: "/app/economics/inventory", label: "Склад и оборот", icon: Package },
   { to: "/app/finance/reconciliation", label: "Сверка выплат", icon: Shield },
 ];
 
-const reportsItems: NavItem[] = [
+const dataItems: NavItem[] = [
+  { to: "/app/reports/upload", label: "Загрузка отчёта", icon: Upload },
   { to: "/app/reports", label: "Отчёты", icon: Database },
-  { to: "/app/reports/upload", label: "Загрузка", icon: Upload },
   { to: "/app/costs", label: "Себестоимость", icon: Database },
+  { to: "/app/analytics/cost-coverage", label: "Покрытие себестоимости", icon: Shield },
 ];
 
-const aiItems: NavItem[] = [
+const actionsItems: NavItem[] = [
   { to: "/app/ai/recommendations", label: "ИИ-помощник", icon: Bot },
   { to: "/app/ai/digest", label: "Сводка ИИ", icon: Bot },
 ];
 
-const accountItems: NavItem[] = [
+const accountItemsAll: NavItem[] = [
   { to: "/app/onboarding", label: "Настройка", icon: Settings2 },
   { to: "/app/settings", label: "Настройки", icon: Settings },
   { to: "/app/support", label: "Поддержка", icon: LifeBuoy },
@@ -86,13 +86,22 @@ const systemItems: NavItem[] = [
   { to: "/app/system/integrity", label: "Целостность данных", icon: Server },
 ];
 
-const sellerSections: NavSection[] = [
-  { id: "dashboard", label: "Обзор", items: dashboardItems },
-  { id: "analytics", label: "Аналитика", items: analyticsItems },
-  { id: "reports", label: "Отчеты", items: reportsItems },
-  { id: "ai", label: "AI", items: aiItems },
-  { id: "account", label: "Аккаунт", items: accountItems },
-];
+function buildAccountItems(): NavItem[] {
+  if (isOnboardingDone()) {
+    return accountItemsAll.filter((item) => item.to !== "/app/onboarding");
+  }
+  return accountItemsAll;
+}
+
+function buildSellerSections(): NavSection[] {
+  return [
+    { id: "overview", label: "Обзор", items: overviewItems },
+    { id: "analytics", label: "Аналитика", items: analyticsItems },
+    { id: "data", label: "Данные", items: dataItems },
+    { id: "actions", label: "Действия", items: actionsItems },
+    { id: "account", label: "Аккаунт", items: buildAccountItems() },
+  ];
+}
 
 const adminSections: NavSection[] = [
   { id: "administration", label: "Администрирование", items: administrationItems },
@@ -101,8 +110,14 @@ const adminSections: NavSection[] = [
 ];
 
 export function buildNavSections(user: UserResponse | null | undefined): NavSection[] {
+  const sellerSections = buildSellerSections();
   if (isPlatformAdmin(user)) {
     return [...sellerSections, ...adminSections];
   }
   return sellerSections;
+}
+
+/** All canonical seller nav targets — for duplicate-URL audits in tests. */
+export function sellerNavTargets(): string[] {
+  return buildSellerSections().flatMap((section) => section.items.map((item) => item.to));
 }

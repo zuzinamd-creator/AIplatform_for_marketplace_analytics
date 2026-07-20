@@ -89,8 +89,11 @@ export const router = createBrowserRouter([
       { path: "costs", element: withBoundary(<CostsPage />) },
       { path: "finance/costs", element: <Navigate to="/app/costs" replace /> },
       { path: "finance/reconciliation", element: withBoundary(<ReconciliationPage />) },
-      { path: "finance/cost-coverage", element: withBoundary(<CostCoveragePage />) },
-      { path: "economics", element: withBoundary(<EconomicsPage />) },
+      {
+        path: "finance/cost-coverage",
+        element: <Navigate to="/app/analytics/cost-coverage" replace />,
+      },
+      { path: "economics", element: <Navigate to="/app/analytics/economics" replace /> },
       {
         path: "analytics",
         element: withBoundary(FEATURE_FLAGS.analyticsHubTabs ? <AnalyticsShell /> : <AnalyticsHubPage />),
