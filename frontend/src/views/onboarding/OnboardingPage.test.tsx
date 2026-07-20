@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 import { ONBOARDING_STEPS, OnboardingPage } from "./OnboardingPage";
@@ -9,6 +9,7 @@ const navigateMock = vi.fn();
 const setOnboardingDoneMock = vi.fn();
 const saveWorkspaceProfileMock = vi.fn();
 const reportsList = vi.fn();
+const reportsGet = vi.fn();
 const costsList = vi.fn();
 
 vi.mock("react-router-dom", async () => {
@@ -30,6 +31,7 @@ vi.mock("../../state/http", () => ({
   api: {
     reports: {
       list: (...args: unknown[]) => reportsList(...args),
+      get: (...args: unknown[]) => reportsGet(...args),
     },
     costs: {
       list: (...args: unknown[]) => costsList(...args),
@@ -40,6 +42,21 @@ vi.mock("../../state/http", () => ({
 vi.mock("../../ui/toast", () => ({
   toast: vi.fn(),
 }));
+
+const processedReport = {
+  id: "r-1",
+  user_id: "u-1",
+  marketplace: "wildberries",
+  report_type: "finance",
+  original_filename: "report.xlsx",
+  status: "processed",
+  created_at: "2026-01-01T00:00:00Z",
+};
+
+function mockReportsProcessed() {
+  reportsList.mockResolvedValue([processedReport]);
+  reportsGet.mockResolvedValue(processedReport);
+}
 
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -65,6 +82,12 @@ async function advanceTo(stepId: (typeof ONBOARDING_STEPS)[number]["id"]) {
       fireEvent.click(screen.getByTestId("onboarding-skip-workspace"));
     } else if (current.id === "cost_import") {
       fireEvent.click(screen.getByTestId("onboarding-skip-costs"));
+    } else if (current.id === "processing") {
+      mockReportsProcessed();
+      await waitFor(() => {
+        expect(screen.getByTestId("onboarding-next")).toBeTruthy();
+      });
+      fireEvent.click(screen.getByTestId("onboarding-next"));
     } else {
       fireEvent.click(screen.getByTestId("onboarding-next"));
     }
@@ -75,7 +98,7 @@ async function advanceTo(stepId: (typeof ONBOARDING_STEPS)[number]["id"]) {
 describe("OnboardingPage F2-C1", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    reportsList.mockResolvedValue([]);
+    mockReportsProcessed();
     costsList.mockResolvedValue([]);
   });
 
@@ -89,6 +112,7 @@ describe("OnboardingPage F2-C1", () => {
       "workspace",
       "marketplace",
       "upload",
+      "processing",
       "cost_import",
       "complete",
     ]);
@@ -100,7 +124,7 @@ describe("OnboardingPage F2-C1", () => {
   it("starts on value-intro step", async () => {
     renderPage();
     expect(await screen.findByTestId("onboarding-step-value-intro")).toBeTruthy();
-    expect(screen.getByText(/Шаг 1 \/ 6/)).toBeTruthy();
+    expect(screen.getByText(/Шаг 1 \/ 7/)).toBeTruthy();
   });
 
   it("allows skipping optional workspace step", async () => {
@@ -163,5 +187,79 @@ describe("OnboardingPage F2-C1", () => {
     expect(screen.getByRole("link", { name: /Пропустить и перейти к панели/i }).getAttribute("href")).toBe(
       "/app/analytics",
     );
+  });
+});
+
+describe("OnboardingPage F2-C2 processing", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    costsList.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("shows processing step after upload", async () => {
+    reportsList.mockResolvedValue([]);
+    renderPage();
+    await advanceTo("upload");
+    fireEvent.click(screen.getByTestId("onboarding-next"));
+    expect(await screen.findByTestId("onboarding-step-processing")).toBeTruthy();
+    expect(screen.getByTestId("onboarding-processing-panel")).toBeTruthy();
+  });
+
+  it("blocks Далее on processing until report is processed", async () => {
+    reportsList.mockResolvedValue([
+      { ...processedReport, status: "processing", job: { id: "j-1", status: "processing", attempts: 1 } },
+    ]);
+    reportsGet.mockResolvedValue({
+      ...processedReport,
+      status: "processing",
+      job: { id: "j-1", status: "processing", attempts: 1 },
+    });
+
+    renderPage();
+    await advanceTo("processing");
+    expect(screen.queryByTestId("onboarding-next")).toBeNull();
+    expect(screen.getByTestId("onboarding-open-later")).toBeTruthy();
+  });
+
+  it("processing open-later persists onboarding done and navigates", async () => {
+    reportsList.mockResolvedValue([
+      { ...processedReport, status: "processing", job: { id: "j-1", status: "processing", attempts: 1 } },
+    ]);
+    reportsGet.mockResolvedValue({
+      ...processedReport,
+      status: "processing",
+      job: { id: "j-1", status: "processing", attempts: 1 },
+    });
+
+    renderPage();
+    await advanceTo("processing");
+    fireEvent.click(screen.getByTestId("onboarding-open-later"));
+    expect(setOnboardingDoneMock).toHaveBeenCalledWith(true);
+    expect(navigateMock).toHaveBeenCalledWith("/app/analytics");
+  });
+
+  it("failed processing returns user to upload step", async () => {
+    reportsList.mockResolvedValue([{ ...processedReport, status: "failed" }]);
+    reportsGet.mockResolvedValue({ ...processedReport, status: "failed", error_hint: "Неверный формат." });
+
+    renderPage();
+    await advanceTo("processing");
+    fireEvent.click(screen.getByTestId("onboarding-retry-upload"));
+    expect(await screen.findByTestId("onboarding-step-upload")).toBeTruthy();
+  });
+
+  it("allows Далее after processed and continues to cost_import", async () => {
+    mockReportsProcessed();
+    renderPage();
+    await advanceTo("processing");
+    await waitFor(() => {
+      expect(screen.getByTestId("onboarding-processing-status").textContent).toMatch(/Отчёт готов/);
+    });
+    fireEvent.click(screen.getByTestId("onboarding-next"));
+    expect(await screen.findByTestId("onboarding-step-cost_import")).toBeTruthy();
   });
 });

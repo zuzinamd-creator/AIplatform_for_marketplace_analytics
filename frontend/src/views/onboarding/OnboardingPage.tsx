@@ -16,11 +16,15 @@ import { Input, Label, Select } from "../../ui/field";
 import { StatusBadge } from "../../ui/status-badge";
 import { toast } from "../../ui/toast";
 
+import { ProcessingStep } from "./ProcessingStep";
+import { useLatestReportPolling } from "./useLatestReportPolling";
+
 export type StepId =
   | "value-intro"
   | "workspace"
   | "marketplace"
   | "upload"
+  | "processing"
   | "cost_import"
   | "complete";
 
@@ -45,6 +49,11 @@ export const ONBOARDING_STEPS: Array<{ id: StepId; title: string; why: string; o
     id: "upload",
     title: "Первая загрузка отчёта",
     why: "Отчёты формируют леджер, агрегаты и основу для аналитики. Нет отчётов — нет KPI.",
+  },
+  {
+    id: "processing",
+    title: "Обработка отчёта",
+    why: "После загрузки система строит леджер и агрегаты — это основа для KPI на панели.",
   },
   {
     id: "cost_import",
@@ -80,6 +89,8 @@ export function OnboardingPage() {
   );
   const step = ONBOARDING_STEPS[stepIdx]!;
   const [marketplaceError, setMarketplaceError] = useState<string | null>(null);
+  const processingActive = step.id === "processing";
+  const { phase: processingPhase } = useLatestReportPolling(processingActive);
 
   const [profile, setProfile] = useState<WorkspaceProfile>(() => loadWorkspaceProfile());
 
@@ -97,12 +108,19 @@ export function OnboardingPage() {
 
   const suggestedNext = useMemo(() => {
     if (!hasUpload) return "Загрузите первый отчёт, чтобы запустить обработку и KPI.";
+    if (processingActive && processingPhase === "processing") {
+      return "Идёт обработка отчёта — KPI появятся после завершения.";
+    }
+    if (processingActive && processingPhase === "failed") {
+      return "Ошибка обработки — попробуйте загрузить отчёт снова.";
+    }
     if (!hasCosts) return "При необходимости загрузите себестоимость для точной прибыли.";
     return "Готово — можно переходить к панели аналитики.";
-  }, [hasUpload, hasCosts]);
+  }, [hasUpload, hasCosts, processingActive, processingPhase]);
 
   const next = () => setStepIdx((i) => Math.min(i + 1, ONBOARDING_STEPS.length - 1));
   const back = () => setStepIdx((i) => Math.max(i - 1, 0));
+  const goToUpload = () => setStepIdx(ONBOARDING_STEPS.findIndex((s) => s.id === "upload"));
 
   const tryAdvanceFromMarketplace = () => {
     if (profile.marketplace === "unknown") {
@@ -119,8 +137,14 @@ export function OnboardingPage() {
       tryAdvanceFromMarketplace();
       return;
     }
+    if (step.id === "processing" && processingPhase !== "processed") {
+      return;
+    }
     next();
   };
+
+  const canShowNext =
+    step.id !== "complete" && (step.id !== "processing" || processingPhase === "processed");
 
   const finish = () => {
     setOnboardingDone(true);
@@ -235,7 +259,7 @@ export function OnboardingPage() {
           {step.id === "upload" ? (
             <div className="space-y-4 text-sm">
               <div className="text-ink-secondary">
-                Загрузите первый отчёт. Прогресс обработки виден в разделе «Отчёты».
+                Загрузите первый отчёт. На следующем шаге вы увидите прогресс обработки.
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link
@@ -254,6 +278,10 @@ export function OnboardingPage() {
                 <div className="text-xs text-ink-muted">Пока нет загруженных отчётов.</div>
               )}
             </div>
+          ) : null}
+
+          {step.id === "processing" ? (
+            <ProcessingStep onRetryUpload={goToUpload} onOpenDashboard={finish} />
           ) : null}
 
           {step.id === "cost_import" ? (
@@ -306,7 +334,7 @@ export function OnboardingPage() {
             <Link to="/app/analytics" className="btn-secondary h-9">
               Пропустить и перейти к панели
             </Link>
-            {step.id !== "complete" ? (
+            {canShowNext ? (
               <Button variant="secondary" onClick={handleNext} data-testid="onboarding-next">
                 Далее
               </Button>
