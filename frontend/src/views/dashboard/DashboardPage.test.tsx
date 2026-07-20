@@ -382,19 +382,38 @@ describe("DashboardPage trust integration", () => {
     expect(screen.getAllByText(/Маржа по выплате/i).length).toBeGreaterThanOrEqual(1);
   });
 
-  it("B13: shows cost business signal alongside chart insight with share", async () => {
+  it("F2-B: renders ActionStrip between PrimaryAnswer and TopSkus", async () => {
     renderPage();
-    expect(await screen.findByTestId("business-signals-panel")).toBeTruthy();
-    expect(screen.getByText("Бизнес-сигналы")).toBeTruthy();
-    expect(screen.getByTestId("business-signal-cost").textContent).toMatch(/Комиссия WB составляет 46%/);
-    const chartInsight = screen.getByTestId("cost-structure-insight").textContent ?? "";
-    expect(chartInsight).toMatch(/Комиссия WB занимает \d+%/);
-    expect(chartInsight).not.toMatch(/составляет \d+%/);
-    expect(screen.queryByTestId("business-signal-returns")).toBeNull();
-    expect(screen.queryByTestId("business-signal-sku")).toBeNull();
+    await screen.findByTestId("action-card-trust-blocker");
+    const actionStrip = screen.getByTestId("action-strip");
+    const topSkuHeading = screen.getByText("Топ SKU");
+    expect(
+      topSkuHeading.compareDocumentPosition(actionStrip) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+    expect(screen.queryByText("Что требует внимания сегодня")).toBeNull();
+    expect(screen.queryByTestId("business-signals-panel")).toBeNull();
   });
 
-  it("B13: shows returns and SKU signals when trust allows and thresholds met", async () => {
+  it("F2-B: removes chart ProfitTrustBadge from dashboard", async () => {
+    renderPage();
+    await screen.findByText(/Выручка и прибыль по дням/i);
+    const chartHeading = screen.getByText(/Выручка и прибыль по дням/i).closest(".p-6");
+    expect(chartHeading?.textContent).not.toMatch(/Нет себестоимости/);
+    expect(chartHeading?.querySelector('[aria-label*="себестоим"]')).toBeNull();
+  });
+
+  it("F2-B: shows trust-blocker and cost signal in Action Strip", async () => {
+    renderPage();
+    expect(await screen.findByTestId("action-card-trust-blocker")).toBeTruthy();
+    expect(screen.getByTestId("action-card-signal-cost").textContent).toMatch(
+      /Комиссия WB составляет 46%/,
+    );
+    expect(
+      screen.getByTestId("action-card-signal-cost").querySelector('a[href="/app/analytics#dashboard-cost-structure"]'),
+    ).toBeTruthy();
+  });
+
+  it("F2-B: shows returns and SKU action cards when trust allows", async () => {
     dashboardSummary.mockResolvedValue({
       ...baseSummary,
       revenue_summary: {
@@ -417,12 +436,45 @@ describe("DashboardPage trust integration", () => {
           { sku: "SKU-WEAK", revenue: "80000", net_profit: "500", margin_pct: "0.6", units_sold: 1 },
         ],
       },
+      recommendations: { items: [], page: { total: 0, skip: 0, limit: 0 } },
     });
     renderPage();
-    expect(await screen.findByTestId("business-signal-returns")).toBeTruthy();
-    expect(screen.getByTestId("business-signal-returns").textContent).toMatch(/Возвраты достигли 12%/);
-    expect(screen.getByTestId("business-signal-sku").textContent).toMatch(
+    expect(await screen.findByTestId("action-card-signal-returns")).toBeTruthy();
+    expect(screen.getByTestId("action-card-signal-returns").textContent).toMatch(/Возвраты достигли 12%/);
+    expect(screen.getByTestId("action-card-signal-sku").textContent).toMatch(
       /SKU SKU-WEAK имеет высокую выручку при низкой марже/,
     );
+    expect(screen.queryByTestId("action-card-trust-blocker")).toBeNull();
+  });
+
+  it("F2-B: shows empty state when no action sources match", async () => {
+    dashboardSummary.mockResolvedValue({
+      ...baseSummary,
+      revenue_summary: {
+        ...baseSummary.revenue_summary,
+        integrity: { warnings: [], profit_metrics_trust: "full" },
+      },
+      finance_summary: {
+        kpis: {
+          ...baseSummary.finance_summary.kpis,
+          commission: "0",
+          logistics: "0",
+          advertisement: "0",
+          storage_fee: "0",
+          penalties: "0",
+          deductions: "0",
+          acquiring: "0",
+          returns_amount: "0",
+          return_rate_pct: "0",
+        },
+      },
+      top_skus: { items: [] },
+      recommendations: { items: [], page: { total: 0, skip: 0, limit: 0 } },
+      todays_focus: { dangerous: [] },
+    });
+    renderPage();
+    expect(await screen.findByTestId("action-card-empty")).toBeTruthy();
+    expect(screen.getByText("Сейчас без срочных действий")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Открыть брифинг" }).getAttribute("href")).toBe("/app/today");
   });
 });

@@ -9,13 +9,10 @@ import { loadWorkspaceProfile } from "../../state/onboarding";
 import { isDemoMode } from "../../state/settings";
 import { trackUsage } from "../../state/usage";
 import { isPlatformAdmin } from "../../state/userRoles";
-import { showInlineCostTrustBanner, useProfitTrust } from "../../state/profit-trust";
+import { useProfitTrust } from "../../state/profit-trust";
 import { formatMetric, formatPct } from "../../utils/format";
 import { Card } from "../../ui/card";
-import { CollapsibleSection } from "../../ui/collapsible-section";
-import { CostTrustBanner } from "../../ui/cost-trust-banner";
 import { KpiCard } from "../../ui/kpi-card";
-import { ProfitTrustBadge } from "../../ui/profit-trust-badge";
 import { StatusBadge } from "../../ui/status-badge";
 import { WarnCallout } from "../../ui/warn-callout";
 import { PeriodSelector } from "../../ui/period-selector";
@@ -23,11 +20,11 @@ import { usePagePeriod } from "../../state/use-page-period";
 import { FirstRunChecklist } from "../../ui/first-run-checklist";
 import { FinancialSummaryCard } from "./FinancialSummaryCard";
 import { TopSkusCard } from "./TopSkusCard";
-import { BusinessSignalsPanel } from "./BusinessSignalsPanel";
 import { DeferredCostStructurePanel, DeferredRevenueTrendChart } from "./DeferredCharts";
-import { buildBusinessSignals } from "./business-signals";
 import { revenueProfitInsight } from "./chart-insights";
 import { PrimaryAnswer } from "./PrimaryAnswer";
+import { ActionStrip } from "./ActionStrip";
+import { buildActionCardsFromSummary, COST_SECTION_ANCHOR } from "./action-strip";
 
 export function DashboardPage() {
   useEffect(() => {
@@ -68,10 +65,12 @@ export function DashboardPage() {
   const completeness = data?.revenue_summary.integrity?.financial_completeness_score ?? null;
   const trustCtx = useProfitTrust(data?.revenue_summary.integrity, data?.cost_coverage ?? null);
 
-  const businessSignals = buildBusinessSignals({
+  const actionCards = buildActionCardsFromSummary({
+    trustCtx,
+    dangerous: data?.todays_focus.dangerous ?? [],
     financeKpis: data?.finance_summary.kpis ?? null,
     topSkus: data?.top_skus.items ?? null,
-    trustInsufficient: trustCtx.trust === "insufficient",
+    aiRecommendationCount: recCount,
   });
   const salesInsight = revenueProfitInsight(
     data?.revenue_trend_daily.points,
@@ -100,18 +99,6 @@ export function DashboardPage() {
 
       <PeriodSelector value={periodSel} onChange={setPeriodSel} />
 
-      {showInlineCostTrustBanner() && trustCtx.trust !== "full" ? (
-        <CostTrustBanner
-          trust={trustCtx.trust}
-          variant="inline"
-          coveragePct={trustCtx.coveragePct}
-          coveredSkus={trustCtx.coveredSkus}
-          totalSkus={trustCtx.totalSkus}
-          missingSkusSample={trustCtx.missingSkus.slice(0, 5)}
-          storageKey={`dashboard-${start}-${end}`}
-        />
-      ) : null}
-
       <PrimaryAnswer
         revenue={data?.revenue_summary.kpis.total_revenue}
         profit={data?.revenue_summary.kpis.total_profit}
@@ -119,48 +106,7 @@ export function DashboardPage() {
         isLoading={isLoading}
       />
 
-      <CollapsibleSection
-        title="Что требует внимания сегодня"
-        subtitle="Ежедневное рабочее место продавца: риски, утечки прибыли, задачи и доверие к данным."
-        actions={<Link to="/app/today" className="link-muted">Брифинг «Сегодня» →</Link>}
-      >
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Card className="p-4">
-            <div className="text-xs font-medium text-ink-muted">Критические проблемы</div>
-            <div className="mt-2 text-sm text-ink-secondary">
-              {(data?.todays_focus.dangerous ?? []).slice(0, 3).join(" · ") || "Нет критичных флагов."}
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-xs font-medium text-ink-muted">Утечки прибыли</div>
-            <div className="mt-2 text-sm text-ink-secondary">
-              {trustCtx.canShowProfitAction
-                ? "Проверьте маржу и затраты по SKU в экономике."
-                : trustCtx.trust === "partial"
-                  ? "Прибыль оценочная — проверяйте SKU с загруженной себестоимостью."
-                  : "Загрузите себестоимость, чтобы увидеть утечки прибыли."}
-            </div>
-            {trustCtx.canShowProfit ? (
-              <Link to="/app/economics" className="link-muted mt-3 inline-block text-xs">
-                Экономика SKU →
-              </Link>
-            ) : null}
-          </Card>
-          <Card className="p-4">
-            <div className="text-xs font-medium text-ink-muted">Себестоимость</div>
-            <div className="mt-2 text-sm text-ink-secondary">
-              {completeness
-                ? `Полнота аналитики: ${formatPct(completeness)}`
-                : "Укажите себестоимость для точной прибыли"}
-            </div>
-            <Link to="/app/costs" className="link-muted mt-3 inline-block text-xs">
-              Себестоимость →
-            </Link>
-          </Card>
-        </div>
-      </CollapsibleSection>
-
-      <BusinessSignalsPanel signals={businessSignals} />
+      <ActionStrip cards={actionCards} isLoading={isLoading} />
 
       <TopSkusCard
         marketplace={marketplace}
@@ -181,10 +127,7 @@ export function DashboardPage() {
 
       <Card className="p-6">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">
-            Выручка и прибыль по дням
-            <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
-          </div>
+          <div className="text-sm font-semibold text-ink">Выручка и прибыль по дням</div>
           <StatusBadge tone={stale ? "warn" : "info"}>
             <LineChartIcon className="mr-1 inline h-3 w-3" />
             {stale ? "устарело" : "актуально"}
@@ -226,7 +169,7 @@ export function DashboardPage() {
         trustCtx={trustCtx}
       />
 
-      <Card className="p-6">
+      <Card className="p-6" id={COST_SECTION_ANCHOR}>
         <DeferredCostStructurePanel
           periodStart={start}
           periodEnd={end}
