@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Bot, Database, LineChart as LineChartIcon, Server, Sparkles } from "lucide-react";
+import { AlertTriangle, Bot, LineChart as LineChartIcon, Server, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
 
@@ -9,21 +9,13 @@ import { loadWorkspaceProfile } from "../../state/onboarding";
 import { isDemoMode } from "../../state/settings";
 import { trackUsage } from "../../state/usage";
 import { isPlatformAdmin } from "../../state/userRoles";
-import {
-  formatMarginValue,
-  formatProfitValue,
-  formatProfitabilityValue,
-  showInlineCostTrustBanner,
-  useProfitTrust,
-} from "../../state/profit-trust";
-import { formatMetric, formatPct, formatRub } from "../../utils/format";
+import { showInlineCostTrustBanner, useProfitTrust } from "../../state/profit-trust";
+import { formatMetric, formatPct } from "../../utils/format";
 import { Card } from "../../ui/card";
 import { CollapsibleSection } from "../../ui/collapsible-section";
-import { CostCoverageIndicator } from "../../ui/cost-coverage-indicator";
 import { CostTrustBanner } from "../../ui/cost-trust-banner";
 import { KpiCard } from "../../ui/kpi-card";
 import { ProfitTrustBadge } from "../../ui/profit-trust-badge";
-import { TrustChip } from "../../ui/trust-chip";
 import { StatusBadge } from "../../ui/status-badge";
 import { WarnCallout } from "../../ui/warn-callout";
 import { PeriodSelector } from "../../ui/period-selector";
@@ -35,6 +27,7 @@ import { BusinessSignalsPanel } from "./BusinessSignalsPanel";
 import { DeferredCostStructurePanel, DeferredRevenueTrendChart } from "./DeferredCharts";
 import { buildBusinessSignals } from "./business-signals";
 import { revenueProfitInsight } from "./chart-insights";
+import { PrimaryAnswer } from "./PrimaryAnswer";
 
 export function DashboardPage() {
   useEffect(() => {
@@ -89,37 +82,20 @@ export function DashboardPage() {
   return (
     <div className="page-shell">
       <FirstRunChecklist />
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="page-title">Финансовая аналитика продавца</h1>
-            {demo ? (
-              <StatusBadge tone="info">
-                <Sparkles className="mr-1 inline h-3 w-3" />
-                Демо
-              </StatusBadge>
-            ) : null}
-          </div>
-          <p className="page-subtitle">
-            Обзор бизнеса: KPI, риски и доверие к данным за период. Для сравнения с прошлым периодом используйте
-            «Сравнение периодов».
-          </p>
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="page-title">Финансовая аналитика продавца</h1>
+          {demo ? (
+            <StatusBadge tone="info">
+              <Sparkles className="mr-1 inline h-3 w-3" />
+              Демо
+            </StatusBadge>
+          ) : null}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link className="btn-secondary" to="/app/analytics/weekly">
-            Подробное сравнение периодов
-          </Link>
-          <Link
-            className="btn-primary"
-            to="/app/reports/upload"
-            onClick={() => trackUsage("cta_upload")}
-          >
-            Загрузить отчёт
-          </Link>
-          <Link className="btn-accent" to="/app/ai/recommendations">
-            ИИ-помощник
-          </Link>
-        </div>
+        <p className="page-subtitle">
+          Обзор бизнеса: KPI, риски и доверие к данным за период. Для сравнения с прошлым периодом используйте
+          «Сравнение периодов».
+        </p>
       </div>
 
       <PeriodSelector value={periodSel} onChange={setPeriodSel} />
@@ -136,15 +112,12 @@ export function DashboardPage() {
         />
       ) : null}
 
-      {trustCtx.coveredSkus !== null && trustCtx.totalSkus !== null ? (
-        <CostCoverageIndicator
-          coveredSkus={trustCtx.coveredSkus}
-          totalSkus={trustCtx.totalSkus}
-          coveragePct={trustCtx.coveragePct}
-          variant="bar"
-          showCta={trustCtx.trust !== "full"}
-        />
-      ) : null}
+      <PrimaryAnswer
+        revenue={data?.revenue_summary.kpis.total_revenue}
+        profit={data?.revenue_summary.kpis.total_profit}
+        trustCtx={trustCtx}
+        isLoading={isLoading}
+      />
 
       <CollapsibleSection
         title="Что требует внимания сегодня"
@@ -174,26 +147,11 @@ export function DashboardPage() {
             ) : null}
           </Card>
           <Card className="p-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="text-xs font-medium text-ink-muted">Себестоимость</div>
-              <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
-            </div>
-            <div className="mt-2">
-              {trustCtx.coveredSkus !== null && trustCtx.totalSkus !== null ? (
-                <CostCoverageIndicator
-                  coveredSkus={trustCtx.coveredSkus}
-                  totalSkus={trustCtx.totalSkus}
-                  coveragePct={trustCtx.coveragePct}
-                  variant="pill"
-                  showCta={trustCtx.trust !== "full"}
-                />
-              ) : (
-                <div className="text-sm text-ink-secondary">
-                  {completeness
-                    ? `Полнота аналитики: ${formatPct(completeness)}`
-                    : "Укажите себестоимость для точной прибыли"}
-                </div>
-              )}
+            <div className="text-xs font-medium text-ink-muted">Себестоимость</div>
+            <div className="mt-2 text-sm text-ink-secondary">
+              {completeness
+                ? `Полнота аналитики: ${formatPct(completeness)}`
+                : "Укажите себестоимость для точной прибыли"}
             </div>
             <Link to="/app/costs" className="link-muted mt-3 inline-block text-xs">
               Себестоимость →
@@ -204,172 +162,119 @@ export function DashboardPage() {
 
       <BusinessSignalsPanel signals={businessSignals} />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className={admin ? "lg:col-span-5" : "lg:col-span-12"}>
-          <div className="space-y-3">
-            <KpiCard
-              variant="hero"
-              icon={<Database className="h-5 w-5" />}
-              label={
-                <span className="inline-flex flex-wrap items-center gap-2">
-                  Продажи (выбранный период)
-                  <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
-                </span>
-              }
-              value={isLoading ? "…" : formatRub(data?.revenue_summary.kpis.total_revenue)}
-              sub={
-                <span>
-                  Чистая прибыль: {formatProfitValue(data?.revenue_summary.kpis.total_profit, trustCtx.trust)}
-                  {" · "}Маржа по выплате:{" "}
-                  {formatMarginValue(data?.revenue_summary.kpis.margin_pct, trustCtx.trust)}
-                  {" · "}Рентабельность:{" "}
-                  {formatProfitabilityValue(data?.revenue_summary.kpis.profitability_pct, trustCtx.trust)}
-                </span>
-              }
-            />
-            <TrustChip trustContext={trustCtx} />
-          </div>
+      <TopSkusCard
+        marketplace={marketplace}
+        start={start}
+        end={end}
+        summaryTopSkus={data?.top_skus}
+        trustCtx={trustCtx}
+        coverageMin={data?.coverage.available_min_date}
+        coverageMax={data?.coverage.available_max_date}
+        missingPeriodsCount={(data?.coverage.missing_periods ?? []).length}
+      />
+
+      {salesInsight ? (
+        <div className="text-sm text-ink-secondary" data-testid="dashboard-insight-line">
+          {salesInsight}
         </div>
-        {admin ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:col-span-7">
-            <KpiCard
-              icon={<Server className="h-4 w-4" />}
-              label="Обработка данных"
-              value={isLoading ? "…" : formatMetric(queued)}
-              sub={<span>Задач в очереди/обработке</span>}
-            />
-            <KpiCard
-              icon={<Bot className="h-4 w-4" />}
-              label="Рекомендации ИИ"
-              value={isLoading ? "…" : recCount}
-              sub={
-                <span>
-                  {(data?.ai_ops as Record<string, unknown>)?.degraded_intelligence_mode
-                    ? "Осторожный режим"
-                    : "Обычный режим"}
-                </span>
-              }
-            />
-            <KpiCard
-              icon={<AlertTriangle className="h-4 w-4" />}
-              label="Обновление аналитики"
-              value={isLoading ? "…" : (rebuild.running ?? 0) + (rebuild.pending_dispatch ?? 0)}
-              sub={<span>Пересборки активны или в очереди</span>}
-            />
-          </div>
-        ) : null}
-      </div>
+      ) : null}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card className="p-6 md:col-span-2">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">
-              Выручка и прибыль по дням
-              <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
-            </div>
-            <StatusBadge tone={stale ? "warn" : "info"}>
-              <LineChartIcon className="mr-1 inline h-3 w-3" />
-              {stale ? "устарело" : "актуально"}
-            </StatusBadge>
+      <Card className="p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">
+            Выручка и прибыль по дням
+            <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
           </div>
-          <div className="chart-panel mt-5">
-            <DeferredRevenueTrendChart
-              points={data?.revenue_trend_daily.points}
-              trustCtx={trustCtx}
-            />
-          </div>
-          <div className="mt-3 space-y-1 text-xs text-ink-muted">
-            <div>
-              Период: {start} → {end} · Обновлено: {freshness?.data_as_of ?? "—"}
-              {completeness ? <> · Полнота данных: {formatPct(completeness)}</> : null}
-            </div>
-            {salesInsight ? <div data-testid="sales-chart-insight">{salesInsight}</div> : null}
-            {trustCtx.trust === "insufficient" ? (
-              <div>Прибыль скрыта — загрузите себестоимость.</div>
-            ) : trustCtx.trust === "partial" ? (
-              <div>Прибыль показана как оценка при неполной себестоимости.</div>
-            ) : null}
-          </div>
-          {integrityWarnings.length ? (
-            <WarnCallout title="Предупреждения целостности" className="mt-4">
-              <ul className="list-disc space-y-1 pl-5 text-xs">
-                {integrityWarnings.slice(0, 4).map((w) => (
-                  <li key={w.code}>{w.message}</li>
-                ))}
-              </ul>
-            </WarnCallout>
-          ) : null}
-        </Card>
-
-        <TopSkusCard
-          marketplace={marketplace}
-          start={start}
-          end={end}
-          summaryTopSkus={data?.top_skus}
-          trustCtx={trustCtx}
-          coverageMin={data?.coverage.available_min_date}
-          coverageMax={data?.coverage.available_max_date}
-          missingPeriodsCount={(data?.coverage.missing_periods ?? []).length}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card className="p-6 md:col-span-2">
-          <DeferredCostStructurePanel
-            periodStart={start}
-            periodEnd={end}
-            financeKpis={data?.finance_summary.kpis}
-            trendPoints={data?.finance_trend_daily.points}
+          <StatusBadge tone={stale ? "warn" : "info"}>
+            <LineChartIcon className="mr-1 inline h-3 w-3" />
+            {stale ? "устарело" : "актуально"}
+          </StatusBadge>
+        </div>
+        <div className="chart-panel mt-5">
+          <DeferredRevenueTrendChart
+            points={data?.revenue_trend_daily.points}
+            trustCtx={trustCtx}
           />
-        </Card>
+        </div>
+        <div className="mt-3 space-y-1 text-xs text-ink-muted">
+          <div>
+            Период: {start} → {end} · Обновлено: {freshness?.data_as_of ?? "—"}
+            {completeness ? <> · Полнота данных: {formatPct(completeness)}</> : null}
+          </div>
+          {trustCtx.trust === "insufficient" ? (
+            <div>Прибыль скрыта — загрузите себестоимость.</div>
+          ) : trustCtx.trust === "partial" ? (
+            <div>Прибыль показана как оценка при неполной себестоимости.</div>
+          ) : null}
+        </div>
+        {integrityWarnings.length ? (
+          <WarnCallout title="Предупреждения целостности" className="mt-4">
+            <ul className="list-disc space-y-1 pl-5 text-xs">
+              {integrityWarnings.slice(0, 4).map((w) => (
+                <li key={w.code}>{w.message}</li>
+              ))}
+            </ul>
+          </WarnCallout>
+        ) : null}
+      </Card>
 
-        <FinancialSummaryCard
+      <FinancialSummaryCard
+        periodStart={start}
+        periodEnd={end}
+        totalRevenue={data?.revenue_summary.kpis.total_revenue}
+        financeKpis={data?.finance_summary.kpis}
+        trustCtx={trustCtx}
+      />
+
+      <Card className="p-6">
+        <DeferredCostStructurePanel
           periodStart={start}
           periodEnd={end}
-          totalRevenue={data?.revenue_summary.kpis.total_revenue}
           financeKpis={data?.finance_summary.kpis}
-          trustCtx={trustCtx}
+          trendPoints={data?.finance_trend_daily.points}
         />
+      </Card>
+
+      <div className="flex flex-wrap gap-3" data-testid="dashboard-secondary-links">
+        <Link className="link-muted text-sm" to="/app/analytics/weekly">
+          Сравнение периодов
+        </Link>
+        <Link className="link-muted text-sm" to="/app/economics">
+          Экономика SKU
+        </Link>
+        <Link className="link-muted text-sm" to="/app/ai/recommendations">
+          ИИ-помощник
+        </Link>
       </div>
 
-      <CollapsibleSection
-        title="Ежедневный сценарий и доверие к данным"
-        subtitle="Справочные блоки для регулярной работы с аналитикой."
-      >
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div>
-            <div className="text-sm font-semibold text-ink">Ежедневный сценарий</div>
-            <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-ink-secondary">
-              <li>Загрузите свежий отчёт (если есть)</li>
-              {admin ? (
-                <li>
-                  Проверьте <Link className="link-muted" to="/app/status">статус системы</Link> (очередь/пересборки)
-                </li>
-              ) : (
-                <li>Убедитесь, что свежие отчёты обработаны и KPI обновились</li>
-              )}
-              <li>
-                Откройте <Link className="link-muted" to="/app/ai/recommendations">ИИ-помощник</Link> или{" "}
-                <Link className="link-muted" to="/app/ai/today">фокус на сегодня</Link>
-                {" · "}
-                <Link className="link-muted" to="/app/ai/digest?type=daily">ежедневный дайджест</Link>
-              </li>
-              <li>Сохраните/отклоните рекомендации и оставьте обратную связь</li>
-            </ol>
-          </div>
-          <div>
-            <div className="text-sm font-semibold text-ink">Доверие к данным</div>
-            <p className="mt-3 text-sm leading-relaxed text-ink-secondary">
-              {admin
-                ? "Финансовые KPI берутся из read-only аналитического слоя. Если данные устарели — проверьте пересборки и очередь; в режиме устаревания трактуйте выводы ИИ осторожно."
-                : "Финансовые KPI берутся из аналитического слоя. Если показатели выглядят устаревшими — загрузите свежий отчёт и дождитесь обновления данных; выводы ИИ в таком случае трактуйте осторожно."}
-            </p>
-            <Link to="/app/onboarding" className="link-muted mt-4 inline-block text-sm">
-              Завершить настройку →
-            </Link>
-          </div>
+      {admin ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3" data-testid="dashboard-admin-kpis">
+          <KpiCard
+            icon={<Server className="h-4 w-4" />}
+            label="Обработка данных"
+            value={isLoading ? "…" : formatMetric(queued)}
+            sub={<span>Задач в очереди/обработке</span>}
+          />
+          <KpiCard
+            icon={<Bot className="h-4 w-4" />}
+            label="Рекомендации ИИ"
+            value={isLoading ? "…" : recCount}
+            sub={
+              <span>
+                {(data?.ai_ops as Record<string, unknown>)?.degraded_intelligence_mode
+                  ? "Осторожный режим"
+                  : "Обычный режим"}
+              </span>
+            }
+          />
+          <KpiCard
+            icon={<AlertTriangle className="h-4 w-4" />}
+            label="Обновление аналитики"
+            value={isLoading ? "…" : (rebuild.running ?? 0) + (rebuild.pending_dispatch ?? 0)}
+            sub={<span>Пересборки активны или в очереди</span>}
+          />
         </div>
-      </CollapsibleSection>
+      ) : null}
 
       {demo ? (
         <Card className="border-sky-200 bg-brand-subtle p-6">

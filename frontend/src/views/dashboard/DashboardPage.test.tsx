@@ -190,10 +190,22 @@ describe("DashboardPage trust integration", () => {
     expect(screen.getAllByText(/Нет себестоимости/i).length).toBeGreaterThan(0);
   });
 
-  it("F2-A1: renders TrustChip in hero area", async () => {
+  it("F2-A2: renders PrimaryAnswer with revenue, profit and TrustChip", async () => {
     renderPage();
-    expect(await screen.findByTestId("trust-chip")).toBeTruthy();
+    const block = await screen.findByTestId("primary-answer");
+    expect(block.querySelector(".text-ink-muted")?.textContent).toMatch(/Выручка/);
+    expect(block.textContent).toMatch(/Чистая прибыль/);
+    expect(block.querySelector('[data-testid="trust-chip"]')).toBeTruthy();
     expect(screen.getByTestId("trust-chip-cta").getAttribute("href")).toBe("/app/costs");
+  });
+
+  it("F2-A2: reduces duplicate trust surfaces on dashboard", async () => {
+    renderPage();
+    await screen.findByTestId("primary-answer");
+    expect(screen.queryByRole("progressbar")).toBeNull();
+    expect(screen.queryByText(/Себестоимость 0 %/)).toBeNull();
+    expect(screen.getAllByTestId("trust-chip")).toHaveLength(1);
+    expect(screen.queryByText("Продажи (выбранный период)")).toBeNull();
   });
 
   it("does not show inline period compare teaser on overview", async () => {
@@ -224,26 +236,38 @@ describe("DashboardPage trust integration", () => {
     expect(screen.queryByText(/Обычный режим/i)).toBeNull();
   });
 
-  it("B1: shows technical ops KPIs for platform_admin", async () => {
+  it("B1: shows technical ops KPIs for platform_admin below fold", async () => {
     useAuthMock.mockReturnValue({
       user: { id: "a1", email: "admin@test.local", role: USER_ROLE_PLATFORM_ADMIN },
       token: "t",
       loading: false,
     });
     renderPage();
-    expect(await screen.findByText("Обработка данных")).toBeTruthy();
+    expect(await screen.findByTestId("dashboard-admin-kpis")).toBeTruthy();
+    expect(screen.getByText("Обработка данных")).toBeTruthy();
     expect(screen.getByText(/Пересборки активны или в очереди/i)).toBeTruthy();
     expect(screen.getByText("Рекомендации ИИ")).toBeTruthy();
     expect(screen.getByText(/Задач в очереди/i)).toBeTruthy();
+    const adminBlock = screen.getByTestId("dashboard-admin-kpis");
+    const secondaryLinks = screen.getByTestId("dashboard-secondary-links");
+    expect(
+      adminBlock.compareDocumentPosition(secondaryLinks) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
   });
 
-  it("B2: has single header AI CTA to recommendations", async () => {
+  it("F2-A2: secondary links below fold replace header CTAs", async () => {
     renderPage();
     await screen.findByText(/Финансовая аналитика продавца/i);
-    const links = screen.getAllByRole("link").filter((el) => el.className.includes("btn-accent"));
-    expect(links).toHaveLength(1);
-    expect(links[0].textContent).toMatch(/ИИ-помощник/);
-    expect(links[0].getAttribute("href")).toBe("/app/ai/recommendations");
+    expect(screen.queryByText("Загрузить отчёт")).toBeNull();
+    expect(screen.queryByRole("link", { name: /Подробное сравнение периодов/i })).toBeNull();
+    const secondary = screen.getByTestId("dashboard-secondary-links");
+    expect(secondary.querySelector('a[href="/app/analytics/weekly"]')?.textContent).toMatch(
+      /Сравнение периодов/,
+    );
+    expect(secondary.querySelector('a[href="/app/economics"]')?.textContent).toMatch(/Экономика SKU/);
+    expect(secondary.querySelector('a[href="/app/ai/recommendations"]')?.textContent).toMatch(
+      /ИИ-помощник/,
+    );
     expect(screen.queryByText("ИИ-анализ периода")).toBeNull();
     expect(screen.queryByRole("button", { name: /ИИ-анализ/i })).toBeNull();
   });
@@ -252,6 +276,24 @@ describe("DashboardPage trust integration", () => {
     renderPage();
     expect(await screen.findByText(/Выручка и прибыль по дням/i)).toBeTruthy();
     expect(screen.getAllByTestId("dashboard-bar-chart").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("F2-A2: TopSkusCard appears before revenue chart", async () => {
+    renderPage();
+    await screen.findByText("SKU-TOP");
+    const topSkuHeading = screen.getByText("Топ SKU");
+    const chartHeading = screen.getByText(/Выручка и прибыль по дням/i);
+    expect(
+      chartHeading.compareDocumentPosition(topSkuHeading) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+  });
+
+  it("F2-A2: removes Daily Scenario and Trust section", async () => {
+    renderPage();
+    await screen.findByTestId("primary-answer");
+    expect(screen.queryByText("Ежедневный сценарий и доверие к данным")).toBeNull();
+    expect(screen.queryByText("Ежедневный сценарий")).toBeNull();
+    expect(screen.queryByText("Завершить настройку →")).toBeNull();
   });
 
   it("B4: shows Top SKU revenue, units, profit and margin (gated)", async () => {
@@ -336,8 +378,8 @@ describe("DashboardPage trust integration", () => {
     expect(structureInsight.textContent).toMatch(/занимает \d+% всех расходов/);
     expect(screen.getByTestId("cost-dynamics-insight")).toBeTruthy();
     expect(screen.getByTestId("top-sku-insight").textContent).toMatch(/формирует 50% выручки периода/);
-    expect(screen.getByTestId("sales-chart-insight")).toBeTruthy();
-    expect(screen.getAllByText(/Маржа по выплате/i).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByTestId("dashboard-insight-line")).toBeTruthy();
+    expect(screen.getAllByText(/Маржа по выплате/i).length).toBeGreaterThanOrEqual(1);
   });
 
   it("B13: shows cost business signal alongside chart insight with share", async () => {
