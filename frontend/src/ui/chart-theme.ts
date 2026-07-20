@@ -1,6 +1,9 @@
 /** Shared Recharts styling tokens (visual only). */
 export const CHART = {
-  axis: { fill: "#94a3b8", fontSize: 12 },
+  /** Axis ticks: ink-secondary for WCAG-friendly contrast on white panels (was slate-400). */
+  axis: { fill: "#334155", fontSize: 12 },
+  /** On-bar / end labels on cost charts */
+  barLabel: { fill: "#0f172a", fontSize: 11, fontWeight: 600 },
   grid: { stroke: "#e2e8f0", strokeDasharray: "4 4" },
   tooltip: {
     background: "rgba(255, 255, 255, 0.98)",
@@ -10,6 +13,8 @@ export const CHART = {
     fontSize: 12,
     padding: "8px 12px",
   },
+  /** Category axis width for vertical cost bars (Russian labels e.g. «Комиссия WB»). */
+  costCategoryAxisWidth: 132,
   series: {
     revenue: "#3b82f6",
     profit: "#059669",

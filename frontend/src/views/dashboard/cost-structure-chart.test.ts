@@ -4,8 +4,16 @@ import {
   buildDailyTotalCostsChart,
   buildPeriodCostComposition,
   COST_CATEGORIES,
+  costStructureChartHeight,
   mapFinanceTrendToCostStructure,
 } from "./cost-structure-chart";
+
+describe("costStructureChartHeight", () => {
+  it("grows with slice count so category labels are not vertically crushed", () => {
+    expect(costStructureChartHeight(1)).toBe(256);
+    expect(costStructureChartHeight(6)).toBeGreaterThan(256);
+  });
+});
 
 describe("buildPeriodCostComposition", () => {
   it("ranks categories by amount and includes Удержания hint", () => {

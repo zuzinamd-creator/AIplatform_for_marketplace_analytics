@@ -2,6 +2,7 @@ import {
   Bar,
   BarChart,
   Cell,
+  LabelList,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -14,6 +15,7 @@ import { costDynamicsInsight, costStructureInsight } from "./chart-insights";
 import {
   buildDailyTotalCostsChart,
   buildPeriodCostComposition,
+  costStructureChartHeight,
   type DailyTotalCostRow,
   type FinanceTrendCostPoint,
 } from "./cost-structure-chart";
@@ -35,6 +37,12 @@ const BREAKDOWN_TOOLTIP_FIELDS: Array<{ key: keyof DailyTotalCostRow; name: stri
   { key: "acquiring", name: "Эквайринг" },
   { key: "other", name: "Прочее" },
 ];
+
+function formatShareLabel(value: unknown): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "";
+  return `${Math.round(n)}%`;
+}
 
 function DailyTotalTooltip({
   active,
@@ -73,6 +81,13 @@ export function CostStructurePanel({
   const daily = buildDailyTotalCostsChart(trendPoints);
   const structureInsight = costStructureInsight(composition);
   const dynamicsInsight = costDynamicsInsight(daily.rows);
+  const structureRows = composition.slices.map((s) => ({
+    name: s.name,
+    amount: s.amount,
+    sharePct: s.sharePct,
+    fillKey: s.fillKey,
+  }));
+  const structureHeight = costStructureChartHeight(structureRows.length);
 
   return (
     <div className="space-y-6">
@@ -87,20 +102,25 @@ export function CostStructurePanel({
           <div className="mt-4 text-sm text-ink-muted">Нет данных по расходам за период.</div>
         ) : (
           <>
-            <div className="chart-panel mt-4">
+            <div
+              className="mt-4 w-full"
+              style={{ height: structureHeight }}
+              data-testid="cost-structure-chart"
+            >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   layout="vertical"
-                  data={composition.slices.map((s) => ({
-                    name: s.name,
-                    amount: s.amount,
-                    sharePct: s.sharePct,
-                    fillKey: s.fillKey,
-                  }))}
-                  margin={{ top: 4, right: 16, left: 8, bottom: 4 }}
+                  data={structureRows}
+                  margin={{ top: 4, right: 48, left: 4, bottom: 4 }}
                 >
-                  <XAxis type="number" tick={CHART.axis} />
-                  <YAxis type="category" dataKey="name" width={110} tick={CHART.axis} />
+                  <XAxis type="number" tick={CHART.axis} hide={false} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={CHART.costCategoryAxisWidth}
+                    tick={CHART.axis}
+                    interval={0}
+                  />
                   <Tooltip
                     contentStyle={CHART.tooltip}
                     formatter={(value, _name, item) => {
@@ -114,6 +134,12 @@ export function CostStructurePanel({
                     {composition.slices.map((s) => (
                       <Cell key={s.key} fill={CHART.series[s.fillKey]} />
                     ))}
+                    <LabelList
+                      dataKey="sharePct"
+                      position="right"
+                      formatter={formatShareLabel}
+                      style={CHART.barLabel}
+                    />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -121,14 +147,14 @@ export function CostStructurePanel({
 
             <ul className="mt-4 space-y-2" data-testid="cost-composition-legend">
               {composition.slices.map((s) => (
-                <li key={s.key} className="flex items-start gap-2 text-sm">
+                <li key={s.key} className="flex items-start gap-2 text-sm" data-testid={`cost-legend-${s.key}`}>
                   <span
                     className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-sm"
                     style={{ background: CHART.series[s.fillKey] }}
                     aria-hidden
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="font-medium text-ink-secondary">
+                    <span className="font-medium text-ink">
                       {s.name}: {formatRub(s.amount)} ({Math.round(s.sharePct)}%)
                     </span>
                     <span className="mt-0.5 block text-xs text-ink-muted">{s.hint}</span>
@@ -162,7 +188,7 @@ export function CostStructurePanel({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={daily.rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <XAxis dataKey="date" tick={CHART.axis} />
-                  <YAxis tick={CHART.axis} />
+                  <YAxis tick={CHART.axis} width={48} />
                   <Tooltip content={<DailyTotalTooltip />} />
                   <Bar
                     dataKey="total_costs"

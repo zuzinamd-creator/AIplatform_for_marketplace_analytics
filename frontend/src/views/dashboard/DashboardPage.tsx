@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Bot, LineChart as LineChartIcon, Server, Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 
 import { useAuth } from "../../state/auth";
@@ -26,11 +26,23 @@ import { revenueProfitInsight } from "./chart-insights";
 import { PrimaryAnswer } from "./PrimaryAnswer";
 import { ActionStrip } from "./ActionStrip";
 import { buildActionCardsFromSummary, COST_SECTION_ANCHOR } from "./action-strip";
+import { scrollToHashTarget } from "./hash-scroll";
 
 export function DashboardPage() {
+  const location = useLocation();
+
   useEffect(() => {
     trackUsage("view_dashboard");
   }, []);
+
+  // Deep-link / cross-route hash: RR does not scroll to #dashboard-cost-structure by itself.
+  useEffect(() => {
+    if (location.hash !== `#${COST_SECTION_ANCHOR}`) return;
+    const timer = window.setTimeout(() => {
+      scrollToHashTarget(location.hash, "smooth");
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [location.hash, location.key]);
 
   const { user } = useAuth();
   const admin = isPlatformAdmin(user);

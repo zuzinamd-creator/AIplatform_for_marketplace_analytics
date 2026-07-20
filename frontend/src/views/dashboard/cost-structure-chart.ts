@@ -152,6 +152,11 @@ export type PeriodCostComposition = {
   slices: PeriodCostSlice[];
 };
 
+/** Room for Russian category labels + end % labels; grows with slice count. */
+export function costStructureChartHeight(sliceCount: number): number {
+  return Math.max(256, sliceCount * 40 + 24);
+}
+
 function num(value: string | number | null | undefined): number {
   if (value == null || value === "") return 0;
   const n = Number(value);

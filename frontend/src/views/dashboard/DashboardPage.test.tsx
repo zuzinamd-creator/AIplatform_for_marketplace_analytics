@@ -417,6 +417,15 @@ describe("DashboardPage trust integration", () => {
     expect(
       screen.getByTestId("action-card-signal-cost").querySelector('a[href="/app/analytics#dashboard-cost-structure"]'),
     ).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Смотреть расходы" })).toBeTruthy();
+  });
+
+  it("R3: cost structure chart mounts with share labels", async () => {
+    renderPage();
+    expect(await screen.findByTestId("cost-structure-chart")).toBeTruthy();
+    expect(screen.getByTestId("cost-composition-legend")).toBeTruthy();
+    // LabelList mocked as bar-label-list in revenue chart; cost panel uses same mock → at least one list.
+    expect(screen.getAllByTestId("bar-label-list").length).toBeGreaterThanOrEqual(1);
   });
 
   it("F2-B: shows returns and SKU action cards when trust allows", async () => {

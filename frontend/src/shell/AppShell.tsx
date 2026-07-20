@@ -64,7 +64,7 @@ export function AppShell() {
               <nav className="mt-5 flex flex-col gap-4" aria-label="Main navigation">
                 {navSections.map((section) => (
                   <div key={section.id}>
-                    <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-ink-faint">
+                    <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
                       {section.label}
                     </div>
                     <div className="flex flex-col gap-0.5">

@@ -59,7 +59,7 @@ export function RevenueTrendChart({ points, trustCtx }: RevenueTrendChartProps) 
               dataKey="revenue"
               position="top"
               formatter={chartBarLabel}
-              style={{ fill: "#64748b", fontSize: 10 }}
+              style={{ fill: CHART.axis.fill, fontSize: 10 }}
             />
           ) : null}
         </Bar>
@@ -76,7 +76,7 @@ export function RevenueTrendChart({ points, trustCtx }: RevenueTrendChartProps) 
                 dataKey="profit"
                 position="top"
                 formatter={chartBarLabel}
-                style={{ fill: "#64748b", fontSize: 10 }}
+                style={{ fill: CHART.axis.fill, fontSize: 10 }}
               />
             ) : null}
           </Bar>
