@@ -1,0 +1,41 @@
+{
+  "count": 2,
+  "sample": [
+    {
+      "sku": "набор из 2х прямых и изогнутого пинцета",
+      "revenue": "13398.0000",
+      "contribution_margin": null,
+      "gross_profit": null,
+      "cogs": null,
+      "returns_amount": "0.0000",
+      "payout": "9288.6800",
+      "commissions": "182.7006",
+      "logistics": "959.3400",
+      "storage": "0.0000",
+      "ads": "0.0000",
+      "penalties": "0.0000",
+      "margin_pct": null,
+      "return_rate": "0E-20",
+      "ad_cost_ratio": "0E-20",
+      "logistics_burden": "5.9203750000000000"
+    },
+    {
+      "sku": "набор из трех прямых пинцетов 14, 20, 25 см",
+      "revenue": "8610.0000",
+      "contribution_margin": null,
+      "gross_profit": null,
+      "cogs": null,
+      "returns_amount": "0.0000",
+      "payout": "5960.9800",
+      "commissions": "156.1187",
+      "logistics": "639.2200",
+      "storage": "0.0000",
+      "ads": "0.0000",
+      "penalties": "0.0000",
+      "margin_pct": null,
+      "return_rate": "0E-20",
+      "ad_cost_ratio": "0E-20",
+      "logistics_burden": "7.4241600000000000"
+    }
+  ]
+}

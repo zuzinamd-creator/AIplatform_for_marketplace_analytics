@@ -46,6 +46,18 @@ describe("buildActionCards", () => {
     expect(cards[0]?.ctaLabel).toBe("Уточнить себестоимость");
   });
 
+  it("omits trust-blocker when Trust badge is on Primary Answer", () => {
+    const cards = buildActionCards(
+      input({
+        omitTrustBlocker: true,
+        signals: [{ id: "cost", text: "Комиссия WB составляет 46% всех расходов за период." }],
+      }),
+    );
+
+    expect(cards.some((card) => card.id === "trust-blocker")).toBe(false);
+    expect(cards[0]?.id).toBe("signal-cost");
+  });
+
   it("does not emit trust-blocker when trust is full", () => {
     const cards = buildActionCards(
       input({
@@ -150,6 +162,56 @@ describe("buildActionCards", () => {
     expect(cards).toEqual([buildEmptyStateCard()]);
     expect(cards[0]?.ctaHref).toBe("/app/today");
     expect(cards[0]?.ctaLabel).toBe("Открыть брифинг");
+  });
+
+  it("variant B: costs-nudge instead of empty when trust ≠ full and chain is empty", () => {
+    const cards = buildActionCards(
+      input({
+        omitTrustBlocker: true,
+        trustCtx: ctx({
+          trust: "insufficient",
+          coveragePct: 0,
+          coveredSkus: 0,
+          totalSkus: 2,
+          canShowProfit: false,
+        }),
+      }),
+    );
+
+    expect(cards).toEqual([
+      {
+        id: "costs-nudge",
+        title: "Добавьте себестоимость",
+        body: "Чтобы видеть прибыль и маржу",
+        ctaLabel: "Загрузить себестоимость",
+        ctaHref: "/app/costs",
+      },
+    ]);
+  });
+
+  it("variant B: partial trust also gets costs-nudge when chain is empty", () => {
+    const cards = buildActionCards(
+      input({
+        omitTrustBlocker: true,
+        trustCtx: ctx({ trust: "partial" }),
+      }),
+    );
+
+    expect(cards).toHaveLength(1);
+    expect(cards[0]?.id).toBe("costs-nudge");
+  });
+
+  it("variant B: does not displace dangerous or signal cards", () => {
+    const cards = buildActionCards(
+      input({
+        omitTrustBlocker: true,
+        trustCtx: ctx({ trust: "insufficient", canShowProfit: false }),
+        dangerous: ["Просрочен отчёт"],
+      }),
+    );
+
+    expect(cards.map((c) => c.id)).toEqual(["dangerous-0"]);
+    expect(cards.some((c) => c.id === "costs-nudge")).toBe(false);
   });
 
   it("maps insufficient trust title and coverage body", () => {

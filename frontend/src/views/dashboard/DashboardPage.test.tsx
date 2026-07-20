@@ -188,7 +188,7 @@ describe("DashboardPage trust integration", () => {
 
   it("hides profit KPI values when trust is insufficient", async () => {
     renderPage();
-    expect(await screen.findByText(/Финансовая аналитика продавца/i)).toBeTruthy();
+    expect(await screen.findByTestId("primary-answer")).toBeTruthy();
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Нет себестоимости/i).length).toBeGreaterThan(0);
   });
@@ -198,7 +198,7 @@ describe("DashboardPage trust integration", () => {
     const block = await screen.findByTestId("primary-answer");
     expect(block.querySelector(".text-ink-muted")?.textContent).toMatch(/Выручка/);
     expect(block.textContent).toMatch(/Чистая прибыль/);
-    expect(block.querySelector('[data-testid="trust-chip"]')).toBeTruthy();
+    expect(block.querySelector('[data-testid="trust-badge"]')).toBeTruthy();
     expect(screen.getByTestId("trust-chip-cta").getAttribute("href")).toBe("/app/costs");
   });
 
@@ -207,13 +207,13 @@ describe("DashboardPage trust integration", () => {
     await screen.findByTestId("primary-answer");
     expect(screen.queryByRole("progressbar")).toBeNull();
     expect(screen.queryByText(/Себестоимость 0 %/)).toBeNull();
-    expect(screen.getAllByTestId("trust-chip")).toHaveLength(1);
+    expect(screen.getAllByTestId("trust-badge")).toHaveLength(1);
     expect(screen.queryByText("Продажи (выбранный период)")).toBeNull();
   });
 
   it("does not show inline period compare teaser on overview", async () => {
     renderPage();
-    await screen.findByText(/Финансовая аналитика продавца/i);
+    await screen.findByTestId("primary-answer");
     expect(screen.queryByText(/Δвыручка/i)).toBeNull();
     expect(dashboardSummary).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -232,7 +232,7 @@ describe("DashboardPage trust integration", () => {
 
   it("B1: hides technical ops KPIs from sellers", async () => {
     renderPage();
-    await screen.findByText(/Финансовая аналитика продавца/i);
+    await screen.findByTestId("primary-answer");
     expect(screen.queryByText("Обработка данных")).toBeNull();
     expect(screen.queryByText(/Пересборки активны/i)).toBeNull();
     expect(screen.queryByText(/Осторожный режим/i)).toBeNull();
@@ -263,7 +263,7 @@ describe("DashboardPage trust integration", () => {
 
   it("F2-A2: secondary links below fold replace header CTAs", async () => {
     renderPage();
-    await screen.findByText(/Финансовая аналитика продавца/i);
+    await screen.findByTestId("primary-answer");
     expect(screen.queryByText("Загрузить отчёт")).toBeNull();
     expect(screen.queryByRole("link", { name: /Подробное сравнение периодов/i })).toBeNull();
     const secondary = screen.getByTestId("dashboard-secondary-links");
@@ -375,9 +375,10 @@ describe("DashboardPage trust integration", () => {
     expect(totalBars.length).toBe(1);
     expect(totalBars[0].getAttribute("data-name")).toBe("Затраты");
     expect(screen.queryByText("Выплаты")).toBeNull();
-    expect(screen.getByTestId("daily-costs-period-strip")).toBeTruthy();
+    expect(screen.queryByTestId("daily-costs-period-strip")).toBeNull();
+    expect(screen.getByTestId("daily-costs-chart")).toBeTruthy();
     expect(screen.getByTestId("daily-costs-share-note").textContent).toMatch(
-      /% — доля от общей суммы расходов за период/,
+      /Подписи на столбцах при ≤\d+ днях/,
     );
     expect(screen.getAllByTestId("cost-share-note").length).toBeGreaterThanOrEqual(1);
     const structureInsight = screen.getByTestId("cost-structure-insight");
@@ -390,7 +391,7 @@ describe("DashboardPage trust integration", () => {
 
   it("F2-B: renders ActionStrip between PrimaryAnswer and TopSkus", async () => {
     renderPage();
-    await screen.findByTestId("action-card-trust-blocker");
+    await screen.findByTestId("action-strip");
     const actionStrip = screen.getByTestId("action-strip");
     const topSkuHeading = screen.getByText("Топ SKU");
     expect(
@@ -408,9 +409,11 @@ describe("DashboardPage trust integration", () => {
     expect(chartHeading?.querySelector('[aria-label*="себестоим"]')).toBeNull();
   });
 
-  it("F2-B: shows trust-blocker and cost signal in Action Strip", async () => {
+  it("F2-B: shows cost signal in Action Strip without duplicate trust-blocker", async () => {
     renderPage();
-    expect(await screen.findByTestId("action-card-trust-blocker")).toBeTruthy();
+    expect(await screen.findByTestId("action-card-signal-cost")).toBeTruthy();
+    expect(screen.queryByTestId("action-card-trust-blocker")).toBeNull();
+    expect(screen.getByTestId("trust-badge")).toBeTruthy();
     expect(screen.getByTestId("action-card-signal-cost").textContent).toMatch(
       /Комиссия WB составляет 46%/,
     );
@@ -418,6 +421,12 @@ describe("DashboardPage trust integration", () => {
       screen.getByTestId("action-card-signal-cost").querySelector('a[href="/app/analytics#dashboard-cost-structure"]'),
     ).toBeTruthy();
     expect(screen.getByRole("link", { name: "Смотреть расходы" })).toBeTruthy();
+  });
+
+  it("R5-P0: chrome diet — no second page H1 on overview", async () => {
+    renderPage();
+    await screen.findByTestId("primary-answer");
+    expect(screen.queryByRole("heading", { name: /Финансовая аналитика продавца/i })).toBeNull();
   });
 
   it("R3: cost structure chart mounts with share labels", async () => {
@@ -500,7 +509,7 @@ describe("DashboardPage trust integration", () => {
   it("F2-B.1: dashboard trust surfaces match F1.6 allowlist", async () => {
     renderPage();
     await screen.findByTestId("primary-answer");
-    expect(screen.getAllByTestId("trust-chip")).toHaveLength(1);
+    expect(screen.getAllByTestId("trust-badge")).toHaveLength(1);
     expect(screen.queryByRole("progressbar")).toBeNull();
     expect(screen.queryByText(/Доверие к прибыли/i)).toBeNull();
     expect(screen.queryByText(/Покрытие себестоимости/i)).toBeNull();
@@ -538,5 +547,42 @@ describe("DashboardPage trust integration", () => {
     expect(await screen.findByTestId("action-card-empty")).toBeTruthy();
     expect(screen.getByText("Сейчас без срочных действий")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Открыть брифинг" }).getAttribute("href")).toBe("/app/today");
+  });
+
+  it("R6-P0 variant B: costs-nudge when trust ≠ full and action chain empty", async () => {
+    dashboardSummary.mockResolvedValue({
+      ...baseSummary,
+      revenue_summary: {
+        ...baseSummary.revenue_summary,
+        integrity: { warnings: [], profit_metrics_trust: "insufficient" },
+      },
+      finance_summary: {
+        kpis: {
+          ...baseSummary.finance_summary.kpis,
+          commission: "0",
+          logistics: "0",
+          advertisement: "0",
+          storage_fee: "0",
+          penalties: "0",
+          deductions: "0",
+          acquiring: "0",
+          returns_amount: "0",
+          return_rate_pct: "0",
+        },
+      },
+      cost_coverage: { coverage_pct: 0, covered_skus: 0, total_skus: 2 },
+      top_skus: { items: [] },
+      recommendations: { items: [], page: { total: 0, skip: 0, limit: 0 } },
+      todays_focus: { dangerous: [] },
+    });
+    renderPage();
+    expect(await screen.findByTestId("action-card-costs-nudge")).toBeTruthy();
+    expect(screen.getByText("Добавьте себестоимость")).toBeTruthy();
+    expect(screen.getByText("Чтобы видеть прибыль и маржу")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Загрузить себестоимость" }).getAttribute("href")).toBe(
+      "/app/costs",
+    );
+    expect(screen.queryByTestId("action-card-empty")).toBeNull();
+    expect(screen.queryByTestId("action-card-trust-blocker")).toBeNull();
   });
 });

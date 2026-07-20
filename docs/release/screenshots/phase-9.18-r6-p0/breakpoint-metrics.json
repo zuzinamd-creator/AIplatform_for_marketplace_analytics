@@ -1,0 +1,38 @@
+[
+  {
+    "mode": "before",
+    "viewport": "375x812",
+    "primaryAnswerTopPx": 395,
+    "file": "/root/AIplatform_for_marketplace_analytics/docs/release/screenshots/phase-9.18-r6-p0/primary-answer-before-375.png"
+  },
+  {
+    "mode": "before",
+    "viewport": "768x1024",
+    "primaryAnswerTopPx": 327,
+    "file": "/root/AIplatform_for_marketplace_analytics/docs/release/screenshots/phase-9.18-r6-p0/primary-answer-before-768.png"
+  },
+  {
+    "mode": "before",
+    "viewport": "1440x900",
+    "primaryAnswerTopPx": 327,
+    "file": "/root/AIplatform_for_marketplace_analytics/docs/release/screenshots/phase-9.18-r6-p0/primary-answer-before-1440.png"
+  },
+  {
+    "mode": "after",
+    "viewport": "375x812",
+    "primaryAnswerTopPx": 189,
+    "file": "/root/AIplatform_for_marketplace_analytics/docs/release/screenshots/phase-9.18-r6-p0/primary-answer-after-375.png"
+  },
+  {
+    "mode": "after",
+    "viewport": "768x1024",
+    "primaryAnswerTopPx": 176,
+    "file": "/root/AIplatform_for_marketplace_analytics/docs/release/screenshots/phase-9.18-r6-p0/primary-answer-after-768.png"
+  },
+  {
+    "mode": "after",
+    "viewport": "1440x900",
+    "primaryAnswerTopPx": 176,
+    "file": "/root/AIplatform_for_marketplace_analytics/docs/release/screenshots/phase-9.18-r6-p0/primary-answer-after-1440.png"
+  }
+]

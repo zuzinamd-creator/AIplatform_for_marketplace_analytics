@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Primary Answer — Ledger P0 fixture</title>
+  <style>
+    :root {
+      --ledger-action: #0b6bcb;
+      --ledger-profit: #0f7b5a;
+      --ledger-profit-soft: #e6f5ef;
+      --ledger-neutral-900: #111827;
+      --ledger-neutral-700: #3f4b5a;
+      --ledger-neutral-500: #6b7280;
+      --ledger-canvas: #f7f8fa;
+      --ledger-panel: #ffffff;
+      --ledger-hairline: #e6e8ec;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+      background: var(--ledger-canvas);
+      color: var(--ledger-neutral-900);
+      padding: 32px;
+    }
+    .card {
+      max-width: 720px;
+      background: var(--ledger-panel);
+      border: 1px solid var(--ledger-hairline);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04), 0 8px 24px rgba(17, 24, 39, 0.06);
+      /* flat panel — no gradient */
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .label { font-size: 14px; font-weight: 500; color: var(--ledger-neutral-500); }
+    .metric {
+      margin-top: 8px;
+      font-size: 36px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      color: var(--ledger-neutral-900);
+    }
+    .metric.profit { color: var(--ledger-profit); }
+    .trust {
+      margin-top: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(15, 123, 90, 0.3);
+      background: var(--ledger-profit-soft);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      /* static — no animation */
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 2px 8px;
+      background: rgba(15, 123, 90, 0.12);
+      color: var(--ledger-profit);
+      font-weight: 600;
+    }
+    .muted { color: var(--ledger-neutral-700); }
+    .caption {
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--ledger-neutral-500);
+      max-width: 720px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" data-testid="primary-answer">
+    <div class="grid">
+      <div>
+        <div class="label">Выручка</div>
+        <div class="metric">1 245 000 ₽</div>
+      </div>
+      <div>
+        <div class="label">Чистая прибыль</div>
+        <div class="metric profit">186 400 ₽</div>
+      </div>
+    </div>
+    <div class="trust" data-testid="trust-badge" role="status">
+      <span class="badge">Доверие: полное</span>
+      <span class="muted">92%</span>
+      <span class="muted">184 / 200 SKU</span>
+    </div>
+  </div>
+  <p class="caption">
+    Ledger P0 fixture — flat raised panel, no gradient; Trust badge once under Primary Answer.
+    Action #0B6BCB · Profit #0F7B5A · Neutral scale for secondary text.
+  </p>
+</body>
+</html>

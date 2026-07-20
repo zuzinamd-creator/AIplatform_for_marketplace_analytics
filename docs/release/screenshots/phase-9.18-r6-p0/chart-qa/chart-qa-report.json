@@ -1,0 +1,40 @@
+{
+  "pages": [
+    {
+      "id": "overview",
+      "uniq": [
+        "#3f4b5a",
+        "#0b6bcb",
+        "#000000",
+        "#2f6fed"
+      ],
+      "purple": [],
+      "legend": 0,
+      "rub": true
+    },
+    {
+      "id": "economics",
+      "uniq": [
+        "#3f4b5a",
+        "#0b6bcb",
+        "#6b7280",
+        "#9ca3af"
+      ],
+      "purple": [],
+      "sparkSvg": 19
+    },
+    {
+      "id": "sku-drilldown",
+      "sku": "набор из 2х прямых и изогнутого пинцета",
+      "uniq": [
+        "#3f4b5a",
+        "#6b7280",
+        "#9a5a00",
+        "#000000"
+      ],
+      "purple": [],
+      "hasAdsBlue": false,
+      "chartPanels": 3
+    }
+  ]
+}

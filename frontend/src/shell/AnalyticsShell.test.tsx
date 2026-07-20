@@ -61,8 +61,11 @@ describe("AnalyticsShell", () => {
     expect(screen.getByText("economics-panel")).toBeTruthy();
   });
 
-  it("renders cost coverage tab content at /app/analytics/cost-coverage", () => {
-    renderShell(ANALYTICS_COST_COVERAGE_ROUTE);
-    expect(screen.getByText("cost-coverage-panel")).toBeTruthy();
+  it("hides long subtitle on overview; shows on child routes", () => {
+    renderShell(ANALYTICS_OVERVIEW_ROUTE);
+    expect(screen.queryByText(/Сравнение периодов, экономика SKU/i)).toBeNull();
+    cleanup();
+    renderShell(ANALYTICS_WEEKLY_ROUTE);
+    expect(screen.getByText(/Сравнение периодов, экономика SKU/i)).toBeTruthy();
   });
 });

@@ -1,0 +1,95 @@
+[
+  {
+    "label": "staging",
+    "viewport": "375x812",
+    "viewportTop": 2255,
+    "documentTop": 2255,
+    "height": 288,
+    "inFirstViewport": false,
+    "h1Count": 1,
+    "h1Texts": [
+      "Аналитика"
+    ],
+    "trustBadge": true,
+    "trustChipLegacy": false,
+    "trustBlocker": false
+  },
+  {
+    "label": "staging",
+    "viewport": "768x1024",
+    "viewportTop": 775,
+    "documentTop": 775,
+    "height": 176,
+    "inFirstViewport": true,
+    "h1Count": 1,
+    "h1Texts": [
+      "Аналитика"
+    ],
+    "trustBadge": true,
+    "trustChipLegacy": false,
+    "trustBlocker": false
+  },
+  {
+    "label": "staging",
+    "viewport": "1440x900",
+    "viewportTop": 599,
+    "documentTop": 599,
+    "height": 176,
+    "inFirstViewport": true,
+    "h1Count": 1,
+    "h1Texts": [
+      "Аналитика"
+    ],
+    "trustBadge": true,
+    "trustChipLegacy": false,
+    "trustBlocker": false
+  },
+  {
+    "label": "prod",
+    "viewport": "375x812",
+    "viewportTop": 2601,
+    "documentTop": 2601,
+    "height": 288,
+    "inFirstViewport": false,
+    "h1Count": 2,
+    "h1Texts": [
+      "Аналитика",
+      "Финансовая аналитика продавца"
+    ],
+    "trustBadge": false,
+    "trustChipLegacy": true,
+    "trustBlocker": true
+  },
+  {
+    "label": "prod",
+    "viewport": "768x1024",
+    "viewportTop": 1107,
+    "documentTop": 1107,
+    "height": 176,
+    "inFirstViewport": false,
+    "h1Count": 2,
+    "h1Texts": [
+      "Аналитика",
+      "Финансовая аналитика продавца"
+    ],
+    "trustBadge": false,
+    "trustChipLegacy": true,
+    "trustBlocker": true
+  },
+  {
+    "label": "prod",
+    "viewport": "1440x900",
+    "viewportTop": 845,
+    "documentTop": 845,
+    "height": 176,
+    "inFirstViewport": true,
+    "h1Count": 2,
+    "h1Texts": [
+      "Аналитика",
+      "Финансовая аналитика продавца"
+    ],
+    "trustBadge": false,
+    "trustChipLegacy": true,
+    "trustBlocker": true
+  }
+]

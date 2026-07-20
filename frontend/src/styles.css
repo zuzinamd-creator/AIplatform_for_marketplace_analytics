@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import "./styles/ledger-tokens.css";
 
 @tailwind base;
 @tailwind components;
@@ -12,17 +13,23 @@
 
   body {
     @apply bg-surface-muted font-sans text-ink antialiased;
+    background-color: var(--ledger-canvas);
+    color: var(--ledger-neutral-900);
   }
 
   :focus-visible {
-    outline: 2px solid #2563eb;
+    outline: 2px solid var(--ledger-action);
     outline-offset: 2px;
   }
 }
 
 @layer components {
   .page-shell {
-    @apply space-y-10;
+    @apply space-y-6;
+  }
+
+  .page-shell-tight {
+    @apply space-y-4;
   }
 
   .section-title {
@@ -45,6 +52,10 @@
     @apply text-2xl font-semibold tracking-tight text-ink md:text-3xl;
   }
 
+  .page-title-compact {
+    @apply text-lg font-semibold tracking-tight text-ink md:text-xl;
+  }
+
   .page-subtitle {
     @apply mt-1.5 max-w-2xl text-sm leading-relaxed text-ink-muted;
   }
@@ -63,6 +74,10 @@
 
   .link-muted {
     @apply text-sm font-medium text-brand hover:text-brand-hover hover:underline;
+  }
+
+  .status-pill {
+    @apply inline-flex items-center gap-2 rounded-full border border-surface-subtle bg-surface px-3 py-1 text-xs font-medium text-ink-secondary;
   }
 
   .disclosure-panel {

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "NODE_OPTIONS=--max-old-space-size=1024 tsc -b && NODE_OPTIONS=--max-old-space-size=1024 vite build",
     "preview": "vite preview",
-    "lint": "eslint .",
+    "lint": "eslint . && node scripts/lint-chart-antipatterns.mjs",
+    "lint:charts": "node scripts/lint-chart-antipatterns.mjs",
     "format": "prettier -w .",
     "test": "vitest run",
     "test:watch": "vitest"

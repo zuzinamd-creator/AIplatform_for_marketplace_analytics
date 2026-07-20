@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Primary Answer BEFORE chrome (R4 simulation)</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #f4f6f9; color: #0f172a; }
+    .shell { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    .h1 { font-size: 28px; font-weight: 600; margin: 0 0 6px; }
+    .sub { font-size: 14px; color: #64748b; margin: 0 0 16px; max-width: 42rem; line-height: 1.5; }
+    .tabs { display: flex; gap: 4px; border-bottom: 1px solid #e8ecf2; margin-bottom: 16px; }
+    .tab { padding: 10px 16px; font-size: 14px; color: #64748b; }
+    .tab.active { color: #2563eb; border-bottom: 2px solid #2563eb; font-weight: 600; }
+    .h1-2 { font-size: 28px; font-weight: 600; margin: 0 0 16px; }
+    .period {
+      background: #fff; border: 1px solid #e8ecf2; border-radius: 12px;
+      padding: 16px; margin-bottom: 24px; font-size: 14px; color: #334155;
+    }
+    .card {
+      background: linear-gradient(to bottom right, rgba(239,246,255,.8), #fff);
+      border: 1px solid rgba(37,99,235,.2); border-radius: 12px;
+      padding: 24px; box-shadow: 0 1px 3px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.06);
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+    .label { font-size: 14px; color: #64748b; font-weight: 500; }
+    .metric { margin-top: 8px; font-size: clamp(28px, 4vw, 36px); font-weight: 600; }
+    .trust {
+      margin-top: 16px; display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      border: 1px solid rgba(185,28,28,.25); background: #fef2f2; border-radius: 8px;
+      padding: 8px 12px; font-size: 12px;
+    }
+    .badge { background: #fee2e2; color: #b91c1c; font-weight: 600; border-radius: 999px; padding: 2px 8px; }
+    .link { color: #2563eb; font-weight: 500; }
+    .hud {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      background: #7f1d1d; color: #fff; font: 12px/1.4 ui-monospace, monospace;
+      padding: 6px 10px;
+    }
+    .body-pad { padding-top: 36px; }
+  </style>
+</head>
+<body class="body-pad">
+  <div class="hud" id="hud">viewport: — · PrimaryAnswer top: —px</div>
+  <div class="shell">
+    <h1 class="h1">Аналитика</h1>
+    <p class="sub">Единый центр финансовой аналитики: обзор бизнеса, сравнение периодов, экономика SKU и качество данных о себестоимости.</p>
+    <nav class="tabs">
+      <span class="tab active">Обзор</span>
+      <span class="tab">Сравнение периодов</span>
+      <span class="tab">Экономика SKU</span>
+    </nav>
+    <h1 class="h1-2">Финансовая аналитика продавца</h1>
+    <div class="period">Период · 2026-01-01 → 2026-07-20</div>
+    <div class="card" id="primary-answer" data-testid="primary-answer">
+      <div class="grid">
+        <div>
+          <div class="label">Выручка</div>
+          <div class="metric">11 004 ₽</div>
+        </div>
+        <div>
+          <div class="label">Чистая прибыль</div>
+          <div class="metric">—</div>
+        </div>
+      </div>
+      <div class="trust">
+        <span class="badge">Нет себестоимости</span>
+        <span>0 %</span>
+        <span>0 / 2 SKU</span>
+        <span class="link">Уточнить</span>
+      </div>
+    </div>
+  </div>
+  <script>
+    function tick() {
+      const el = document.getElementById('primary-answer');
+      const top = Math.round(el.getBoundingClientRect().top + window.scrollY);
+      document.getElementById('hud').textContent =
+        'viewport: ' + window.innerWidth + '×' + window.innerHeight +
+        ' · PrimaryAnswer top: ' + top + 'px' +
+        ' · mode: BEFORE (dual H1 + long subtitle + gradient)';
+    }
+    tick();
+    window.addEventListener('resize', tick);
+  </script>
+</body>
+</html>

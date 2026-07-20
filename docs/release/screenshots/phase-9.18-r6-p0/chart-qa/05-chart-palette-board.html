@@ -1,0 +1,106 @@
+<!DOCTYPE html><html><head><meta charset=utf-8><title>Chart palette QA</title>
+<style>
+body{font-family:system-ui;background:#F7F8FA;color:#111827;padding:24px}
+h1{font-size:18px;margin:0 0 8px}
+.note{color:#6B7280;font-size:13px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.card{background:#fff;border:1px solid #E6E8EC;border-radius:10px;padding:12px}
+.swatch{height:28px;border-radius:6px;margin:8px 0}
+.meta{font:12px ui-monospace,monospace}
+.barrow{display:flex;align-items:flex-end;gap:6px;height:80px;margin-top:8px}
+.bar{flex:1;border-radius:3px 3px 0 0}
+.lines{height:70px;margin-top:8px}
+svg{width:100%;height:70px}
+.ok{color:#0F7B5A;font-weight:600}
+.bad{color:#C81E1E}
+</style></head><body>
+<h1>Ledger chart series — visual QA (staging tokens)</h1>
+<p class="note">Source: <code>LEDGER_LIGHT</code> / <code>CHART.series</code>. Banned legacy purple/indigo must be absent.</p>
+<div class="grid">
+<div class="card"><div>revenue (DeferredCharts)</div>
+  <div class="swatch" style="background:#2F6FED"></div>
+  <div class="meta">#2F6FED</div>
+  <div class="barrow"><div class="bar" style="height:70%;background:#2F6FED"></div>
+  <div class="bar" style="height:45%;background:#2F6FED;opacity:.85"></div>
+  <div class="bar" style="height:90%;background:#2F6FED"></div></div>
+  <div class="lines"><svg viewBox="0 0 200 70"><polyline fill="none" stroke="#2F6FED" stroke-width="3" points="0,50 40,30 80,40 120,15 160,28 200,10"/></svg></div>
+  </div><div class="card"><div>profit (DeferredCharts)</div>
+  <div class="swatch" style="background:#0F7B5A"></div>
+  <div class="meta">#0F7B5A</div>
+  <div class="barrow"><div class="bar" style="height:70%;background:#0F7B5A"></div>
+  <div class="bar" style="height:45%;background:#0F7B5A;opacity:.85"></div>
+  <div class="bar" style="height:90%;background:#0F7B5A"></div></div>
+  <div class="lines"><svg viewBox="0 0 200 70"><polyline fill="none" stroke="#0F7B5A" stroke-width="3" points="0,50 40,30 80,40 120,15 160,28 200,10"/></svg></div>
+  </div><div class="card"><div>spark / Economics</div>
+  <div class="swatch" style="background:#0F7B5A"></div>
+  <div class="meta">#0F7B5A</div>
+  <div class="barrow"><div class="bar" style="height:70%;background:#0F7B5A"></div>
+  <div class="bar" style="height:45%;background:#0F7B5A;opacity:.85"></div>
+  <div class="bar" style="height:90%;background:#0F7B5A"></div></div>
+  <div class="lines"><svg viewBox="0 0 200 70"><polyline fill="none" stroke="#0F7B5A" stroke-width="3" points="0,50 40,30 80,40 120,15 160,28 200,10"/></svg></div>
+  </div><div class="card"><div>logistics (SkuDrilldown)</div>
+  <div class="swatch" style="background:#A16207"></div>
+  <div class="meta">#A16207</div>
+  <div class="barrow"><div class="bar" style="height:70%;background:#A16207"></div>
+  <div class="bar" style="height:45%;background:#A16207;opacity:.85"></div>
+  <div class="bar" style="height:90%;background:#A16207"></div></div>
+  <div class="lines"><svg viewBox="0 0 200 70"><polyline fill="none" stroke="#A16207" stroke-width="3" points="0,50 40,30 80,40 120,15 160,28 200,10"/></svg></div>
+  </div><div class="card"><div>ads/promotion was purple→</div>
+  <div class="swatch" style="background:#1D4E89"></div>
+  <div class="meta">#1D4E89</div>
+  <div class="barrow"><div class="bar" style="height:70%;background:#1D4E89"></div>
+  <div class="bar" style="height:45%;background:#1D4E89;opacity:.85"></div>
+  <div class="bar" style="height:90%;background:#1D4E89"></div></div>
+  <div class="lines"><svg viewBox="0 0 200 70"><polyline fill="none" stroke="#1D4E89" stroke-width="3" points="0,50 40,30 80,40 120,15 160,28 200,10"/></svg></div>
+  </div><div class="card"><div>returns / penalties line</div>
+  <div class="swatch" style="background:#C81E1E"></div>
+  <div class="meta">#C81E1E</div>
+  <div class="barrow"><div class="bar" style="height:70%;background:#C81E1E"></div>
+  <div class="bar" style="height:45%;background:#C81E1E;opacity:.85"></div>
+  <div class="bar" style="height:90%;background:#C81E1E"></div></div>
+  <div class="lines"><svg viewBox="0 0 200 70"><polyline fill="none" stroke="#C81E1E" stroke-width="3" points="0,50 40,30 80,40 120,15 160,28 200,10"/></svg></div>
+  </div><div class="card"><div>commission</div>
+  <div class="swatch" style="background:#0F766E"></div>
+  <div class="meta">#0F766E</div>
+  <div class="barrow"><div class="bar" style="height:70%;background:#0F766E"></div>
+  <div class="bar" style="height:45%;background:#0F766E;opacity:.85"></div>
+  <div class="bar" style="height:90%;background:#0F766E"></div></div>
+  <div class="lines"><svg viewBox="0 0 200 70"><polyline fill="none" stroke="#0F766E" stroke-width="3" points="0,50 40,30 80,40 120,15 160,28 200,10"/></svg></div>
+  </div><div class="card"><div>storage</div>
+  <div class="swatch" style="background:#7C5E10"></div>
+  <div class="meta">#7C5E10</div>
+  <div class="barrow"><div class="bar" style="height:70%;background:#7C5E10"></div>
+  <div class="bar" style="height:45%;background:#7C5E10;opacity:.85"></div>
+  <div class="bar" style="height:90%;background:#7C5E10"></div></div>
+  <div class="lines"><svg viewBox="0 0 200 70"><polyline fill="none" stroke="#7C5E10" stroke-width="3" points="0,50 40,30 80,40 120,15 160,28 200,10"/></svg></div>
+  </div><div class="card"><div>other / deductions</div>
+  <div class="swatch" style="background:#5B6573"></div>
+  <div class="meta">#5B6573</div>
+  <div class="barrow"><div class="bar" style="height:70%;background:#5B6573"></div>
+  <div class="bar" style="height:45%;background:#5B6573;opacity:.85"></div>
+  <div class="bar" style="height:90%;background:#5B6573"></div></div>
+  <div class="lines"><svg viewBox="0 0 200 70"><polyline fill="none" stroke="#5B6573" stroke-width="3" points="0,50 40,30 80,40 120,15 160,28 200,10"/></svg></div>
+  </div><div class="card"><div>penalties fill</div>
+  <div class="swatch" style="background:#9F1239"></div>
+  <div class="meta">#9F1239</div>
+  <div class="barrow"><div class="bar" style="height:70%;background:#9F1239"></div>
+  <div class="bar" style="height:45%;background:#9F1239;opacity:.85"></div>
+  <div class="bar" style="height:90%;background:#9F1239"></div></div>
+  <div class="lines"><svg viewBox="0 0 200 70"><polyline fill="none" stroke="#9F1239" stroke-width="3" points="0,50 40,30 80,40 120,15 160,28 200,10"/></svg></div>
+  </div><div class="card"><div>costTotal daily</div>
+  <div class="swatch" style="background:#3D4A5C"></div>
+  <div class="meta">#3D4A5C</div>
+  <div class="barrow"><div class="bar" style="height:70%;background:#3D4A5C"></div>
+  <div class="bar" style="height:45%;background:#3D4A5C;opacity:.85"></div>
+  <div class="bar" style="height:90%;background:#3D4A5C"></div></div>
+  <div class="lines"><svg viewBox="0 0 200 70"><polyline fill="none" stroke="#3D4A5C" stroke-width="3" points="0,50 40,30 80,40 120,15 160,28 200,10"/></svg></div>
+  </div><div class="card"><div>axis/labels ink</div>
+  <div class="swatch" style="background:#3F4B5A"></div>
+  <div class="meta">#3F4B5A</div>
+  <div class="barrow"><div class="bar" style="height:70%;background:#3F4B5A"></div>
+  <div class="bar" style="height:45%;background:#3F4B5A;opacity:.85"></div>
+  <div class="bar" style="height:90%;background:#3F4B5A"></div></div>
+  <div class="lines"><svg viewBox="0 0 200 70"><polyline fill="none" stroke="#3F4B5A" stroke-width="3" points="0,50 40,30 80,40 120,15 160,28 200,10"/></svg></div>
+  </div></div><h1 style="margin-top:24px">Banned colors check</h1><ul><li class="ok">Absent from staging bundle: #7C3AED</li><li class="ok">Absent from staging bundle: #9333EA</li><li class="ok">Absent from staging bundle: #4F46E5</li></ul>
+<p class="note">Live MVP account currently has empty cost/SKU chart datasets — palette verified via tokens + staging JS forensics + this board.</p>
+</body></html>

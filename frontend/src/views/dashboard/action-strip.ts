@@ -18,6 +18,7 @@ export type ActionCardId =
   | "signal-returns"
   | "signal-sku"
   | "ai-count"
+  | "costs-nudge"
   | "empty";
 
 export type ActionCard = {
@@ -33,6 +34,8 @@ export type BuildActionCardsInput = {
   dangerous: string[];
   signals: BusinessSignal[];
   aiRecommendationCount: number;
+  /** When true, skip trust-blocker (Trust badge already on Primary Answer). */
+  omitTrustBlocker?: boolean;
 };
 
 export type BuildActionCardsFromSummaryInput = {
@@ -41,6 +44,7 @@ export type BuildActionCardsFromSummaryInput = {
   financeKpis?: Parameters<typeof buildBusinessSignals>[0]["financeKpis"];
   topSkus?: Parameters<typeof buildBusinessSignals>[0]["topSkus"];
   aiRecommendationCount: number;
+  omitTrustBlocker?: boolean;
 };
 
 function trustBlockerTitle(trust: ProfitTrustContext["trust"]): string {
@@ -140,11 +144,28 @@ export function buildEmptyStateCard(): ActionCard {
   };
 }
 
-/** Priority: trust-blocker → dangerous[0..1] → signal-cost → signal-returns → signal-sku → ai-count. Max 3. */
+/** Fallback when priority chain is empty and trust ≠ full (variant B — no priority reorder). */
+export function buildCostsNudgeCard(): ActionCard {
+  return {
+    id: "costs-nudge",
+    title: "Добавьте себестоимость",
+    body: "Чтобы видеть прибыль и маржу",
+    ctaLabel: "Загрузить себестоимость",
+    ctaHref: COSTS_WORKFLOW_ROUTE,
+  };
+}
+
+/** Priority: trust-blocker → dangerous[0..1] → signal-cost → signal-returns → signal-sku → ai-count. Max 3.
+ *  Empty fallback: costs-nudge when trust ≠ full; generic empty when trust === full.
+ */
 export function buildActionCards(input: BuildActionCardsInput): ActionCard[] {
   const cards: ActionCard[] = [];
 
-  if (input.trustCtx.trust !== "full" && cards.length < ACTION_STRIP_MAX_CARDS) {
+  if (
+    !input.omitTrustBlocker &&
+    input.trustCtx.trust !== "full" &&
+    cards.length < ACTION_STRIP_MAX_CARDS
+  ) {
     cards.push(buildTrustBlockerCard(input.trustCtx));
   }
 
@@ -170,6 +191,9 @@ export function buildActionCards(input: BuildActionCardsInput): ActionCard[] {
   }
 
   if (cards.length === 0) {
+    if (input.trustCtx.trust !== "full") {
+      return [buildCostsNudgeCard()];
+    }
     return [buildEmptyStateCard()];
   }
 
@@ -189,5 +213,6 @@ export function buildActionCardsFromSummary(input: BuildActionCardsFromSummaryIn
     dangerous: input.dangerous ?? [],
     signals,
     aiRecommendationCount: input.aiRecommendationCount,
+    omitTrustBlocker: input.omitTrustBlocker,
   });
 }

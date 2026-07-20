@@ -9,12 +9,15 @@ import {
 import { formatMetric, formatPct } from "../utils/format";
 import { cx } from "./cx";
 import { StatusBadge } from "./status-badge";
+import { TRUST_BADGE_SPEC } from "./design-tokens";
 
 type TrustChipTone = "ok" | "warn" | "bad";
 
 export type TrustChipProps = {
   trustContext: ProfitTrustContext;
   className?: string;
+  /** Defaults to TRUST_BADGE_SPEC.testId when used as Overview Trust badge. */
+  "data-testid"?: string;
 };
 
 function toneForTrust(trust: ProfitTrustContext["trust"]): TrustChipTone {
@@ -31,23 +34,25 @@ function toneForTrust(trust: ProfitTrustContext["trust"]): TrustChipTone {
 function chipSurfaceClass(tone: TrustChipTone): string {
   switch (tone) {
     case "ok":
-      return "border-emerald-200/80 bg-semantic-success-bg/60";
+      return "border-ledger-profit/30 bg-ledger-profit-soft";
     case "warn":
-      return "border-amber-200/80 bg-semantic-warn-bg/60";
+      return "border-ledger-warn/30 bg-ledger-warn-soft";
     case "bad":
-      return "border-red-200/80 bg-semantic-danger-bg/60";
+      return "border-ledger-risk/30 bg-ledger-risk-soft";
   }
 }
 
-/** Compact trust + coverage indicator for dashboard hero (F2-A1). No new trust logic. */
-export function TrustChip({ trustContext, className }: TrustChipProps) {
+/**
+ * Compact trust + coverage indicator.
+ * On Overview this is the sole Trust badge/line (static, under Primary Answer).
+ */
+export function TrustChip({ trustContext, className, "data-testid": testId }: TrustChipProps) {
   const { trust, coveragePct, coveredSkus, totalSkus } = trustContext;
   const tone = toneForTrust(trust);
   const label = profitTrustLabel(trust);
   const tooltip = profitTrustTooltip(trust, trustContext);
 
-  const coverageText =
-    coveragePct !== null ? formatPct(coveragePct) : null;
+  const coverageText = coveragePct !== null ? formatPct(coveragePct) : null;
   const skuText =
     coveredSkus !== null && totalSkus !== null
       ? `${formatMetric(coveredSkus)} / ${formatMetric(totalSkus)} SKU`
@@ -60,7 +65,7 @@ export function TrustChip({ trustContext, className }: TrustChipProps) {
         chipSurfaceClass(tone),
         className,
       )}
-      data-testid="trust-chip"
+      data-testid={testId ?? TRUST_BADGE_SPEC.testId}
       role="status"
       aria-live="polite"
       title={tooltip}

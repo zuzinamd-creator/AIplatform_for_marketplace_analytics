@@ -69,7 +69,7 @@ describe("PrimaryAnswer", () => {
   it("includes TrustChip", () => {
     renderBlock();
 
-    expect(screen.getByTestId("trust-chip")).toBeTruthy();
+    expect(screen.getByTestId("trust-badge")).toBeTruthy();
   });
 
   it("shows loading placeholder", () => {

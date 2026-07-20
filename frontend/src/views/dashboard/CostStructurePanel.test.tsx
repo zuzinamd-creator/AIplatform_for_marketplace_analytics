@@ -85,12 +85,30 @@ describe("CostStructurePanel labels", () => {
     const yAxis = screen.getByTestId("cost-structure-yaxis");
     expect(Number(yAxis.getAttribute("data-width"))).toBeGreaterThanOrEqual(CHART.costCategoryAxisWidth);
     expect(yAxis.getAttribute("data-interval")).toBe("0");
-    expect(yAxis.getAttribute("data-tick-fill")).toBe("#334155");
+    expect(yAxis.getAttribute("data-tick-fill")).toBe("#3F4B5A");
 
     const labels = screen.getByTestId("cost-structure-share-labels");
     expect(labels.getAttribute("data-key")).toBe("sharePct");
 
     const chart = screen.getByTestId("cost-bar-chart");
     expect(Number(chart.getAttribute("data-margin-right"))).toBeGreaterThanOrEqual(40);
+  });
+
+  it("renders daily costs chart with on-bar labels and without mismatched color strip", () => {
+    render(
+      <CostStructurePanel
+        periodStart="2026-07-01"
+        periodEnd="2026-07-07"
+        financeKpis={kpis}
+        trendPoints={[
+          { date: "2026-07-01", commission: "100", logistics: "50" },
+          { date: "2026-07-02", commission: "80", logistics: "40" },
+        ]}
+      />,
+    );
+
+    expect(screen.getByTestId("daily-costs-chart")).toBeTruthy();
+    expect(screen.queryByTestId("daily-costs-period-strip")).toBeNull();
+    expect(screen.getAllByTestId("cost-structure-share-labels").length).toBeGreaterThanOrEqual(1);
   });
 });

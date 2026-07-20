@@ -35,7 +35,7 @@ describe("TrustChip", () => {
   it("renders trust label, coverage and SKU counts", () => {
     renderChip(ctx());
 
-    expect(screen.getByTestId("trust-chip")).toBeTruthy();
+    expect(screen.getByTestId("trust-badge")).toBeTruthy();
     expect(screen.getByText("Оценка")).toBeTruthy();
     expect(screen.getByTestId("trust-chip-coverage").textContent).toMatch(/72/);
     expect(screen.getByTestId("trust-chip-sku").textContent).toBe("18 / 25 SKU");

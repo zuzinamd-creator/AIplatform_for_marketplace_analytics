@@ -1,0 +1,48 @@
+/* Ledger UI CSS variables — light default, dark via [data-theme="dark"] or .dark */
+
+:root {
+  --ledger-action: #0b6bcb;
+  --ledger-action-hover: #0958a8;
+  --ledger-action-soft: #e8f2fc;
+  --ledger-profit: #0f7b5a;
+  --ledger-profit-soft: #e6f5ef;
+  --ledger-expense: #3d4a5c;
+  --ledger-expense-soft: #eef1f4;
+  --ledger-risk: #c81e1e;
+  --ledger-risk-soft: #fdecec;
+  --ledger-warn: #9a5a00;
+  --ledger-warn-soft: #fff6e5;
+  --ledger-neutral-900: #111827;
+  --ledger-neutral-700: #3f4b5a;
+  --ledger-neutral-500: #6b7280;
+  --ledger-neutral-300: #d1d5db;
+  --ledger-neutral-100: #f3f4f6;
+  --ledger-canvas: #f7f8fa;
+  --ledger-panel: #ffffff;
+  --ledger-hairline: #e6e8ec;
+  --ledger-inset: #f1f3f5;
+}
+
+.dark,
+[data-theme="dark"] {
+  --ledger-action: #3b8dd9;
+  --ledger-action-hover: #5ba3e3;
+  --ledger-action-soft: #0a1f35;
+  --ledger-profit: #34b08a;
+  --ledger-profit-soft: #0f2e24;
+  --ledger-expense: #9aa6b5;
+  --ledger-expense-soft: #1c2430;
+  --ledger-risk: #f07171;
+  --ledger-risk-soft: #3a1515;
+  --ledger-warn: #e0a23a;
+  --ledger-warn-soft: #3a2a0e;
+  --ledger-neutral-900: #f3f4f6;
+  --ledger-neutral-700: #d1d5db;
+  --ledger-neutral-500: #9ca3af;
+  --ledger-neutral-300: #374151;
+  --ledger-neutral-100: #1f2937;
+  --ledger-canvas: #0b0f14;
+  --ledger-panel: #141a22;
+  --ledger-hairline: #243041;
+  --ledger-inset: #1a222d;
+}

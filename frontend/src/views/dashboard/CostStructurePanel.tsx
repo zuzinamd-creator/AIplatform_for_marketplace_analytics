@@ -10,7 +10,7 @@ import {
 } from "recharts";
 
 import { CHART } from "../../ui/chart-theme";
-import { formatPct, formatRub } from "../../utils/format";
+import { formatCompactRub, formatPct, formatRub } from "../../utils/format";
 import { costDynamicsInsight, costStructureInsight } from "./chart-insights";
 import {
   buildDailyTotalCostsChart,
@@ -37,6 +37,8 @@ const BREAKDOWN_TOOLTIP_FIELDS: Array<{ key: keyof DailyTotalCostRow; name: stri
   { key: "acquiring", name: "Эквайринг" },
   { key: "other", name: "Прочее" },
 ];
+
+const MAX_DAILY_LABELED_POINTS = 14;
 
 function formatShareLabel(value: unknown): string {
   const n = Number(value);
@@ -88,6 +90,7 @@ export function CostStructurePanel({
     fillKey: s.fillKey,
   }));
   const structureHeight = costStructureChartHeight(structureRows.length);
+  const showDailyLabels = daily.rows.length > 0 && daily.rows.length <= MAX_DAILY_LABELED_POINTS;
 
   return (
     <div className="space-y-6">
@@ -147,7 +150,11 @@ export function CostStructurePanel({
 
             <ul className="mt-4 space-y-2" data-testid="cost-composition-legend">
               {composition.slices.map((s) => (
-                <li key={s.key} className="flex items-start gap-2 text-sm" data-testid={`cost-legend-${s.key}`}>
+                <li
+                  key={s.key}
+                  className="flex items-start gap-2 text-sm"
+                  data-testid={`cost-legend-${s.key}`}
+                >
                   <span
                     className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-sm"
                     style={{ background: CHART.series[s.fillKey] }}
@@ -178,15 +185,15 @@ export function CostStructurePanel({
         <div className="text-sm font-semibold text-ink">Общие затраты по дням</div>
         <div className="mt-1 text-xs text-ink-muted">
           Сумма расходов WB без возвратов (комиссия + логистика + продвижение + хранение + штрафы +
-          удержания + эквайринг + прочее)
+          удержания + эквайринг + прочее). Разбивка дня — во всплывающей подсказке.
         </div>
         {!daily.hasData ? (
           <div className="mt-4 text-sm text-ink-muted">Нет дневных данных по расходам.</div>
         ) : (
           <>
-            <div className="chart-panel mt-4">
+            <div className="chart-panel mt-4" data-testid="daily-costs-chart">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={daily.rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <BarChart data={daily.rows} margin={{ top: 18, right: 8, left: 0, bottom: 0 }}>
                   <XAxis dataKey="date" tick={CHART.axis} />
                   <YAxis tick={CHART.axis} width={48} />
                   <Tooltip content={<DailyTotalTooltip />} />
@@ -195,30 +202,21 @@ export function CostStructurePanel({
                     name="Затраты"
                     fill={CHART.series.costTotal}
                     radius={[2, 2, 0, 0]}
-                  />
+                  >
+                    {showDailyLabels ? (
+                      <LabelList
+                        dataKey="total_costs"
+                        position="top"
+                        formatter={(v: unknown) => formatCompactRub(v)}
+                        style={CHART.barLabel}
+                      />
+                    ) : null}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
-
-            {composition.slices.length > 0 ? (
-              <div
-                className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-secondary"
-                data-testid="daily-costs-period-strip"
-              >
-                {composition.slices.map((s) => (
-                  <span key={s.key} className="inline-flex items-center gap-1.5">
-                    <span
-                      className="h-2 w-2 shrink-0 rounded-sm"
-                      style={{ background: CHART.series[s.fillKey] }}
-                      aria-hidden
-                    />
-                    {s.name} {Math.round(s.sharePct)}%
-                  </span>
-                ))}
-              </div>
-            ) : null}
             <div className="mt-1 text-xs text-ink-muted" data-testid="daily-costs-share-note">
-              % — доля от общей суммы расходов за период
+              Подписи на столбцах при ≤{MAX_DAILY_LABELED_POINTS} днях; иначе — только оси и tooltip.
             </div>
 
             {dynamicsInsight ? (

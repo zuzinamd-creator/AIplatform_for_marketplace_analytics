@@ -84,6 +84,7 @@ export function DashboardPage() {
     financeKpis: data?.finance_summary.kpis ?? null,
     topSkus: data?.top_skus.items ?? null,
     aiRecommendationCount: recCount,
+    omitTrustBlocker: true,
   });
   const salesInsight = revenueProfitInsight(
     data?.revenue_trend_daily.points,
@@ -92,21 +93,18 @@ export function DashboardPage() {
   );
 
   return (
-    <div className="page-shell">
+    <div className="page-shell page-shell-tight">
       <FirstRunChecklist />
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="page-title">Финансовая аналитика продавца</h1>
-          {demo ? (
-            <StatusBadge tone="info">
-              <Sparkles className="mr-1 inline h-3 w-3" />
-              Демо
-            </StatusBadge>
-          ) : null}
+      {demo ? (
+        <div className="flex justify-end">
+          <StatusBadge tone="info">
+            <Sparkles className="mr-1 inline h-3 w-3" />
+            Демо
+          </StatusBadge>
         </div>
-      </div>
+      ) : null}
 
-      <div className="space-y-6" data-testid="dashboard-above-fold">
+      <div className="space-y-4" data-testid="dashboard-above-fold">
         <PeriodSelector value={periodSel} onChange={setPeriodSel} />
 
         <PrimaryAnswer

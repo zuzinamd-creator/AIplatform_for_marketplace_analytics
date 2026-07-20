@@ -163,34 +163,46 @@ export function TrustBanners() {
 
   return (
     <div className="space-y-3">
-      {visible.map((b) => (
-        <Card
-          key={b.id}
-          className={
-            b.tone === "bad"
-              ? "border-red-200 bg-semantic-danger-bg p-4"
-              : b.tone === "warn"
-                ? "border-amber-200 bg-semantic-warn-bg p-4"
-                : b.tone === "ok"
-                  ? "border-emerald-200 bg-semantic-success-bg p-4"
-                  : "border-sky-200 bg-semantic-info-bg p-4"
-          }
-        >
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <StatusBadge tone={b.tone}>{b.title}</StatusBadge>
-              </div>
-              <div className="mt-1.5 text-sm leading-relaxed text-ink-secondary">{b.detail}</div>
-            </div>
-            {b.href ? (
-              <Link to={b.href} className="btn-secondary h-9 shrink-0 px-3 text-xs">
-                {b.action ?? "Подробнее"}
-              </Link>
-            ) : null}
+      {visible.map((b) =>
+        b.id === "all-clear" ? (
+          <div
+            key={b.id}
+            className="status-pill border-ledger-profit/25 bg-ledger-profit-soft text-ledger-profit"
+            data-testid="system-status-pill"
+            title={b.detail}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-ledger-profit" aria-hidden />
+            {b.title}
           </div>
-        </Card>
-      ))}
+        ) : (
+          <Card
+            key={b.id}
+            className={
+              b.tone === "bad"
+                ? "border-ledger-risk/30 bg-ledger-risk-soft p-4"
+                : b.tone === "warn"
+                  ? "border-ledger-warn/30 bg-ledger-warn-soft p-4"
+                  : b.tone === "ok"
+                    ? "border-ledger-profit/30 bg-ledger-profit-soft p-4"
+                    : "border-brand/30 bg-brand-subtle p-4"
+            }
+          >
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <StatusBadge tone={b.tone}>{b.title}</StatusBadge>
+                </div>
+                <div className="mt-1.5 text-sm leading-relaxed text-ink-secondary">{b.detail}</div>
+              </div>
+              {b.href ? (
+                <Link to={b.href} className="btn-secondary h-9 shrink-0 px-3 text-xs">
+                  {b.action ?? "Подробнее"}
+                </Link>
+              ) : null}
+            </div>
+          </Card>
+        ),
+      )}
     </div>
   );
 }
