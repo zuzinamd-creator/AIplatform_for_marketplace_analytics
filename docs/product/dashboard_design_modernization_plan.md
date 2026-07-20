@@ -1,10 +1,30 @@
 # Dashboard Design Modernization Plan
 
-**Phase:** 9.18-R5 → **R6-P0 implementation (visual layer)**  
-**Status:** Palette + hierarchy **APPROVED** · P0 (+ items 5–7) **IMPLEMENTED** · staging `:8443` · **prod not deployed**  
-**Warning AA note:** light `warn` adjusted `#B86E00` → `#9A5A00` for soft-surface text ≥4.5:1.  
-**Baseline evidence:** `docs/release/screenshots/phase-9.18-r4/`  
+**Phase:** 9.18-R6-P0 (Ledger UI visual layer)  
+**Status:** ✅ **CLOSED — deployed to production**  
+**Prod SHA:** `addb31f` · **Prod bundle:** `index-yRrE3lAU.js` · **Host:** `https://321997.fornex.cloud/`  
+**Staging (preview):** `:8443` · may be wound down after P0 close  
+**Warning AA note:** light `warn` `#9A5A00` (was `#B86E00`) for soft-surface text ≥4.5:1.  
+**Baseline evidence:** `docs/release/screenshots/phase-9.18-r4/` · post-deploy: `docs/release/screenshots/phase-9.18-r6-p0/prod-postdeploy/`  
 **Comparables:** Stripe Dashboard · Linear · Vercel Analytics · Amplitude · Mixpanel · Power BI · Looker Studio  
+
+### Closed in P0 (deployed)
+
+1. Daily costs on-bar labels + legend honesty  
+2. Chrome diet (one H1 path on Overview)  
+3. Trust once under Primary (`TRUST_BADGE_SPEC`) + Action Strip `omitTrustBlocker`  
+4. Core + neutral + dark tokens; chart series without purple  
+5. Chart anti-pattern lint  
+6. Action Strip **variant B** — `costs-nudge` when chain empty and trust ≠ full  
+7. WCAG soft-pair + costs-nudge contrast tests  
+
+### P1 backlog — next phase (separate track)
+
+| ID | Item | Problem statement |
+|----|------|-------------------|
+| **P1-FOLD** | Desktop Primary Answer fold | PA ≈ **599px** from top (1440×900): «чек-лист Первый запуск + period selector съедают fold». Chrome diet helped (~845→599) but executive fold not closed. Scope: collapse/dismiss FirstRunChecklist; denser period chrome. **Not an open tail of R6-P0.** |
+
+Other P1+ (task-row CTAs, typography brand, etc.) remain deferred.
 
 ### Approved core palette
 
@@ -30,12 +50,9 @@
 6. Explicit Trust badge/line contract (`TRUST_BADGE_SPEC`)  
 7. Dark-mode tokens in CSS variables (not a later phase)  
 
-P1+ (task-row CTAs, typography brand, etc.) **not in this change**.
+P1+ (task-row CTAs, typography brand, etc.) **deferred — see P1 backlog above.**
 
-### P1 backlog (explicit — not in P0)
-
-**Desktop Primary Answer still ~599px from top (staging live, 1440×900).**  
-Problem statement: «чек-лист Первый запуск + period selector съедают fold» — after chrome diet (dual H1 removed) PA moved up (~845→599) but remains below executive fold. Address in next phase (collapse/dismiss checklist; denser period chrome), not this P0.
+### ~~P1 backlog (explicit — not in P0)~~ → moved to header «P1 backlog — next phase»
 
 ---
 

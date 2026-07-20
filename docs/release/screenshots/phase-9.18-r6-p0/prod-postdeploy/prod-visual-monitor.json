@@ -1,0 +1,32 @@
+{
+  "base": "https://321997.fornex.cloud",
+  "markers": {
+    "bundle": "https://321997.fornex.cloud/assets/index-yRrE3lAU.js",
+    "primaryAnswer": 1,
+    "trustBadge": 1,
+    "costsNudge": 0,
+    "emptyCard": 0,
+    "trustBlocker": 0,
+    "h1Count": 1,
+    "h1Texts": [
+      "Аналитика"
+    ]
+  },
+  "chartColors": [
+    "#666",
+    "#2f6fed",
+    "#a16207",
+    "#0f766e",
+    "#3d4a5c"
+  ],
+  "purple": [],
+  "darkTokens": {
+    "action": "#3b8dd9",
+    "actionSoft": "#0a1f35",
+    "canvas": "#0b0f14"
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "httpFails": [],
+  "costsOk": true
+}
