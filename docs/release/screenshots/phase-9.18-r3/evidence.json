@@ -1,0 +1,136 @@
+{
+  "steps": [
+    {
+      "name": "bundle",
+      "detail": "/assets/index-Df_toJsq.js",
+      "pass": true
+    },
+    {
+      "name": "url",
+      "detail": "https://321997.fornex.cloud/app/analytics",
+      "pass": true
+    },
+    {
+      "name": "cta_visible",
+      "detail": "count=1",
+      "pass": true
+    },
+    {
+      "name": "cta_works",
+      "detail": "{\"before\":{\"y\":0,\"top\":2559.5},\"after\":{\"hash\":\"#dashboard-cost-structure\",\"y\":2560,\"top\":-0.5}}",
+      "pass": true
+    },
+    {
+      "name": "chart_title",
+      "detail": "true",
+      "pass": true
+    },
+    {
+      "name": "chart_legend_values",
+      "detail": "Логистика: 799,28 ₽ (70%)Доставка и обработка заказовКомиссия WB: 338,82 ₽ (30%)Комиссия маркетплейса за продажи",
+      "pass": true
+    },
+    {
+      "name": "chart_svg_categories",
+      "detail": "[\"Логистика\",\"Комиссия WB\"]",
+      "pass": true
+    },
+    {
+      "name": "chart_svg_percentages",
+      "detail": "[\"70%\",\"30%\"]",
+      "pass": true
+    },
+    {
+      "name": "chart_axis_fill",
+      "detail": "[\"#334155\",\"#334155\",\"#334155\",\"#334155\",\"#334155\",\"#334155\",\"#334155\",\"#334155\"]",
+      "pass": true
+    },
+    {
+      "name": "mobile_legend",
+      "detail": "{\"legendOk\":true,\"svgCats\":[\"Логистика\",\"Комиссия WB\"],\"svgPcts\":[\"70%\",\"30%\"]}",
+      "pass": true
+    },
+    {
+      "name": "mobile_svg_labels",
+      "detail": "{\"cats\":[\"Логистика\",\"Комиссия WB\"],\"pcts\":[\"70%\",\"30%\"]}",
+      "pass": true
+    },
+    {
+      "name": "color_cta",
+      "detail": "{\"color\":\"rgb(37, 99, 235)\",\"size\":\"14px\",\"weight\":\"600\"}",
+      "pass": true
+    },
+    {
+      "name": "color_nav_muted",
+      "detail": "rgb(100, 116, 139)",
+      "pass": true
+    }
+  ],
+  "ok": true,
+  "chart": {
+    "title": true,
+    "legend": "Логистика: 799,28 ₽ (70%)Доставка и обработка заказовКомиссия WB: 338,82 ₽ (30%)Комиссия маркетплейса за продажи",
+    "legendOk": true,
+    "svgTexts": [
+      "0",
+      "200",
+      "400",
+      "600",
+      "800",
+      "Логистика",
+      "Комиссия WB",
+      "70%",
+      "30%",
+      "05-18",
+      "05-19",
+      "05-20",
+      "05-21",
+      "05-22",
+      "05-24",
+      "0",
+      "200",
+      "400",
+      "600",
+      "800"
+    ],
+    "svgCats": [
+      "Логистика",
+      "Комиссия WB"
+    ],
+    "svgPcts": [
+      "70%",
+      "30%"
+    ],
+    "tickFills": [
+      "#334155",
+      "#334155",
+      "#334155",
+      "#334155",
+      "#334155",
+      "#334155",
+      "#334155",
+      "#334155"
+    ],
+    "chartH": 256
+  },
+  "mobile": {
+    "legendOk": true,
+    "svgCats": [
+      "Логистика",
+      "Комиссия WB"
+    ],
+    "svgPcts": [
+      "70%",
+      "30%"
+    ]
+  },
+  "colors": {
+    "cta": {
+      "color": "rgb(37, 99, 235)",
+      "size": "14px",
+      "weight": "600"
+    },
+    "chipBg": "rgba(254, 242, 242, 0.6)",
+    "navColor": "rgb(100, 116, 139)"
+  }
+}
