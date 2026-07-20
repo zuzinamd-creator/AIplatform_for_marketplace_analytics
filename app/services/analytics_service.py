@@ -76,6 +76,7 @@ from app.schemas.analytics import (
     WarehouseRow,
 )
 from app.services.base import TenantScopedService
+from app.services.dashboard_query_cache import DashboardQueryCache
 from app.services.financial_integrity_service import FinancialIntegrityService, IntegrityPeriod
 from app.services.ops_service import OpsService
 
@@ -87,11 +88,23 @@ class Period:
 
 
 class AnalyticsService(TenantScopedService):
-    def __init__(self, db: AsyncSession, user: User) -> None:
+    def __init__(
+        self,
+        db: AsyncSession,
+        user: User,
+        *,
+        query_cache: DashboardQueryCache | None = None,
+    ) -> None:
         super().__init__(db, user_id=user.id)
         self.user = user
+        self._query_cache = query_cache
 
     async def _freshness(self, semantics_version: str = "1.0") -> AnalyticsFreshnessMeta:
+        if self._query_cache is not None:
+            return await self._query_cache.get_freshness(self, semantics_version=semantics_version)
+        return await self._freshness_uncached(semantics_version=semantics_version)
+
+    async def _freshness_uncached(self, semantics_version: str = "1.0") -> AnalyticsFreshnessMeta:
         # Reuse existing operational snapshot to provide rebuild/queue context.
         runtime = await OpsService(self.db, self.user).runtime_summary()
         data_as_of = await self._max_aggregate_date()
@@ -124,6 +137,26 @@ class AnalyticsService(TenantScopedService):
     ) -> AnalyticsIntegrityMeta | None:
         if period is None:
             return None
+        if self._query_cache is not None:
+            return await self._query_cache.get_integrity(
+                self,
+                marketplace=marketplace,
+                period=period,
+                semantics_version=semantics_version,
+            )
+        return await self._integrity_uncached(
+            marketplace=marketplace,
+            period=period,
+            semantics_version=semantics_version,
+        )
+
+    async def _integrity_uncached(
+        self,
+        *,
+        marketplace: Marketplace,
+        period: Period,
+        semantics_version: str = "1.0",
+    ) -> AnalyticsIntegrityMeta | None:
         svc = FinancialIntegrityService(self.db, self.user.id)
         return await svc.validate_period(
             marketplace=marketplace,
@@ -167,7 +200,12 @@ class AnalyticsService(TenantScopedService):
         res = await self.execute_with_rls(stmt)
         return {str(sku): Decimal(cost) for sku, cost in res.all()}
 
-    async def coverage(self, *, semantics_version: str = "1.0") -> AnalyticsCoverageResponse:
+    async def coverage(
+        self,
+        *,
+        semantics_version: str = "1.0",
+        for_period: Period | None = None,
+    ) -> AnalyticsCoverageResponse:
         freshness = await self._freshness(semantics_version)
 
         # Marketplaces detected from governed projections.
@@ -219,12 +257,15 @@ class AnalyticsService(TenantScopedService):
         recommendations: list[ReportRecommendation] = []
         warnings: list = []
 
-        # Costs recommendation.
-        integrity = await FinancialIntegrityService(self.db, self.user.id).validate_period(
-            marketplace=marketplaces[0] if marketplaces else Marketplace.WILDBERRIES,
-            period=IntegrityPeriod(start=min_date or date.today(), end=max_date or date.today()),
-            semantics_version=semantics_version,
-        ) if (min_date and max_date and marketplaces) else None
+        # Costs recommendation (reuse request-scoped integrity when for_period provided).
+        integrity = None
+        if min_date and max_date and marketplaces:
+            ip = for_period or Period(start=min_date, end=max_date)
+            integrity = await self._integrity(
+                marketplace=marketplaces[0] if marketplaces else Marketplace.WILDBERRIES,
+                period=ip,
+                semantics_version=semantics_version,
+            )
         if integrity:
             warnings.extend(integrity.warnings)
             if any(w.code == "missing_cost_basis" for w in integrity.warnings):
@@ -316,6 +357,13 @@ class AnalyticsService(TenantScopedService):
         return select_canonical_finance_report_ids(candidates)
 
     async def _wb_seller_kpis(self, *, marketplace: Marketplace, period: Period) -> SellerKpis:
+        if self._query_cache is not None:
+            return await self._query_cache.get_seller_kpis(
+                self, marketplace=marketplace, period=period
+            )
+        return await self._wb_seller_kpis_uncached(marketplace=marketplace, period=period)
+
+    async def _wb_seller_kpis_uncached(self, *, marketplace: Marketplace, period: Period) -> SellerKpis:
         """
         WB seller settlement KPIs for a period.
 

@@ -150,6 +150,7 @@ async def test_summary_admin_adds_ops_branches_and_rec_total():
         avg_confidence=None,
         recommendations=["keep"],
     )
+    # 8 critical + queue + ai_ops + count_recs (runtime from shared cache, not a fan-out)
     fake_results = [
         focus,
         1,
@@ -160,7 +161,6 @@ async def test_summary_admin_adds_ops_branches_and_rec_total():
         6,
         7,
         ([], 42, {"queued": 2}),
-        runtime,
         ai_ops,
         7,
     ]
@@ -170,9 +170,15 @@ async def test_summary_admin_adds_ops_branches_and_rec_total():
         captured.extend(coros)
         return fake_results
 
+    from app.services.dashboard_query_cache import DashboardQueryCache
+
+    cache = DashboardQueryCache()
+    cache.runtime = runtime
+
     with (
         patch("app.services.dashboard_service.asyncio.gather", side_effect=capture_gather),
         patch.object(DashboardService, "_run", side_effect=lambda fn: fn),
+        patch("app.services.dashboard_service.DashboardQueryCache", return_value=cache),
         patch("app.services.dashboard_service.RevenueKpiSummaryResponse.model_validate", return_value=validated),
         patch("app.services.dashboard_service.RevenueTrendResponse.model_validate", return_value=validated),
         patch("app.services.dashboard_service.FinancialKpiSummaryResponse.model_validate", return_value=validated),
@@ -192,10 +198,11 @@ async def test_summary_admin_adds_ops_branches_and_rec_total():
             end=date(2026, 7, 12),
         )
 
-    assert len(captured) == 12
+    assert len(captured) == 11
     assert result.recommendations.items == []
     assert result.recommendations.page.total == 7
     assert result.queue.items == []
     assert result.queue.status_counts == {"queued": 2}
     assert result.ai_ops.degraded_intelligence_mode is True
     assert result.todays_focus.priority_queue == []
+    assert result.runtime is runtime

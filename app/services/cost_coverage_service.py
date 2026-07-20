@@ -21,6 +21,7 @@ from app.schemas.analytics import (
     IntegrityWarning,
 )
 from app.services.base import TenantScopedService
+from app.services.dashboard_query_cache import DashboardQueryCache
 from app.services.ops_service import OpsService
 
 
@@ -31,10 +32,27 @@ class CoveragePeriod:
 
 
 class CostCoverageService(TenantScopedService):
-    def __init__(self, db: AsyncSession, user_id):
+    def __init__(
+        self,
+        db: AsyncSession,
+        user_id,
+        *,
+        query_cache: DashboardQueryCache | None = None,
+        user=None,
+    ):
         super().__init__(db, user_id=user_id)
+        self._query_cache = query_cache
+        self._user = user
 
     async def _freshness(self) -> AnalyticsFreshnessMeta:
+        # Dashboard summary: one shared freshness via AnalyticsService (9.18-D B+C).
+        if self._query_cache is not None and self._user is not None:
+            from app.services.analytics_service import AnalyticsService
+
+            return await self._query_cache.get_freshness(
+                AnalyticsService(self.db, self._user, query_cache=self._query_cache)
+            )
+
         runtime = await OpsService(self.db, type("U", (), {"id": self.user_id})()).runtime_summary()  # lightweight shim
         # data_as_of: max economics date
         stmt = select(func.max(SkuUnitEconomicsDaily.metric_date))

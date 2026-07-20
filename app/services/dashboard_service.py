@@ -3,6 +3,9 @@
 Phase 9.18-B: slim first-screen payload — omit AI priority queues / full
 recommendation bodies / queue job rows / cost-coverage SKU tables that the
 dashboard UI does not render. Ops branches run only for platform admins.
+
+Phase 9.18-D P1: one TenantSession per branch (A); one runtime/freshness (B+C);
+one seller KPI + integrity validate per period (D) via DashboardQueryCache.
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import SessionLocal
+from app.core.security_context import TenantSession
 from app.core.user_roles import is_platform_admin
 from app.models.report import Marketplace
 from app.models.user import User
@@ -49,6 +53,7 @@ from app.schemas.ops_runtime import (
 from app.services.ai_service import AIService
 from app.services.analytics_service import AnalyticsService, Period
 from app.services.cost_coverage_service import CostCoverageService, CoveragePeriod
+from app.services.dashboard_query_cache import DashboardQueryCache
 from app.services.ops_service import OpsService
 
 T = TypeVar("T")
@@ -129,9 +134,10 @@ class DashboardService:
         self.user = user
 
     async def _run(self, fn) -> T:
-        """Each fan-out task gets its own DB session (asyncpg is not concurrent per connection)."""
+        """Each fan-out task: own DB session + one TenantSession (no repeated set_config)."""
         async with SessionLocal() as session:
-            return await fn(session)
+            async with TenantSession.transaction(session, self.user.id):
+                return await fn(session)
 
     async def summary(
         self,
@@ -146,30 +152,36 @@ class DashboardService:
         user_id: UUID = user.id
         period = Period(start=start, end=end)
         admin = is_platform_admin(user.role)
+        cache = DashboardQueryCache()
+
+        def analytics(db: AsyncSession) -> AnalyticsService:
+            return AnalyticsService(db, user, query_cache=cache)
 
         # Critical path for first screen (all roles).
         coros: list = [
             self._run(lambda db: AIService(db, user_id).todays_focus()),
             self._run(
-                lambda db: AnalyticsService(db, user).revenue_summary(marketplace=marketplace, period=period)
+                lambda db: analytics(db).revenue_summary(marketplace=marketplace, period=period)
             ),
             self._run(
-                lambda db: AnalyticsService(db, user).revenue_trend(marketplace=marketplace, period=period)
+                lambda db: analytics(db).revenue_trend(marketplace=marketplace, period=period)
             ),
             self._run(
-                lambda db: AnalyticsService(db, user).financial_summary(marketplace=marketplace, period=period)
+                lambda db: analytics(db).financial_summary(marketplace=marketplace, period=period)
             ),
             self._run(
-                lambda db: AnalyticsService(db, user).financial_trends(marketplace=marketplace, period=period)
+                lambda db: analytics(db).financial_trends(marketplace=marketplace, period=period)
             ),
             self._run(
-                lambda db: AnalyticsService(db, user).top_skus(
+                lambda db: analytics(db).top_skus(
                     marketplace=marketplace, period=period, limit=5, sort="revenue"
                 )
             ),
-            self._run(lambda db: AnalyticsService(db, user).coverage()),
+            self._run(lambda db: analytics(db).coverage(for_period=period)),
             self._run(
-                lambda db: CostCoverageService(db, user_id).analyze(
+                lambda db: CostCoverageService(
+                    db, user_id, query_cache=cache, user=user
+                ).analyze(
                     marketplace=marketplace,
                     period=CoveragePeriod(start=start, end=end),
                     # Dashboard trust UI uses aggregates + missing_skus sample only.
@@ -177,13 +189,12 @@ class DashboardService:
                 )
             ),
         ]
-        # Admin KPI strip: status counts / rebuild / AI mode / recommendation total.
-        # Sellers do not render these; TrustBanners already polls AI ops for admins.
+        # Admin KPI strip: status counts / AI mode / recommendation total.
+        # runtime comes from shared cache (B) — no separate fan-out branch.
         if admin:
             coros.extend(
                 [
                     self._run(lambda db: OpsService(db, user).list_queue_jobs(skip=0, limit=0)),
-                    self._run(lambda db: OpsService(db, user).runtime_summary()),
                     self._run(lambda db: AIService(db, user_id).operational_status()),
                     self._run(lambda db: AIService(db, user_id).count_recommendations()),
                 ]
@@ -195,7 +206,7 @@ class DashboardService:
             compare_idx = len(coros)
             coros.append(
                 self._run(
-                    lambda db: AnalyticsService(db, user).revenue_summary(
+                    lambda db: analytics(db).revenue_summary(
                         marketplace=marketplace, period=compare_period
                     )
                 )
@@ -214,15 +225,21 @@ class DashboardService:
 
         if admin:
             _queue_rows, queue_total, status_counts = results[8]
-            runtime = results[9]
-            ai_ops_raw = results[10]
-            rec_total = int(results[11])
+            ai_ops_raw = results[9]
+            rec_total = int(results[10])
             queue = PaginatedQueueResponse(
                 items=[],
                 page=OpsService.page_meta(queue_total, 0, 0),
                 status_counts=status_counts,
             )
-            runtime_payload = runtime
+            # Shared runtime snapshot from analytics freshness path (B).
+            if cache.runtime is not None:
+                runtime_payload = cache.runtime
+            else:
+                # Extremely unlikely if analytics ran; fall back once.
+                async with SessionLocal() as session:
+                    async with TenantSession.transaction(session, user_id):
+                        runtime_payload = await OpsService(session, user).runtime_summary()
             ai_ops = AIOperationalStatusResponse(
                 overall_score=ai_ops_raw.overall_score,
                 degraded_intelligence_mode=ai_ops_raw.degraded_intelligence_mode,
@@ -242,7 +259,7 @@ class DashboardService:
                 page=OpsPageMeta(total=0, skip=0, limit=0),
                 status_counts={},
             )
-            runtime_payload = _empty_runtime()
+            runtime_payload = cache.runtime if cache.runtime is not None else _empty_runtime()
             ai_ops = _empty_ai_ops()
             recommendations = PaginatedRecommendationsResponse(
                 items=[],

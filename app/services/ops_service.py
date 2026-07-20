@@ -9,12 +9,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.security_context import TenantSession
-from app.core.tenant_context import (
-    set_bypass_rls_context,
-    set_current_user_context,
-    set_queue_role_context,
-)
+from app.core.security_context import TenantSession, bind_tenant_context, tenant_context_bound
+from app.core.tenant_context import set_bypass_rls_context
 from app.models.enterprise_runtime import (
     AutonomousActionStatus,
     RuntimeAutonomousAction,
@@ -65,9 +61,9 @@ class OpsService(TenantScopedService):
             raise ValueError("user_id is required for operational reads")
         user_id = self.user_id
         if self.db.in_transaction():
-            await set_bypass_rls_context(self.db, False)
-            await set_queue_role_context(self.db, False)
-            await set_current_user_context(self.db, user_id)
+            if not tenant_context_bound(self.db, user_id):
+                await set_bypass_rls_context(self.db, False)
+                await bind_tenant_context(self.db, user_id)
             yield
         else:
             async with TenantSession.transaction(self.db, user_id):
