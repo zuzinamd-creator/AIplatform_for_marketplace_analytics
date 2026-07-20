@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { X } from "lucide-react";
 
 import { FEATURE_FLAGS } from "../state/feature-flags";
@@ -202,8 +202,18 @@ function CostTrustBannerGlobal() {
  * AppShell mounting point for the global cost trust banner.
  * Wired to live integrity data; disabled by default via FEATURE_FLAGS.
  */
+function isDashboardOverviewPath(pathname: string): boolean {
+  return pathname === "/app/analytics" || pathname === "/app/analytics/";
+}
+
 export function CostTrustBannerMount() {
+  const { pathname } = useLocation();
+
   if (!FEATURE_FLAGS.costTrustBannerGlobal) {
+    return null;
+  }
+
+  if (isDashboardOverviewPath(pathname)) {
     return null;
   }
 

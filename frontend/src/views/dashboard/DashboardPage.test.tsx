@@ -190,6 +190,12 @@ describe("DashboardPage trust integration", () => {
     expect(screen.getAllByText(/Нет себестоимости/i).length).toBeGreaterThan(0);
   });
 
+  it("F2-A1: renders TrustChip in hero area", async () => {
+    renderPage();
+    expect(await screen.findByTestId("trust-chip")).toBeTruthy();
+    expect(screen.getByTestId("trust-chip-cta").getAttribute("href")).toBe("/app/costs");
+  });
+
   it("does not show inline period compare teaser on overview", async () => {
     renderPage();
     await screen.findByText(/Финансовая аналитика продавца/i);

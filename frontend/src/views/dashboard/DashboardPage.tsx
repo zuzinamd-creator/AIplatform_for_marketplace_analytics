@@ -23,6 +23,7 @@ import { CostCoverageIndicator } from "../../ui/cost-coverage-indicator";
 import { CostTrustBanner } from "../../ui/cost-trust-banner";
 import { KpiCard } from "../../ui/kpi-card";
 import { ProfitTrustBadge } from "../../ui/profit-trust-badge";
+import { TrustChip } from "../../ui/trust-chip";
 import { StatusBadge } from "../../ui/status-badge";
 import { WarnCallout } from "../../ui/warn-callout";
 import { PeriodSelector } from "../../ui/period-selector";
@@ -205,26 +206,29 @@ export function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className={admin ? "lg:col-span-5" : "lg:col-span-12"}>
-          <KpiCard
-            variant="hero"
-            icon={<Database className="h-5 w-5" />}
-            label={
-              <span className="inline-flex flex-wrap items-center gap-2">
-                Продажи (выбранный период)
-                <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
-              </span>
-            }
-            value={isLoading ? "…" : formatRub(data?.revenue_summary.kpis.total_revenue)}
-            sub={
-              <span>
-                Чистая прибыль: {formatProfitValue(data?.revenue_summary.kpis.total_profit, trustCtx.trust)}
-                {" · "}Маржа по выплате:{" "}
-                {formatMarginValue(data?.revenue_summary.kpis.margin_pct, trustCtx.trust)}
-                {" · "}Рентабельность:{" "}
-                {formatProfitabilityValue(data?.revenue_summary.kpis.profitability_pct, trustCtx.trust)}
-              </span>
-            }
-          />
+          <div className="space-y-3">
+            <KpiCard
+              variant="hero"
+              icon={<Database className="h-5 w-5" />}
+              label={
+                <span className="inline-flex flex-wrap items-center gap-2">
+                  Продажи (выбранный период)
+                  <ProfitTrustBadge trust={trustCtx.trust} trustContext={trustCtx} metric="profit" />
+                </span>
+              }
+              value={isLoading ? "…" : formatRub(data?.revenue_summary.kpis.total_revenue)}
+              sub={
+                <span>
+                  Чистая прибыль: {formatProfitValue(data?.revenue_summary.kpis.total_profit, trustCtx.trust)}
+                  {" · "}Маржа по выплате:{" "}
+                  {formatMarginValue(data?.revenue_summary.kpis.margin_pct, trustCtx.trust)}
+                  {" · "}Рентабельность:{" "}
+                  {formatProfitabilityValue(data?.revenue_summary.kpis.profitability_pct, trustCtx.trust)}
+                </span>
+              }
+            />
+            <TrustChip trustContext={trustCtx} />
+          </div>
         </div>
         {admin ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:col-span-7">

@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import { CostTrustBanner, CostTrustBannerMount } from "./cost-trust-banner";
 
@@ -76,13 +76,44 @@ describe("CostTrustBanner", () => {
 });
 
 describe("CostTrustBannerMount", () => {
-  it("renders global banner when feature flag is enabled", () => {
-    render(
-      <MemoryRouter>
-        <CostTrustBannerMount />
+  afterEach(() => {
+    cleanup();
+  });
+
+  function renderMountAt(path: string) {
+    return render(
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/app/analytics" element={<CostTrustBannerMount />} />
+          <Route path="/app/analytics/weekly" element={<CostTrustBannerMount />} />
+          <Route path="/app/analytics/economics" element={<CostTrustBannerMount />} />
+          <Route path="/app/analytics/cost-coverage" element={<CostTrustBannerMount />} />
+          <Route path="/app/costs" element={<CostTrustBannerMount />} />
+        </Routes>
       </MemoryRouter>,
     );
+  }
+
+  it("renders global banner when feature flag is enabled on non-dashboard routes", () => {
+    renderMountAt("/app/costs");
     expect(screen.getByRole("status")).toBeTruthy();
     expect(screen.getByText(/Оценка/)).toBeTruthy();
+  });
+
+  it("hides global banner on /app/analytics overview", () => {
+    renderMountAt("/app/analytics");
+    expect(screen.queryByText(/Доверие к прибыли/)).toBeNull();
+  });
+
+  it("shows global banner on analytics child routes", () => {
+    for (const path of [
+      "/app/analytics/weekly",
+      "/app/analytics/economics",
+      "/app/analytics/cost-coverage",
+    ]) {
+      cleanup();
+      renderMountAt(path);
+      expect(screen.getByText(/Доверие к прибыли/)).toBeTruthy();
+    }
   });
 });
