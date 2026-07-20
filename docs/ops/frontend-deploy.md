@@ -3,7 +3,9 @@
 Production UI is served by **nginx** from `/var/www/marketplace-analytics`.  
 `marketplace-frontend.service` (Vite preview on port 4173) is **optional** — disable it on VPS to save RAM.
 
-**Current production FE:** bundle `index-DVVPbWvu.js` (Phase 9.16-C seller dashboard surface; platform SHA `f85dea6` — see [phase_917f_release_certification.md](../release/phase_917f_release_certification.md)).
+**Current production FE (9.18-R2):** bundle `index-CfF3RxW0.js` (+ deferred `recharts-DlIxri3H.js`, `CostStructurePanel-*.js`).  
+F2 seller surface (Primary Answer · Trust Chip · Action Strip · F1.6 onboarding · nav Обзор/Аналитика/Данные/Действия/Аккаунт).  
+Operators: `cat /var/lib/marketplace-analytics/frontend_bundle` and `frontend_deploy_sha` (tip at publish was `49f843f`; docs tip may advance after alignment commits without changing the hashed bundle).
 
 ## One-command deploy
 

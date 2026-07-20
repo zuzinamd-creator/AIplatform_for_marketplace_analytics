@@ -1,11 +1,11 @@
 # Marketplace Analytics Platform (WB / Ozon)
 
-**Version:** Phase **9.17-G** (runtime identity aligned)  
+**Version:** Phase **9.18-R2** (F2 production release)  
 **Certified baseline:** see `git rev-parse HEAD` / tag `certified-production`  
-**Runtime app deploy lineage:** ETL `f85dea6` · docs tip · **processes restarted at tip (9.17-G)**  
-**Frontend bundle (production):** `index-DVVPbWvu.js` @ 2026-07-19 (rebuild; hash stable since 9.16-C)  
-**Status:** Production certified · runtime aligned in **9.17-G** · **GO**  
-**Last updated:** 2026-07-19
+**Frontend code tip (F2):** `49f843f` · **docs tip:** follow `HEAD` after R2 alignment commit  
+**Frontend bundle (production):** `index-CfF3RxW0.js` @ 2026-07-20 17:26 UTC  
+**Status:** Production certified · F2 UX live · **GO**  
+**Last updated:** 2026-07-20
 
 ---
 
@@ -14,29 +14,26 @@
 | Field | Value |
 |-------|-------|
 | **Production / GitHub / Release SHA** | `git rev-parse HEAD` (tip; tag `certified-production`) |
-| **Backend runtime SHA** | `/var/lib/marketplace-analytics/runtime_sha` (= HEAD after 9.17-G restart) |
-| **Frontend bundle** | `index-DVVPbWvu.js` (`DVVPbWvu`) · redeployed 2026-07-19 23:04 UTC |
+| **Frontend deploy SHA** | `/var/lib/marketplace-analytics/frontend_deploy_sha` (= F2 tip at publish) |
+| **Backend runtime SHA** | `/var/lib/marketplace-analytics/runtime_sha` |
+| **Frontend bundle** | `index-CfF3RxW0.js` (+ deferred `recharts-DlIxri3H.js`) · published 2026-07-20 17:26 UTC |
 | **Alembic** | `0037_inv_stream_idx` (head) |
-| **Phase 9.17-G runtime alignment** | [docs/release/phase_917g_runtime_alignment_certification.md](docs/release/phase_917g_runtime_alignment_certification.md) |
-| **Phase 9.17-F release cert** | [docs/release/phase_917f_release_certification.md](docs/release/phase_917f_release_certification.md) |
-| **ETL performance (9.17-E1)** | [docs/release/phase_917e1_production_performance_certification.md](docs/release/phase_917e1_production_performance_certification.md) |
-| **Safe Incremental Stream (9.17-E)** | [docs/release/phase_917e_safe_incremental_stream_certification.md](docs/release/phase_917e_safe_incremental_stream_certification.md) |
+| **Seller dashboard (F2)** | [docs/frontend/seller_dashboard.md](docs/frontend/seller_dashboard.md) |
+| **Onboarding (F1.6)** | [docs/product/onboarding.md](docs/product/onboarding.md) |
+| **Frontend deploy** | [docs/ops/frontend-deploy.md](docs/ops/frontend-deploy.md) |
+| **Dashboard perf (9.18-B)** | [docs/release/phase_918b_dashboard_performance_certification.md](docs/release/phase_918b_dashboard_performance_certification.md) |
+| **HTTPS perf (9.18-D1)** | [docs/release/phase_918d1_production_https_certification.md](docs/release/phase_918d1_production_https_certification.md) |
 | **AI trigger policy (9.17-B)** | [docs/product/ai_trigger_policy.md](docs/product/ai_trigger_policy.md) |
-| **Seller dashboard (FE surface 9.16-C)** | [docs/frontend/seller_dashboard.md](docs/frontend/seller_dashboard.md) |
 | **Insight Engine V1** | [docs/product/dashboard_insight_engine.md](docs/product/dashboard_insight_engine.md) |
 | **Margin semantics** | [docs/product/margin_semantics.md](docs/product/margin_semantics.md) |
-| **Analytics Hub master spec** | [docs/product/analytics_hub_master_spec.md](docs/product/analytics_hub_master_spec.md) |
 | **Trust matrix** | [docs/product/trust_matrix_certification.md](docs/product/trust_matrix_certification.md) |
-| **Frontend deploy** | [docs/ops/frontend-deploy.md](docs/ops/frontend-deploy.md) |
 | **Safety stack** | 8.2.0 systemd preflight · 8.2.1a recovery · 8.3.0 deploy guard |
-| **Feature release tag (historical)** | `v8.1-promotion-expenses-mvp` |
-| **Auth phases** | 9.1A gate · 9.2B roles · 9.2C admin panel · 9.3A invites |
 | **Safety docs** | [docs/operations/production_safety.md](docs/operations/production_safety.md) |
 | **Recovery runbook** | [docs/operations/production_recovery_runbook.md](docs/operations/production_recovery_runbook.md) |
 
-**Host:** `321997.fornex.cloud` · **Branches:** `main` ≡ `release/task0-jam-subscription-expenses` ≡ production
+**Host:** `321997.fornex.cloud` · **Branches:** `main` ≡ production
 
-**Recent line:** 9.17-E (Safe Incremental Stream) → 9.17-E1 (perf) → 9.17-F (docs) → **9.17-G** (runtime identity).
+**Recent line:** 9.18-B (slim summary) → 9.18-D1 (~1.7s HTTPS) → **9.18-F2** (Primary Answer / Action Strip / F1.6 onboarding / nav IA) → **9.18-R2** (production sync).
 
 ---
 
@@ -59,25 +56,32 @@ The platform treats marketplace reports as a **financial data platform** — not
 2. ETL → ledger → aggregates → inventory snapshots → report **`processed`** (dashboard ready)
 3. Import COGS (`cost_history`) for margin/profit trust
 4. Enter **promotion expenses** / Jam subscription where applicable (Reports / finance summary)
-5. Open **Analytics Hub** (`/app/analytics`) — overview KPIs, costs, Top SKU, financial summary, Business Signals
+5. Open **Обзор** (`/app/analytics`) — Primary Answer, Trust Chip, Action Strip, Top SKU, charts, financial summary
 6. **Explicit** Period Intelligence AI run («Запустить анализ» / AI API) → executive summary + recommendations  
    — AI does **not** run automatically after upload (`AI_AUTO_RECOMMEND_AFTER_REPORT=false` by default; Phase 9.17-B)
 7. Seller actions: accept / dismiss / complete / snooze
 
+**Seller nav (F2):** Обзор · Аналитика · Данные · Действия · Аккаунт
+
+**Onboarding (F1.6):** `value-intro` → … → `processing` → … → `complete` (no `sku_mapping` / `first_ai` / `walkthrough`)
+
 ---
 
-## Seller Dashboard (Phase 9.11–9.16)
+## Seller Dashboard (Phase 9.18-F2)
 
 Entry: **`/app/analytics`** (Overview). `/app/dashboard` redirects here.
 
 | Capability | What sellers see |
 |------------|------------------|
-| **Hero KPIs** | Revenue, net profit, **Маржа по выплате**, profitability (trust-gated) |
-| **Business Signals** | Up to 3 alerts: dominant cost share, returns pressure, weak high-revenue SKU |
-| **Charts** | Daily revenue/profit · period cost structure · daily **total** costs (returns excluded) |
-| **Insight Engine V1** | Deterministic captions: Fact + Driver + Attention (no LLM) |
+| **Primary Answer** | Period revenue + net profit (trust-gated) |
+| **Trust Chip** | Inline COGS / profit trust on the overview |
+| **Action Strip** | Compact next actions (replaces Focus + Business Signals panels) |
 | **Top SKU** | Revenue / profit / **Маржа SKU** · contribution insight · link to Economics |
+| **Charts** | Daily revenue/profit · period cost structure · daily **total** costs (returns excluded; Recharts deferred) |
+| **Insight Engine V1** | Deterministic captions: Fact + Driver + Attention (no LLM) |
 | **Financial Summary** | Flat **Расходы WB** (commission, logistics, storage, deductions) → Выплата от WB |
+
+Removed from overview (F2): Hero KPI grid, Business Signals panel, Focus («Что требует внимания сегодня»).
 
 **Three margins (different math — do not merge):**
 
