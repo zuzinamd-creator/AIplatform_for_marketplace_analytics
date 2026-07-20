@@ -66,9 +66,10 @@ Trust/transparency (System Status, trust banners, stale indicators) is a differe
 
 ### 7) Onboarding friction
 
-- 8-step wizard can feel long for returning sellers
-- SKU mapping guidance is informational only (no CRUD API)
-- “First AI analysis” step depends on processed report — timing unclear
+- 7-step F1.6 wizard (certified 9.18-F2-C3) — shorter than legacy 8-step UX-2; optional workspace and costs reduce length
+- Upload and processing are split: upload happens on `/app/reports/upload`, processing step polls until `processed`
+- Global «Пропустить и перейти к панели» bypasses completion flag — setup banner may persist until explicit finish CTA
+- Client-local completion (`localStorage`) — not synced across devices
 
 ---
 
@@ -106,11 +107,10 @@ flowchart TB
   subgraph gap [Friction gaps]
     W[Weekly analysis UI]
     I[Inventory/warehouse seller view]
-    S[SKU mapping]
+    S[SKU mapping CRUD — product backlog, not onboarding]
   end
   D --> W
   D --> I
-  O --> S
 ```
 
 See scoring impact in `docs/product/product_validation.md`.

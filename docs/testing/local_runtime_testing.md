@@ -209,8 +209,10 @@ Checks: `/health`, `/health/ready`, register/login (§5a requires `REGISTRATION_
 1. Set `REGISTRATION_MODE=open` in `.env`
 2. Open http://localhost:5173/register
 3. Register seller account (password ≥ 8 chars) without invite token
-4. Login → redirected to `/app/onboarding` or dashboard
+4. Login → redirected to `/app/onboarding` (first seller login) or `/app/analytics` (onboarding complete)
 5. Token stored in `localStorage` (`ma.accessToken`)
+
+**Onboarding smoke (F1.6):** after first login, complete wizard at `/app/onboarding` — upload report, confirm processing step shows «Отчёт готов», finish to `/app/analytics`. See [onboarding.md](../product/onboarding.md).
 
 ### 5b. Invite registration (production-like — Phase 9.3A)
 

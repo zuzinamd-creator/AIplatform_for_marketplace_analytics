@@ -32,5 +32,5 @@ This audit focuses on seller comprehension and workflow clarity (not backend arc
   - consistent pagination
   - seller-friendly error explanations
 - Add “stale data” and “rebuild pending” banners on dashboard when signals exist
-- Add a SKU mapping UX once backend exposes mapping CRUD endpoints (tenant-scoped)
+- Add a SKU mapping UX once backend exposes mapping CRUD endpoints (tenant-scoped) — **outside** the F1.6 onboarding wizard
 

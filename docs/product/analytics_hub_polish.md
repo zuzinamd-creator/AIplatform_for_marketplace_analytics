@@ -40,7 +40,7 @@
 | `/app` (index) | Redirect → `/app/analytics` |
 | `/app/dashboard` | Soft redirect → `/app/analytics` (preserves `?query` and `#hash`) |
 | Nav «Панель» | Points to `/app/analytics` |
-| Post-login default | `/app/analytics` (onboarding flow unchanged) |
+| Post-login default | `/app/analytics` (onboarding wizard at `/app/onboarding` per [onboarding.md](onboarding.md)) |
 | Legacy bookmarks | `/app/dashboard` resolves via redirect — no 404 |
 
 `DashboardPage` remains embedded as Overview tab; standalone render removed from `/app/dashboard` route.

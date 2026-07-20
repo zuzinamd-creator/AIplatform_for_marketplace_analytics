@@ -16,7 +16,7 @@ platform_admin
   → GET /api/v1/auth/invite/validate?token=…
   → POST /api/v1/auth/register { email, password, invite_token }
   → seller account (role=seller)
-  → login → /app/onboarding or dashboard
+  → login → /app/onboarding (incomplete) or /app/analytics (complete)
 ```
 
 | Step | Route / API | Notes |
@@ -26,6 +26,27 @@ platform_admin
 | Validate | `GET /api/v1/auth/invite/validate` | Returns `valid`, `email`, `expires_at` |
 | Register | `POST /api/v1/auth/register` | Requires `invite_token` when `invite_only` |
 | Login | `/login` → `POST /api/v1/auth/login` | JWT stored locally → `GET /api/v1/auth/me` |
+| First login (seller) | `/app/onboarding` | When `localStorage["ma.onboardingDone"]` is not `true` |
+| Return login (seller) | `/app/analytics` | When onboarding complete |
+
+### Seller onboarding wizard (F1.6)
+
+Route: `/app/onboarding` — see [onboarding.md](../product/onboarding.md) for full spec.
+
+Certified step sequence:
+
+```
+value-intro → workspace (optional) → marketplace → upload → processing → cost_import (optional) → complete
+```
+
+Key behaviors:
+
+- Marketplace step blocks advance while preference is `unknown`
+- Upload deep-links to `/app/reports/upload`; processing step polls `GET /reports` + `GET /reports/{id}` until `processed` or `failed`
+- Finish CTAs set `ma.onboardingDone` and navigate to `/app/analytics`
+- AI is **not** triggered by the wizard; optional link to `/app/ai/recommendations` on `complete` only
+
+Removed from wizard (Phase 9.18-F2-C1): `sku_mapping`, `first_ai`, `walkthrough`.
 
 #### Invite lifecycle outcomes
 

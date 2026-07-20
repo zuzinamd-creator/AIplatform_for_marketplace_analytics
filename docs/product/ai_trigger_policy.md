@@ -27,4 +27,8 @@ Code: `app/core/config.py` · hook: `app/etl/post_report_ai.py` · worker still 
 
 ## What does **not** require AI
 
-Dashboard Overview: KPIs, charts, Top SKU, Financial Summary, Business Signals, deterministic Insight Engine V1 captions — all work from governed analytics without `AIRecommendation`.
+Dashboard Overview: KPIs, charts, Top SKU, Financial Summary, Action Strip, deterministic Insight Engine V1 captions — all work from governed analytics without `AIRecommendation`.
+
+## Onboarding
+
+The `/app/onboarding` wizard (F1.6) does **not** call `POST /api/v1/ai/intelligence/runs`. Sellers may open `/app/ai/recommendations` via an optional link on the final step only.

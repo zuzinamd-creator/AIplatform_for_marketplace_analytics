@@ -93,7 +93,7 @@ For each profile, validate:
 
 ## Recommended demo sequence
 
-1. **Healthy seller** — show happy path (onboarding → upload → dashboard → AI feedback)
+1. **Healthy seller** — show happy path (onboarding → upload → **processing** → `/app/analytics` → optional AI feedback)
 2. **Declining seller** — show period comparison via script/API
 3. **Stale inventory** — show trust banners + reduced AI confidence
 4. **Inventory chaos** — show incident workflow on System Status

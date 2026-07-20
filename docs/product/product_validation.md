@@ -99,7 +99,7 @@ Full profiles: `docs/product/real_seller_scenarios.md`
 
 ## What passed validation
 
-- Register/login → onboarding → upload → dashboard KPIs (with freshness)
+- Register/login → onboarding (F1.6: upload → processing → complete) → `/app/analytics` KPIs (with freshness)
 - AI recommendation list → detail → feedback loop
 - Trust layer during stale/degraded conditions
 - Duplicate report detection (checksum)
