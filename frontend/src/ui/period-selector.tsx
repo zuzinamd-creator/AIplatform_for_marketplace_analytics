@@ -52,7 +52,7 @@ export function PeriodSelector(props: {
   }, [sel]);
 
   return (
-    <Card className="p-5">
+    <Card className="p-5" data-testid="period-selector">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end">
         <div className="md:col-span-4">
           <Label>Период</Label>

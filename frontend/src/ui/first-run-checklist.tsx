@@ -5,10 +5,11 @@ import { useState } from "react";
 import { Card } from "./card";
 import { Button } from "./button";
 import { dismissFirstRunChecklist, isFirstRunChecklistDismissed } from "../state/first-run";
+import { isOnboardingDone } from "../state/onboarding";
 
 export function FirstRunChecklist() {
-  const [hidden, setHidden] = useState(() => isFirstRunChecklistDismissed());
-  if (hidden) return null;
+  const [dismissed, setDismissed] = useState(() => isFirstRunChecklistDismissed());
+  if (dismissed || isOnboardingDone()) return null;
 
   return (
     <Card className="p-5">
@@ -26,7 +27,7 @@ export function FirstRunChecklist() {
           aria-label="Скрыть чек-лист"
           onClick={() => {
             dismissFirstRunChecklist();
-            setHidden(true);
+            setDismissed(true);
           }}
         >
           <X className="h-4 w-4" />

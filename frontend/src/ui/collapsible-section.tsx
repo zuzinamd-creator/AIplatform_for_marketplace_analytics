@@ -9,6 +9,7 @@ type Props = {
   defaultOpen?: boolean;
   className?: string;
   actions?: React.ReactNode;
+  "data-testid"?: string;
 };
 
 /** Progressive disclosure via native &lt;details&gt; — no extra state or data logic. */
@@ -19,9 +20,14 @@ export function CollapsibleSection({
   defaultOpen = false,
   className,
   actions,
+  "data-testid": dataTestId,
 }: Props) {
   return (
-    <details className={cx("disclosure-panel group", className)} open={defaultOpen || undefined}>
+    <details
+      className={cx("disclosure-panel group", className)}
+      open={defaultOpen || undefined}
+      data-testid={dataTestId}
+    >
       <summary className="disclosure-summary">
         <span className="min-w-0 flex-1">
           <span className="block">{title}</span>

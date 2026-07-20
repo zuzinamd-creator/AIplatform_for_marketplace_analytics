@@ -12,6 +12,7 @@ import { isPlatformAdmin } from "../../state/userRoles";
 import { useProfitTrust } from "../../state/profit-trust";
 import { formatMetric, formatPct } from "../../utils/format";
 import { Card } from "../../ui/card";
+import { CollapsibleSection } from "../../ui/collapsible-section";
 import { KpiCard } from "../../ui/kpi-card";
 import { StatusBadge } from "../../ui/status-badge";
 import { WarnCallout } from "../../ui/warn-callout";
@@ -91,33 +92,31 @@ export function DashboardPage() {
             </StatusBadge>
           ) : null}
         </div>
-        <p className="page-subtitle">
-          Обзор бизнеса: KPI, риски и доверие к данным за период. Для сравнения с прошлым периодом используйте
-          «Сравнение периодов».
-        </p>
       </div>
 
-      <PeriodSelector value={periodSel} onChange={setPeriodSel} />
+      <div className="space-y-6" data-testid="dashboard-above-fold">
+        <PeriodSelector value={periodSel} onChange={setPeriodSel} />
 
-      <PrimaryAnswer
-        revenue={data?.revenue_summary.kpis.total_revenue}
-        profit={data?.revenue_summary.kpis.total_profit}
-        trustCtx={trustCtx}
-        isLoading={isLoading}
-      />
+        <PrimaryAnswer
+          revenue={data?.revenue_summary.kpis.total_revenue}
+          profit={data?.revenue_summary.kpis.total_profit}
+          trustCtx={trustCtx}
+          isLoading={isLoading}
+        />
 
-      <ActionStrip cards={actionCards} isLoading={isLoading} />
+        <ActionStrip cards={actionCards} isLoading={isLoading} />
 
-      <TopSkusCard
-        marketplace={marketplace}
-        start={start}
-        end={end}
-        summaryTopSkus={data?.top_skus}
-        trustCtx={trustCtx}
-        coverageMin={data?.coverage.available_min_date}
-        coverageMax={data?.coverage.available_max_date}
-        missingPeriodsCount={(data?.coverage.missing_periods ?? []).length}
-      />
+        <TopSkusCard
+          marketplace={marketplace}
+          start={start}
+          end={end}
+          summaryTopSkus={data?.top_skus}
+          trustCtx={trustCtx}
+          coverageMin={data?.coverage.available_min_date}
+          coverageMax={data?.coverage.available_max_date}
+          missingPeriodsCount={(data?.coverage.missing_periods ?? []).length}
+        />
+      </div>
 
       {salesInsight ? (
         <div className="text-sm text-ink-secondary" data-testid="dashboard-insight-line">
@@ -139,16 +138,9 @@ export function DashboardPage() {
             trustCtx={trustCtx}
           />
         </div>
-        <div className="mt-3 space-y-1 text-xs text-ink-muted">
-          <div>
-            Период: {start} → {end} · Обновлено: {freshness?.data_as_of ?? "—"}
-            {completeness ? <> · Полнота данных: {formatPct(completeness)}</> : null}
-          </div>
-          {trustCtx.trust === "insufficient" ? (
-            <div>Прибыль скрыта — загрузите себестоимость.</div>
-          ) : trustCtx.trust === "partial" ? (
-            <div>Прибыль показана как оценка при неполной себестоимости.</div>
-          ) : null}
+        <div className="mt-3 text-xs text-ink-muted">
+          Период: {start} → {end} · Обновлено: {freshness?.data_as_of ?? "—"}
+          {completeness ? <> · Полнота данных: {formatPct(completeness)}</> : null}
         </div>
         {integrityWarnings.length ? (
           <WarnCallout title="Предупреждения целостности" className="mt-4">
@@ -191,32 +183,39 @@ export function DashboardPage() {
       </div>
 
       {admin ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3" data-testid="dashboard-admin-kpis">
-          <KpiCard
-            icon={<Server className="h-4 w-4" />}
-            label="Обработка данных"
-            value={isLoading ? "…" : formatMetric(queued)}
-            sub={<span>Задач в очереди/обработке</span>}
-          />
-          <KpiCard
-            icon={<Bot className="h-4 w-4" />}
-            label="Рекомендации ИИ"
-            value={isLoading ? "…" : recCount}
-            sub={
-              <span>
-                {(data?.ai_ops as Record<string, unknown>)?.degraded_intelligence_mode
-                  ? "Осторожный режим"
-                  : "Обычный режим"}
-              </span>
-            }
-          />
-          <KpiCard
-            icon={<AlertTriangle className="h-4 w-4" />}
-            label="Обновление аналитики"
-            value={isLoading ? "…" : (rebuild.running ?? 0) + (rebuild.pending_dispatch ?? 0)}
-            sub={<span>Пересборки активны или в очереди</span>}
-          />
-        </div>
+        <CollapsibleSection
+          title="Система"
+          subtitle="Очередь, рекомендации ИИ и пересборки аналитики."
+          className="disclosure-panel-muted"
+          data-testid="dashboard-admin-system"
+        >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3" data-testid="dashboard-admin-kpis">
+            <KpiCard
+              icon={<Server className="h-4 w-4" />}
+              label="Обработка данных"
+              value={isLoading ? "…" : formatMetric(queued)}
+              sub={<span>Задач в очереди/обработке</span>}
+            />
+            <KpiCard
+              icon={<Bot className="h-4 w-4" />}
+              label="Рекомендации ИИ"
+              value={isLoading ? "…" : recCount}
+              sub={
+                <span>
+                  {(data?.ai_ops as Record<string, unknown>)?.degraded_intelligence_mode
+                    ? "Осторожный режим"
+                    : "Обычный режим"}
+                </span>
+              }
+            />
+            <KpiCard
+              icon={<AlertTriangle className="h-4 w-4" />}
+              label="Обновление аналитики"
+              value={isLoading ? "…" : (rebuild.running ?? 0) + (rebuild.pending_dispatch ?? 0)}
+              sub={<span>Пересборки активны или в очереди</span>}
+            />
+          </div>
+        </CollapsibleSection>
       ) : null}
 
       {demo ? (

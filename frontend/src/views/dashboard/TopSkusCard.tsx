@@ -71,7 +71,7 @@ export function TopSkusCard({
   const listError = sortTab !== "revenue" ? sortedQuery.error : null;
 
   return (
-    <Card className="p-6">
+    <Card className="p-6" data-testid="top-skus-card">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <div className="text-sm font-semibold text-ink">Топ SKU</div>

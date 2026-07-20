@@ -10,6 +10,7 @@ import { USER_ROLE_PLATFORM_ADMIN, USER_ROLE_SELLER } from "../../state/userRole
 const dashboardSummary = vi.fn();
 const topSkus = vi.fn();
 const useAuthMock = vi.fn();
+const isOnboardingDoneMock = vi.fn();
 
 vi.mock("../../state/http", () => ({
   api: {
@@ -28,6 +29,7 @@ vi.mock("../../state/auth", () => ({
 
 vi.mock("../../state/onboarding", () => ({
   loadWorkspaceProfile: () => ({ workspace_name: "Test", marketplace: "wildberries" }),
+  isOnboardingDone: () => isOnboardingDoneMock(),
 }));
 
 vi.mock("../../state/settings", () => ({
@@ -159,6 +161,7 @@ const baseSummary = {
 describe("DashboardPage trust integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    isOnboardingDoneMock.mockReturnValue(true);
     useAuthMock.mockReturnValue({
       user: { id: "u1", email: "seller@test.local", role: USER_ROLE_SELLER },
       token: "t",
@@ -236,22 +239,25 @@ describe("DashboardPage trust integration", () => {
     expect(screen.queryByText(/Обычный режим/i)).toBeNull();
   });
 
-  it("B1: shows technical ops KPIs for platform_admin below fold", async () => {
+  it("B1: shows admin system section collapsed below fold", async () => {
     useAuthMock.mockReturnValue({
       user: { id: "a1", email: "admin@test.local", role: USER_ROLE_PLATFORM_ADMIN },
       token: "t",
       loading: false,
     });
     renderPage();
+    const adminSection = await screen.findByTestId("dashboard-admin-system");
+    expect(adminSection.hasAttribute("open")).toBe(false);
+    fireEvent.click(screen.getByText("Система"));
+    expect(adminSection.hasAttribute("open")).toBe(true);
     expect(await screen.findByTestId("dashboard-admin-kpis")).toBeTruthy();
     expect(screen.getByText("Обработка данных")).toBeTruthy();
     expect(screen.getByText(/Пересборки активны или в очереди/i)).toBeTruthy();
     expect(screen.getByText("Рекомендации ИИ")).toBeTruthy();
     expect(screen.getByText(/Задач в очереди/i)).toBeTruthy();
-    const adminBlock = screen.getByTestId("dashboard-admin-kpis");
     const secondaryLinks = screen.getByTestId("dashboard-secondary-links");
     expect(
-      adminBlock.compareDocumentPosition(secondaryLinks) & Node.DOCUMENT_POSITION_PRECEDING,
+      adminSection.compareDocumentPosition(secondaryLinks) & Node.DOCUMENT_POSITION_PRECEDING,
     ).toBeTruthy();
   });
 
@@ -445,6 +451,53 @@ describe("DashboardPage trust integration", () => {
       /SKU SKU-WEAK имеет высокую выручку при низкой марже/,
     );
     expect(screen.queryByTestId("action-card-trust-blocker")).toBeNull();
+  });
+
+  it("F2-B.1: hides FirstRunChecklist when onboarding is done", async () => {
+    isOnboardingDoneMock.mockReturnValue(true);
+    renderPage();
+    await screen.findByTestId("primary-answer");
+    expect(screen.queryByText(/Первый запуск: чек‑лист продавца/i)).toBeNull();
+  });
+
+  it("F2-B.1: above-fold blocks follow F1.6 order", async () => {
+    renderPage();
+    const fold = await screen.findByTestId("dashboard-above-fold");
+    const period = screen.getByTestId("period-selector");
+    const primary = screen.getByTestId("primary-answer");
+    const actions = screen.getByTestId("action-strip");
+    const topSkus = screen.getByTestId("top-skus-card");
+    expect(fold.contains(period)).toBe(true);
+    expect(fold.contains(primary)).toBe(true);
+    expect(fold.contains(actions)).toBe(true);
+    expect(fold.contains(topSkus)).toBe(true);
+    expect(
+      primary.compareDocumentPosition(period) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+    expect(
+      actions.compareDocumentPosition(primary) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+    expect(
+      topSkus.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+  });
+
+  it("F2-B.1: removes page subtitle per F1.6", async () => {
+    renderPage();
+    await screen.findByTestId("primary-answer");
+    expect(screen.queryByText(/Обзор бизнеса: KPI, риски и доверие/i)).toBeNull();
+  });
+
+  it("F2-B.1: dashboard trust surfaces match F1.6 allowlist", async () => {
+    renderPage();
+    await screen.findByTestId("primary-answer");
+    expect(screen.getAllByTestId("trust-chip")).toHaveLength(1);
+    expect(screen.queryByRole("progressbar")).toBeNull();
+    expect(screen.queryByText(/Доверие к прибыли/i)).toBeNull();
+    expect(screen.queryByText(/Покрытие себестоимости/i)).toBeNull();
+    expect(screen.queryByText("Что требует внимания сегодня")).toBeNull();
+    const chartHeading = screen.getByText(/Выручка и прибыль по дням/i).closest(".p-6");
+    expect(chartHeading?.textContent).not.toMatch(/Нет себестоимости/);
   });
 
   it("F2-B: shows empty state when no action sources match", async () => {
